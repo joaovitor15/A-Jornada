@@ -1,3 +1,4 @@
+import 'package:myapp/core/exceptions/app_validation_exception.dart';
 import '../entities/auth_entity.dart';
 import '../repositories/auth_repository.dart';
 
@@ -13,16 +14,28 @@ class SignupUseCase {
   }) async {
     // Validate inputs
     if (email.isEmpty) {
-      throw ArgumentError('Email cannot be empty');
+      throw AppValidationException(
+        message: 'Email cannot be empty',
+        code: 'EMPTY_EMAIL',
+      );
     }
     if (password.isEmpty) {
-      throw ArgumentError('Password cannot be empty');
+      throw AppValidationException(
+        message: 'Password cannot be empty',
+        code: 'EMPTY_PASSWORD',
+      );
     }
     if (displayName.isEmpty) {
-      throw ArgumentError('Display name cannot be empty');
+      throw AppValidationException(
+        message: 'Display name cannot be empty',
+        code: 'EMPTY_DISPLAY_NAME',
+      );
     }
     if (password.length < 6) {
-      throw ArgumentError('Password must be at least 6 characters');
+      throw AppValidationException(
+        message: 'Password must be at least 6 characters',
+        code: 'PASSWORD_TOO_SHORT',
+      );
     }
 
     // Call repository

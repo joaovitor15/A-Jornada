@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:myapp/core/exceptions/app_auth_exception.dart';
+import 'package:myapp/core/utils/logger.dart';
 import '../models/auth_model.dart';
 import '../models/login_request_model.dart';
 import '../models/signup_request_model.dart';
@@ -10,6 +11,22 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   AuthRemoteDataSourceImpl({required SupabaseClient supabaseClient})
       : _supabaseClient = supabaseClient;
+
+  /// Converte para DateTime de forma segura
+  DateTime _parseDateTime(dynamic value) {
+    if (value == null) return DateTime.now();
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value) ?? DateTime.now();
+    return DateTime.now();
+  }
+
+  /// Converte para DateTime? de forma segura
+  DateTime? _parseDateTimeNullable(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
+  }
 
   @override
   Future<AuthModel?> getCurrentUser() async {
@@ -23,8 +40,11 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: user.email ?? '',
         displayName: user.userMetadata?['display_name'],
         isEmailVerified: user.emailConfirmedAt != null,
+        createdAt: _parseDateTime(user.createdAt),
+        lastSignInAt: _parseDateTimeNullable(user.lastSignInAt),
       );
     } catch (e, st) {
+      logger.error('getCurrentUser error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Falha ao obter usuário atual',
         code: 'GET_CURRENT_USER_ERROR',
@@ -54,10 +74,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: user.email ?? '',
         displayName: user.userMetadata?['display_name'],
         isEmailVerified: user.emailConfirmedAt != null,
+        createdAt: _parseDateTime(user.createdAt),
+        lastSignInAt: _parseDateTimeNullable(user.lastSignInAt),
       );
     } on AppAuthException {
       rethrow;
     } catch (e, st) {
+      logger.error('login error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Falha ao fazer login',
         code: 'LOGIN_ERROR',
@@ -88,10 +111,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: user.email ?? '',
         displayName: request.displayName,
         isEmailVerified: false,
+        createdAt: _parseDateTime(user.createdAt),
+        lastSignInAt: _parseDateTimeNullable(user.lastSignInAt),
       );
     } on AppAuthException {
       rethrow;
     } catch (e, st) {
+      logger.error('signup error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Falha ao criar conta',
         code: 'SIGNUP_ERROR',
@@ -105,6 +131,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await _supabaseClient.auth.signOut();
     } catch (e, st) {
+      logger.error('logout error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Falha ao fazer logout',
         code: 'LOGOUT_ERROR',
@@ -118,6 +145,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     try {
       await _supabaseClient.auth.resetPasswordForEmail(email);
     } catch (e, st) {
+      logger.error('resetPassword error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Falha ao resetar senha',
         code: 'RESET_PASSWORD_ERROR',
@@ -135,6 +163,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         type: OtpType.email,
       );
     } catch (e, st) {
+      logger.error('verifyEmail error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Código de verificação inválido',
         code: 'VERIFY_EMAIL_ERROR',
@@ -169,10 +198,13 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: user.email ?? '',
         displayName: user.userMetadata?['display_name'],
         isEmailVerified: user.emailConfirmedAt != null,
+        createdAt: _parseDateTime(user.createdAt),
+        lastSignInAt: _parseDateTimeNullable(user.lastSignInAt),
       );
     } on AppAuthException {
       rethrow;
     } catch (e, st) {
+      logger.error('refreshToken error', err: e, stackTrace: st);
       throw AppAuthException(
         message: 'Falha ao atualizar sessão',
         code: 'REFRESH_TOKEN_ERROR',
@@ -203,6 +235,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         email: user.email ?? '',
         displayName: user.userMetadata?['display_name'],
         isEmailVerified: user.emailConfirmedAt != null,
+        createdAt: _parseDateTime(user.createdAt),
+        lastSignInAt: _parseDateTimeNullable(user.lastSignInAt),
       );
     });
   }

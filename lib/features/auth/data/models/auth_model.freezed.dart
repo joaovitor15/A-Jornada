@@ -24,6 +24,8 @@ mixin _$AuthModel {
   String get email => throw _privateConstructorUsedError;
   String? get displayName => throw _privateConstructorUsedError;
   bool get isEmailVerified => throw _privateConstructorUsedError;
+  DateTime get createdAt => throw _privateConstructorUsedError;
+  DateTime? get lastSignInAt => throw _privateConstructorUsedError;
 
   /// Serializes this AuthModel to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -41,7 +43,12 @@ abstract class $AuthModelCopyWith<$Res> {
       _$AuthModelCopyWithImpl<$Res, AuthModel>;
   @useResult
   $Res call(
-      {String id, String email, String? displayName, bool isEmailVerified});
+      {String id,
+      String email,
+      String? displayName,
+      bool isEmailVerified,
+      DateTime createdAt,
+      DateTime? lastSignInAt});
 }
 
 /// @nodoc
@@ -63,6 +70,8 @@ class _$AuthModelCopyWithImpl<$Res, $Val extends AuthModel>
     Object? email = null,
     Object? displayName = freezed,
     Object? isEmailVerified = null,
+    Object? createdAt = null,
+    Object? lastSignInAt = freezed,
   }) {
     return _then(_value.copyWith(
       id: null == id
@@ -81,6 +90,14 @@ class _$AuthModelCopyWithImpl<$Res, $Val extends AuthModel>
           ? _value.isEmailVerified
           : isEmailVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      lastSignInAt: freezed == lastSignInAt
+          ? _value.lastSignInAt
+          : lastSignInAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ) as $Val);
   }
 }
@@ -94,7 +111,12 @@ abstract class _$$AuthModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String id, String email, String? displayName, bool isEmailVerified});
+      {String id,
+      String email,
+      String? displayName,
+      bool isEmailVerified,
+      DateTime createdAt,
+      DateTime? lastSignInAt});
 }
 
 /// @nodoc
@@ -114,6 +136,8 @@ class __$$AuthModelImplCopyWithImpl<$Res>
     Object? email = null,
     Object? displayName = freezed,
     Object? isEmailVerified = null,
+    Object? createdAt = null,
+    Object? lastSignInAt = freezed,
   }) {
     return _then(_$AuthModelImpl(
       id: null == id
@@ -132,6 +156,14 @@ class __$$AuthModelImplCopyWithImpl<$Res>
           ? _value.isEmailVerified
           : isEmailVerified // ignore: cast_nullable_to_non_nullable
               as bool,
+      createdAt: null == createdAt
+          ? _value.createdAt
+          : createdAt // ignore: cast_nullable_to_non_nullable
+              as DateTime,
+      lastSignInAt: freezed == lastSignInAt
+          ? _value.lastSignInAt
+          : lastSignInAt // ignore: cast_nullable_to_non_nullable
+              as DateTime?,
     ));
   }
 }
@@ -142,8 +174,10 @@ class _$AuthModelImpl extends _AuthModel {
   const _$AuthModelImpl(
       {required this.id,
       required this.email,
-      required this.displayName,
-      required this.isEmailVerified})
+      this.displayName,
+      this.isEmailVerified = false,
+      required this.createdAt,
+      this.lastSignInAt})
       : super._();
 
   factory _$AuthModelImpl.fromJson(Map<String, dynamic> json) =>
@@ -156,11 +190,16 @@ class _$AuthModelImpl extends _AuthModel {
   @override
   final String? displayName;
   @override
+  @JsonKey()
   final bool isEmailVerified;
+  @override
+  final DateTime createdAt;
+  @override
+  final DateTime? lastSignInAt;
 
   @override
   String toString() {
-    return 'AuthModel(id: $id, email: $email, displayName: $displayName, isEmailVerified: $isEmailVerified)';
+    return 'AuthModel(id: $id, email: $email, displayName: $displayName, isEmailVerified: $isEmailVerified, createdAt: $createdAt, lastSignInAt: $lastSignInAt)';
   }
 
   @override
@@ -173,13 +212,17 @@ class _$AuthModelImpl extends _AuthModel {
             (identical(other.displayName, displayName) ||
                 other.displayName == displayName) &&
             (identical(other.isEmailVerified, isEmailVerified) ||
-                other.isEmailVerified == isEmailVerified));
+                other.isEmailVerified == isEmailVerified) &&
+            (identical(other.createdAt, createdAt) ||
+                other.createdAt == createdAt) &&
+            (identical(other.lastSignInAt, lastSignInAt) ||
+                other.lastSignInAt == lastSignInAt));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, id, email, displayName, isEmailVerified);
+  int get hashCode => Object.hash(runtimeType, id, email, displayName,
+      isEmailVerified, createdAt, lastSignInAt);
 
   /// Create a copy of AuthModel
   /// with the given fields replaced by the non-null parameter values.
@@ -201,8 +244,10 @@ abstract class _AuthModel extends AuthModel {
   const factory _AuthModel(
       {required final String id,
       required final String email,
-      required final String? displayName,
-      required final bool isEmailVerified}) = _$AuthModelImpl;
+      final String? displayName,
+      final bool isEmailVerified,
+      required final DateTime createdAt,
+      final DateTime? lastSignInAt}) = _$AuthModelImpl;
   const _AuthModel._() : super._();
 
   factory _AuthModel.fromJson(Map<String, dynamic> json) =
@@ -216,6 +261,10 @@ abstract class _AuthModel extends AuthModel {
   String? get displayName;
   @override
   bool get isEmailVerified;
+  @override
+  DateTime get createdAt;
+  @override
+  DateTime? get lastSignInAt;
 
   /// Create a copy of AuthModel
   /// with the given fields replaced by the non-null parameter values.

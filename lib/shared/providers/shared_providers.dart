@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/core/utils/logger.dart';
 import 'package:myapp/core/network/dio_client.dart';
+import 'package:myapp/features/auth/domain/entities/auth_entity.dart';
+import 'package:myapp/features/auth/presentation/controllers/auth_controller.dart';
 
 // Shared providers (global state)
 
@@ -35,4 +37,11 @@ final clearMessagesProvider = Provider((ref) {
     ref.read(errorMessageProvider.notifier).state = null;
     ref.read(successMessageProvider.notifier).state = null;
   };
+});
+
+// Current user provider (Auth)
+final currentUserProvider = FutureProvider<AuthEntity?>((ref) async {
+  final authController = ref.watch(authProvider);
+  
+  return authController.whenData((auth) => auth).value;
 });

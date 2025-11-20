@@ -9,8 +9,10 @@ class AuthModel with _$AuthModel {
   const factory AuthModel({
     required String id,
     required String email,
-    required String? displayName,
-    required bool isEmailVerified,
+    String? displayName,
+    @Default(false) bool isEmailVerified,
+    required DateTime createdAt,
+    DateTime? lastSignInAt,
   }) = _AuthModel;
 
   const AuthModel._();
@@ -18,13 +20,15 @@ class AuthModel with _$AuthModel {
   factory AuthModel.fromJson(Map<String, dynamic> json) =>
       _$AuthModelFromJson(json);
 
-  AuthEntity toEntity() => AuthEntity(
+  /// Converte Model → Entity (adiciona status depois no Controller)
+  AuthEntity toEntity({AuthStatus status = AuthStatus.authenticated}) => AuthEntity(
     id: id,
     email: email,
     displayName: displayName,
     isEmailVerified: isEmailVerified,
-    createdAt: DateTime.now(),
-    lastSignInAt: null,
-    status: AuthStatus.authenticated,
+    createdAt: createdAt,
+    lastSignInAt: lastSignInAt,
+    status: status,
+    errorMessage: null,
   );
 }

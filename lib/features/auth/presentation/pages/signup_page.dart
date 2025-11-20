@@ -2,32 +2,153 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/shared/themes/app_colors.dart';
 import 'package:myapp/shared/themes/app_text_styles.dart';
+import 'package:myapp/core/utils/validators.dart';
 import '../controllers/auth_controller.dart';
-import '../controllers/auth_form_controller.dart';
-import '../widgets/auth_form.dart';
 
-class SignupPage extends ConsumerWidget {
+class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final authState = ref.watch(authProvider);
-    final formState = ref.watch(authFormProvider);
+  ConsumerState<SignupPage> createState() => _SignupPageState();
+}
 
+class _SignupPageState extends ConsumerState<SignupPage> {
+  late TextEditingController _displayNameController;
+  late TextEditingController _emailController;
+  late TextEditingController _passwordController;
+  late TextEditingController _confirmPasswordController;
+  late FocusNode _displayNameFocus;
+  late FocusNode _emailFocus;
+  late FocusNode _passwordFocus;
+  late FocusNode _confirmPasswordFocus;
+
+  bool _isPasswordVisible = false;
+  bool _isConfirmPasswordVisible = false;
+  bool _agreedToTerms = false;
+
+  String? _displayNameError;
+  String? _emailError;
+  String? _passwordError;
+  String? _confirmPasswordError;
+
+  @override
+  void initState() {
+    super.initState();
+    _displayNameController = TextEditingController();
+    _emailController = TextEditingController();
+    _passwordController = TextEditingController();
+    _confirmPasswordController = TextEditingController();
+    _displayNameFocus = FocusNode();
+    _emailFocus = FocusNode();
+    _passwordFocus = FocusNode();
+    _confirmPasswordFocus = FocusNode();
+  }
+
+  @override
+  void dispose() {
+    _displayNameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    _confirmPasswordController.dispose();
+    _displayNameFocus.dispose();
+    _emailFocus.dispose();
+    _passwordFocus.dispose();
+    _confirmPasswordFocus.dispose();
+    super.dispose();
+  }
+
+  void _validateDisplayName() {
+    final displayName = _displayNameController.text;
+    setState(() {
+      _displayNameError = Validators.validateDisplayName(displayName);
+    });
+  }
+
+  void _validateEmail() {
+    final email = _emailController.text;
+    setState(() {
+      _emailError = Validators.validateEmail(email);
+    });
+  }
+
+  void _validatePassword() {
+    final password = _passwordController.text;
+    setState(() {
+      _passwordError = Validators.validatePassword(password);
+    });
+  }
+
+  void _validateConfirmPassword() {
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+    setState(() {
+      if (confirmPassword != password) {
+        _confirmPasswordError = 'As senhas não correspondem';
+      } else {
+        _confirmPasswordError = null;
+      }
+    });
+  }
+
+  void _handleSignup() {
+    _validateDisplayName();
+    _validateEmail();
+    _validatePassword();
+    _validateConfirmPassword();
+
+    if (_displayNameError == null &&
+        _emailError == null &&
+        _passwordError == null &&
+        _confirmPasswordError == null &&
+        _agreedToTerms) {
+      ref.read(authProvider.notifier).signup(
+        email: _emailController.text,
+        password: _passwordController.text,
+        displayName: _displayNameController.text,
+      );
+    } else if (!_agreedToTerms) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Você deve concordar com os termos'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
+    // Listener para navegar após signup bem-sucedido e mostrar erro
     ref.listen(authProvider, (previous, next) {
-      next.whenData((user) {
-        if (user != null) {
+      next.when(
+        data: (user) {
+          if (user != null && user.isAuthenticated) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text('Conta criada com sucesso!'),
+                backgroundColor: AppColors.success,
+              ),
+            );
+            Navigator.of(context).pushReplacementNamed('/home');
+          }
+        },
+        error: (error, stackTrace) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Cadastro realizado com sucesso!')),
+            SnackBar(
+              content: Text('Erro: ${error.toString()}'),
+              backgroundColor: AppColors.error,
+            ),
           );
-          Navigator.of(context).pushReplacementNamed('/home');
-        }
-      });
+        },
+        loading: () {},
+      );
     });
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Cadastro'),
+        title: const Text('Criar Conta'),
         centerTitle: true,
         elevation: 0,
       ),
@@ -37,7 +158,7 @@ class SignupPage extends ConsumerWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const SizedBox(height: 40),
+            const SizedBox(height: 32),
             Text(
               'Criar Conta',
               style: AppTextStyles.displayLarge.copyWith(
@@ -47,83 +168,220 @@ class SignupPage extends ConsumerWidget {
             ),
             const SizedBox(height: 16),
             Text(
-              'Preencha os dados abaixo',
+              'Preencha os dados para começar',
               style: AppTextStyles.bodyMedium.copyWith(
                 color: AppColors.textSecondary,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 48),
+            const SizedBox(height: 40),
+            // Display Name Field
             TextField(
+              controller: _displayNameController,
+              focusNode: _displayNameFocus,
+              onChanged: (_) {
+                if (_displayNameError != null) {
+                  _validateDisplayName();
+                }
+              },
+              onEditingComplete: _validateDisplayName,
               decoration: InputDecoration(
-                labelText: 'Nome completo',
+                labelText: 'Nome Completo',
+                hintText: 'João Silva',
+                prefixIcon: const Icon(Icons.person),
+                errorText: _displayNameError,
+                errorMaxLines: 2,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-              ),
-              onChanged: (value) {
-                ref.read(authFormProvider.notifier).setDisplayName(value);
-              },
-            ),
-            const SizedBox(height: 16),
-            AuthForm(
-              email: formState.email,
-              password: formState.password,
-              isPasswordVisible: formState.isPasswordVisible,
-              onEmailChanged: (value) {
-                ref.read(authFormProvider.notifier).setEmail(value);
-              },
-              onPasswordChanged: (value) {
-                ref.read(authFormProvider.notifier).setPassword(value);
-              },
-              onPasswordVisibilityToggled: () {
-                ref.read(authFormProvider.notifier).togglePasswordVisibility();
-              },
-              error: formState.error,
-            ),
-            const SizedBox(height: 24),
-            authState.when(
-              loading: () => const Center(
-                child: CircularProgressIndicator(),
-              ),
-              data: (_) => ElevatedButton(
-                onPressed: () {
-                  ref.read(authProvider.notifier).signup(
-                    formState.email,
-                    formState.password,
-                    formState.displayName,
-                  );
-                },
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  child: Text('Cadastrar'),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
                 ),
               ),
-              error: (error, stack) => Column(
-                children: [
-                  ElevatedButton(
-                    onPressed: () {
-                      ref.read(authProvider.notifier).signup(
-                        formState.email,
-                        formState.password,
-                        formState.displayName,
-                      );
-                    },
-                    child: const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 16),
-                      child: Text('Cadastrar'),
-                    ),
+            ),
+            const SizedBox(height: 16),
+            // Email Field
+            TextField(
+              controller: _emailController,
+              focusNode: _emailFocus,
+              keyboardType: TextInputType.emailAddress,
+              onChanged: (_) {
+                if (_emailError != null) {
+                  _validateEmail();
+                }
+              },
+              onEditingComplete: _validateEmail,
+              decoration: InputDecoration(
+                labelText: 'Email',
+                hintText: 'seu@email.com',
+                prefixIcon: const Icon(Icons.email),
+                errorText: _emailError,
+                errorMaxLines: 2,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Erro: ${error.toString()}',
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+                ),
               ),
             ),
             const SizedBox(height: 16),
+            // Password Field
+            TextField(
+              controller: _passwordController,
+              focusNode: _passwordFocus,
+              obscureText: !_isPasswordVisible,
+              onChanged: (_) {
+                if (_passwordError != null) {
+                  _validatePassword();
+                }
+                if (_confirmPasswordError != null) {
+                  _validateConfirmPassword();
+                }
+              },
+              onEditingComplete: _validatePassword,
+              decoration: InputDecoration(
+                labelText: 'Senha',
+                hintText: '••••••••',
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
+                errorText: _passwordError,
+                errorMaxLines: 2,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Confirm Password Field
+            TextField(
+              controller: _confirmPasswordController,
+              focusNode: _confirmPasswordFocus,
+              obscureText: !_isConfirmPasswordVisible,
+              onChanged: (_) {
+                if (_confirmPasswordError != null) {
+                  _validateConfirmPassword();
+                }
+              },
+              onEditingComplete: _validateConfirmPassword,
+              decoration: InputDecoration(
+                labelText: 'Confirmar Senha',
+                hintText: '••••••••',
+                prefixIcon: const Icon(Icons.lock),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isConfirmPasswordVisible
+                        ? Icons.visibility
+                        : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                    });
+                  },
+                ),
+                errorText: _confirmPasswordError,
+                errorMaxLines: 2,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(8),
+                  borderSide: const BorderSide(
+                    color: AppColors.primary,
+                    width: 2,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            // Terms Checkbox
+            Row(
+              children: [
+                Checkbox(
+                  value: _agreedToTerms,
+                  onChanged: (value) {
+                    setState(() {
+                      _agreedToTerms = value ?? false;
+                    });
+                  },
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _agreedToTerms = !_agreedToTerms;
+                      });
+                    },
+                    child: Text(
+                      'Concordo com os Termos de Serviço',
+                      style: AppTextStyles.bodySmall.copyWith(
+                        color: AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+            // Signup Button
+            authState.when(
+              loading: () => SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: null,
+                  child: const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+              ),
+              data: (_) => SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _handleSignup,
+                  child: const Text('Criar Conta'),
+                ),
+              ),
+              error: (error, stack) => SizedBox(
+                height: 56,
+                child: ElevatedButton(
+                  onPressed: _handleSignup,
+                  child: const Text('Tentar Novamente'),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            // Login Link
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();

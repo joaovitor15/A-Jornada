@@ -1,15 +1,14 @@
 import 'package:myapp/core/exceptions/app_validation_exception.dart';
-import '../entities/auth_entity.dart';
 import '../repositories/auth_repository.dart';
 
-class LoginUseCase {
+class VerifyEmailUseCase {
   final AuthRepository repository;
 
-  LoginUseCase({required this.repository});
+  VerifyEmailUseCase({required this.repository});
 
-  Future<AuthEntity> call({
+  Future<void> call({
     required String email,
-    required String password,
+    required String code,
   }) async {
     // Validate inputs
     if (email.isEmpty) {
@@ -18,17 +17,14 @@ class LoginUseCase {
         code: 'EMPTY_EMAIL',
       );
     }
-    if (password.isEmpty) {
+    if (code.isEmpty) {
       throw AppValidationException(
-        message: 'Password cannot be empty',
-        code: 'EMPTY_PASSWORD',
+        message: 'Verification code cannot be empty',
+        code: 'EMPTY_CODE',
       );
     }
 
     // Call repository
-    return await repository.login(
-      email: email,
-      password: password,
-    );
+    return await repository.verifyEmail(email, code);
   }
 }

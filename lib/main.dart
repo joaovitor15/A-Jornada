@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/core/config/environment.dart';
 import 'package:myapp/core/config/supabase_config.dart';
 import 'package:myapp/core/config/get_it_config.dart';
+import 'package:myapp/core/config/app_router.dart';
 import 'package:myapp/core/utils/logger.dart';
 import 'package:myapp/shared/themes/app_theme.dart';
 import 'package:myapp/shared/providers/riverpod_observer.dart';
@@ -36,38 +37,20 @@ void main() async {
   }
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
+  Widget build(BuildContext context, WidgetRef ref) {
+    final goRouter = ref.watch(goRouterProvider);
+
+    return MaterialApp.router(
       title: 'Controle Financeiro',
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ThemeMode.system,
       debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Controle Financeiro'),
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                'Foundation + 3 Críticos completos! 🎉',
-                style: Theme.of(context).textTheme.headlineLarge,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Pronto para Auth Feature',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-            ],
-          ),
-        ),
-      ),
+      routerConfig: goRouter,
     );
   }
 }
