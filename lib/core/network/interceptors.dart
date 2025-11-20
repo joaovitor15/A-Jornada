@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
-import '../utils/logger.dart';
-import '../exceptions/network_exception.dart';
+import 'package:myapp/core/utils/logger.dart';
+import 'package:myapp/core/exceptions/app_network_exception.dart';
 
 class LoggingInterceptor extends Interceptor {
   @override
@@ -36,7 +36,10 @@ class ErrorInterceptor extends Interceptor {
       handler.reject(
         DioException(
           requestOptions: response.requestOptions,
-          error: NetworkException.unknown(),
+          error: AppNetworkException(
+            message: 'Status de resposta nulo',
+            code: 'NULL_STATUS',
+          ),
         ),
       );
       return;
@@ -67,41 +70,77 @@ class ErrorInterceptor extends Interceptor {
     );
   }
 
-  NetworkException _handleStatusCode(int statusCode) {
+  AppNetworkException _handleStatusCode(int statusCode) {
     switch (statusCode) {
       case 400:
-        return NetworkException.badRequest();
+        return AppNetworkException(
+          message: 'Requisição inválida',
+          code: 'BAD_REQUEST',
+        );
       case 401:
-        return NetworkException.unauthorized();
+        return AppNetworkException(
+          message: 'Não autorizado',
+          code: 'UNAUTHORIZED',
+        );
       case 403:
-        return NetworkException.forbidden();
+        return AppNetworkException(
+          message: 'Acesso proibido',
+          code: 'FORBIDDEN',
+        );
       case 404:
-        return NetworkException.notFound();
+        return AppNetworkException(
+          message: 'Recurso não encontrado',
+          code: 'NOT_FOUND',
+        );
       case 500:
       case 502:
       case 503:
-        return NetworkException.serverError();
+        return AppNetworkException(
+          message: 'Erro no servidor',
+          code: 'SERVER_ERROR',
+        );
       default:
-        return NetworkException.unknown(message: 'Status: $statusCode');
+        return AppNetworkException(
+          message: 'Erro desconhecido - Status: $statusCode',
+          code: 'UNKNOWN',
+        );
     }
   }
 
-  NetworkException _handleDioError(DioException err) {
+  AppNetworkException _handleDioError(DioException err) {
     switch (err.type) {
       case DioExceptionType.connectionTimeout:
       case DioExceptionType.sendTimeout:
       case DioExceptionType.receiveTimeout:
-        return NetworkException.timeout();
+        return AppNetworkException(
+          message: 'Tempo de conexão expirado',
+          code: 'TIMEOUT',
+        );
       case DioExceptionType.connectionError:
-        return NetworkException.noConnection();
+        return AppNetworkException(
+          message: 'Sem conexão com a internet',
+          code: 'NO_CONNECTION',
+        );
       case DioExceptionType.badResponse:
-        return NetworkException.badRequest();
+        return AppNetworkException(
+          message: 'Resposta inválida do servidor',
+          code: 'BAD_RESPONSE',
+        );
       case DioExceptionType.cancel:
-        return NetworkException.unknown(message: 'Request cancelled');
+        return AppNetworkException(
+          message: 'Requisição cancelada',
+          code: 'CANCELLED',
+        );
       case DioExceptionType.unknown:
-        return NetworkException.unknown(message: err.message);
+        return AppNetworkException(
+          message: err.message ?? 'Erro desconhecido',
+          code: 'UNKNOWN',
+        );
       default:
-        return NetworkException.unknown(message: err.message);
+        return AppNetworkException(
+          message: err.message ?? 'Erro desconhecido',
+          code: 'UNKNOWN',
+        );
     }
   }
 }

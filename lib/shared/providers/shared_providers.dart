@@ -1,12 +1,12 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/utils/logger.dart';
-import '../../core/network/dio_client.dart';
+import 'package:myapp/core/utils/logger.dart';
+import 'package:myapp/core/network/dio_client.dart';
 
 // Shared providers (global state)
 
 // Logger provider (Singleton)
-final loggerProvider = Provider<AppLogger>((ref) {
-  return AppLogger();
+final loggerProvider = Provider<Logger>((ref) {
+  return Logger();
 });
 
 // DioClient provider (Singleton)

@@ -1,62 +1,40 @@
-import 'dart:developer' as developer;
+import 'package:logger/logger.dart' as logger_pkg;
 
-enum LogLevel { debug, info, warning, error }
+class Logger {
+  static final Logger _instance = Logger._internal();
+  late final logger_pkg.Logger _logger;
 
-class AppLogger {
-  static final AppLogger _instance = AppLogger._internal();
-
-  factory AppLogger() {
+  factory Logger() {
     return _instance;
   }
 
-  AppLogger._internal();
-
-  void debug(String message, {Object? error, StackTrace? stackTrace}) {
-    _log(LogLevel.debug, message, error, stackTrace);
-  }
-
-  void info(String message, {Object? error, StackTrace? stackTrace}) {
-    _log(LogLevel.info, message, error, stackTrace);
-  }
-
-  void warning(String message, {Object? error, StackTrace? stackTrace}) {
-    _log(LogLevel.warning, message, error, stackTrace);
-  }
-
-  void error(String message, {Object? err, StackTrace? stackTrace}) {
-    _log(LogLevel.error, message, err, stackTrace);
-  }
-
-  void _log(
-    LogLevel level,
-    String message,
-    Object? error,
-    StackTrace? stackTrace,
-  ) {
-    final timestamp = DateTime.now().toIso8601String();
-    final prefix = '[${level.name.toUpperCase()}] $timestamp';
-    final logMessage = '$prefix: $message';
-
-    developer.log(
-      logMessage,
-      level: _logLevelToInt(level),
-      error: error,
-      stackTrace: stackTrace,
+  Logger._internal() {
+    _logger = logger_pkg.Logger(
+      printer: logger_pkg.PrettyPrinter(
+        methodCount: 2,
+        errorMethodCount: 8,
+        lineLength: 120,
+        colors: true,
+        printEmojis: true,
+      ),
     );
   }
 
-  int _logLevelToInt(LogLevel level) {
-    switch (level) {
-      case LogLevel.debug:
-        return 500;
-      case LogLevel.info:
-        return 800;
-      case LogLevel.warning:
-        return 900;
-      case LogLevel.error:
-        return 1000;
-    }
+  void debug(String message, {dynamic err, StackTrace? stackTrace}) {
+    _logger.d(message, error: err, stackTrace: stackTrace);
+  }
+
+  void info(String message) {
+    _logger.i(message);
+  }
+
+  void warning(String message, {dynamic err, StackTrace? stackTrace}) {
+    _logger.w(message, error: err, stackTrace: stackTrace);
+  }
+
+  void error(String message, {dynamic err, StackTrace? stackTrace}) {
+    _logger.e(message, error: err, stackTrace: stackTrace);
   }
 }
 
-final logger = AppLogger();
+final logger = Logger();

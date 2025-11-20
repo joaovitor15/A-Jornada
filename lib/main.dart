@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'core/config/environment.dart';
-import 'core/config/supabase_config.dart';
-import 'core/config/get_it_config.dart';
-import 'core/utils/logger.dart';
-import 'shared/themes/app_theme.dart';
-import 'shared/providers/riverpod_observer.dart';
+import 'package:myapp/core/config/environment.dart';
+import 'package:myapp/core/config/supabase_config.dart';
+import 'package:myapp/core/config/get_it_config.dart';
+import 'package:myapp/core/utils/logger.dart';
+import 'package:myapp/shared/themes/app_theme.dart';
+import 'package:myapp/shared/providers/riverpod_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -20,14 +20,14 @@ void main() async {
     logger.info('Supabase initialized');
 
     // 3. Setup dependency injection
-    await GetItConfig.setupServiceLocator();
+    setupGetIt();
     logger.info('GetIt setup completed');
 
     // 4. Run app
     runApp(
       ProviderScope(
         observers: [RiverpodObserver()],
-        child: MyApp(),
+        child: const MyApp(),
       ),
     );
   } catch (e, st) {
@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         appBar: AppBar(
-          title: Text('Controle Financeiro'),
+          title: const Text('Controle Financeiro'),
         ),
         body: Center(
           child: Column(
@@ -59,7 +59,7 @@ class MyApp extends StatelessWidget {
                 'Foundation + 3 Críticos completos! 🎉',
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
-              SizedBox(height: 16),
+              const SizedBox(height: 16),
               Text(
                 'Pronto para Auth Feature',
                 style: Theme.of(context).textTheme.bodyLarge,
