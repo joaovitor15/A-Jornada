@@ -1,5 +1,6 @@
 import 'package:get_it/get_it.dart';
 import '../utils/logger.dart';
+import '../network/dio_client.dart';
 
 final getIt = GetIt.instance;
 
@@ -9,6 +10,11 @@ class GetItConfig {
       // Logger (Singleton)
       getIt.registerSingleton<AppLogger>(
         AppLogger(),
+      );
+
+      // DioClient (Singleton)
+      getIt.registerSingleton<DioClient>(
+        DioClient(),
       );
 
       logger.info('ServiceLocator setup completed');

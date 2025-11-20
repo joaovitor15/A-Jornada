@@ -5,6 +5,7 @@ import 'core/config/supabase_config.dart';
 import 'core/config/get_it_config.dart';
 import 'core/utils/logger.dart';
 import 'shared/themes/app_theme.dart';
+import 'shared/providers/riverpod_observer.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,7 @@ void main() async {
     // 4. Run app
     runApp(
       ProviderScope(
+        observers: [RiverpodObserver()],
         child: MyApp(),
       ),
     );
@@ -54,12 +56,12 @@ class MyApp extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Foundation completo! 🎉',
+                'Foundation + 3 Críticos completos! 🎉',
                 style: Theme.of(context).textTheme.headlineLarge,
               ),
               SizedBox(height: 16),
               Text(
-                'Pronto para começar com Features',
+                'Pronto para Auth Feature',
                 style: Theme.of(context).textTheme.bodyLarge,
               ),
             ],
