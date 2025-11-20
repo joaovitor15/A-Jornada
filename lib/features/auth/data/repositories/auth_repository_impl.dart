@@ -1,5 +1,6 @@
 import 'package:myapp/core/exceptions/app_auth_exception.dart';
 import 'package:myapp/core/utils/logger.dart';
+import 'package:myapp/core/config/secure_storage_config.dart';
 import '../models/login_request_model.dart';
 import '../models/signup_request_model.dart';
 import '../../domain/entities/auth_entity.dart';
@@ -75,7 +76,13 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> logout() async {
     try {
+      // 1️⃣ Faz logout no Supabase
       await remoteDataSource.logout();
+      
+      // 2️⃣ Limpa tokens do Secure Storage
+      await SecureStorageConfig.deleteAllTokens();
+      
+      logger.info('✅ Logout completo - Todos os dados limpos');
     } on AppAuthException catch (e) {
       logger.error('logout error', err: e);
       rethrow;

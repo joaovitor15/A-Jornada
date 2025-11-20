@@ -1,6 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:myapp/core/utils/logger.dart';
 import 'environment.dart';
-import '../utils/logger.dart';
 
 class SupabaseConfig {
   static bool _isInitialized = false;
@@ -13,11 +13,37 @@ class SupabaseConfig {
       );
 
       _isInitialized = true;
-      logger.info('Supabase initialized successfully');
+      _setupAuthListener();
+      logger.info('💡 Supabase initialized successfully');
     } catch (e, st) {
       logger.error('Failed to initialize Supabase', err: e, stackTrace: st);
       rethrow;
     }
+  }
+
+  // ✅ NOVO: Escuta mudanças de auth
+  static void _setupAuthListener() {
+    final client = Supabase.instance.client;
+    
+    client.auth.onAuthStateChange.listen((data) {
+      final event = data.event;
+      
+      if (event == AuthChangeEvent.initialSession) {
+        logger.info('✅ Initial session loaded');
+      } else if (event == AuthChangeEvent.signedIn) {
+        logger.info('✅ User signed in');
+      } else if (event == AuthChangeEvent.signedOut) {
+        logger.info('✅ User signed out');
+      } else if (event == AuthChangeEvent.passwordRecovery) {
+        logger.info('✅ Password recovery initiated');
+      } else if (event == AuthChangeEvent.tokenRefreshed) {
+        logger.info('✅ Token refreshed automatically');
+      } else if (event == AuthChangeEvent.userUpdated) {
+        logger.info('✅ User updated');
+      } else if (event == AuthChangeEvent.mfaChallengeVerified) {
+        logger.info('✅ MFA challenge verified');
+      }
+    });
   }
 
   static SupabaseClient get client {
