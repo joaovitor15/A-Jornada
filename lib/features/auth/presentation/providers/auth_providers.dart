@@ -15,6 +15,7 @@ import 'package:myapp/features/auth/data/datasources/auth_remote_datasource_impl
 import 'package:myapp/features/auth/data/datasources/auth_secure_storage.dart';
 import 'package:myapp/features/auth/data/datasources/auth_secure_storage_impl.dart';
 import 'package:myapp/features/auth/domain/entities/auth_entity.dart';
+
 // ============ DATA SOURCES ============
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
@@ -79,7 +80,7 @@ final watchAuthStateUseCaseProvider = Provider<WatchAuthStateUseCase>((ref) {
 
 /// ✅ NOVO: Fornece o JWT token atual
 /// Usado pelo AuthInterceptor para adicionar ao header
-/// Retorna Future<String?> com o token salvo
+/// Retorna `Future<String?>` com o token salvo
 final currentJwtTokenProvider = FutureProvider<String?>((ref) async {
   final secureStorage = ref.watch(authSecureStorageProvider);
   try {
@@ -89,6 +90,7 @@ final currentJwtTokenProvider = FutureProvider<String?>((ref) async {
     return null;
   }
 });
+
 // ============ NOVO: AUTH USER PROVIDER ============
 
 /// Fornece o usuário autenticado atual
