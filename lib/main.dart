@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/core/config/environment.dart';
 import 'package:myapp/core/config/app_initialization.dart';
 import 'package:myapp/core/config/app_router.dart';
+import 'package:myapp/shared/themes/app_theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
@@ -17,7 +18,7 @@ void main() async {
     anonKey: Environment.supabaseAnonKey,
   );
 
-  // 3. Inicializar Hive + Cache
+  // 3. Inicializar Hive + Cache + Notifications
   await AppInitialization.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
@@ -33,10 +34,9 @@ class MyApp extends ConsumerWidget {
     return MaterialApp.router(
       title: 'Controle Financeiro',
       routerConfig: router,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-      ),
+      theme: AppTheme.light,
+      darkTheme: AppTheme.dark,
+      themeMode: ThemeMode.light,
     );
   }
 }
