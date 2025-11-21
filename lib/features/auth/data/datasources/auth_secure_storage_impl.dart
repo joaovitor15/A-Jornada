@@ -3,6 +3,8 @@ import 'package:myapp/core/utils/logger.dart';
 import 'auth_secure_storage.dart';
 
 class AuthSecureStorageImpl implements AuthSecureStorage {
+  final Logger _logger = Logger();
+
   @override
   Future<void> saveTokens({
     required String jwtToken,
@@ -10,14 +12,23 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
     required String userId,
   }) async {
     try {
+      _logger.info(
+        'AuthSecureStorageImpl: Salvando tokens para usuário $userId',
+      );
+
       await SecureStorageConfig.saveJwtToken(jwtToken);
       if (refreshToken != null) {
         await SecureStorageConfig.saveRefreshToken(refreshToken);
       }
       await SecureStorageConfig.saveUserId(userId);
-      logger.info('Tokens saved securely');
+
+      _logger.info('AuthSecureStorageImpl: Tokens salvos com sucesso');
     } catch (e, st) {
-      logger.error('Failed to save tokens', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao salvar tokens',
+        err: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -25,9 +36,23 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
   @override
   Future<String?> getJwtToken() async {
     try {
-      return await SecureStorageConfig.getJwtToken();
+      _logger.info('AuthSecureStorageImpl: Recuperando JWT token');
+
+      final token = await SecureStorageConfig.getJwtToken();
+
+      if (token != null) {
+        _logger.info('AuthSecureStorageImpl: JWT token encontrado');
+      } else {
+        _logger.info('AuthSecureStorageImpl: JWT token não encontrado');
+      }
+
+      return token;
     } catch (e, st) {
-      logger.error('Failed to get JWT token', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao recuperar JWT token',
+        err: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
@@ -35,9 +60,23 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
   @override
   Future<String?> getRefreshToken() async {
     try {
-      return await SecureStorageConfig.getRefreshToken();
+      _logger.info('AuthSecureStorageImpl: Recuperando refresh token');
+
+      final token = await SecureStorageConfig.getRefreshToken();
+
+      if (token != null) {
+        _logger.info('AuthSecureStorageImpl: Refresh token encontrado');
+      } else {
+        _logger.info('AuthSecureStorageImpl: Refresh token não encontrado');
+      }
+
+      return token;
     } catch (e, st) {
-      logger.error('Failed to get refresh token', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao recuperar refresh token',
+        err: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
@@ -45,9 +84,23 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
   @override
   Future<String?> getUserId() async {
     try {
-      return await SecureStorageConfig.getUserId();
+      _logger.info('AuthSecureStorageImpl: Recuperando user ID');
+
+      final userId = await SecureStorageConfig.getUserId();
+
+      if (userId != null) {
+        _logger.info('AuthSecureStorageImpl: User ID encontrado: $userId');
+      } else {
+        _logger.info('AuthSecureStorageImpl: User ID não encontrado');
+      }
+
+      return userId;
     } catch (e, st) {
-      logger.error('Failed to get user ID', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao recuperar user ID',
+        err: e,
+        stackTrace: st,
+      );
       return null;
     }
   }
@@ -55,9 +108,18 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
   @override
   Future<bool> hasValidToken() async {
     try {
-      return await SecureStorageConfig.hasToken();
+      _logger.info('AuthSecureStorageImpl: Verificando validade do token');
+
+      final hasToken = await SecureStorageConfig.hasToken();
+
+      _logger.info('AuthSecureStorageImpl: Token válido = $hasToken');
+      return hasToken;
     } catch (e, st) {
-      logger.error('Failed to check token validity', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao verificar validade do token',
+        err: e,
+        stackTrace: st,
+      );
       return false;
     }
   }
@@ -65,10 +127,17 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
   @override
   Future<void> deleteAllTokens() async {
     try {
+      _logger.info('AuthSecureStorageImpl: Deletando todos os tokens');
+
       await SecureStorageConfig.deleteAllTokens();
-      logger.info('All tokens deleted');
+
+      _logger.info('AuthSecureStorageImpl: Todos os tokens deletados');
     } catch (e, st) {
-      logger.error('Failed to delete tokens', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao deletar tokens',
+        err: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }
@@ -76,10 +145,17 @@ class AuthSecureStorageImpl implements AuthSecureStorage {
   @override
   Future<void> clearAll() async {
     try {
+      _logger.info('AuthSecureStorageImpl: Limpando armazenamento seguro');
+
       await SecureStorageConfig.clearAll();
-      logger.info('Secure storage cleared');
+
+      _logger.info('AuthSecureStorageImpl: Armazenamento limpo');
     } catch (e, st) {
-      logger.error('Failed to clear storage', err: e, stackTrace: st);
+      _logger.error(
+        'AuthSecureStorageImpl: Erro ao limpar armazenamento',
+        err: e,
+        stackTrace: st,
+      );
       rethrow;
     }
   }

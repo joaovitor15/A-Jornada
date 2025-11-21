@@ -115,8 +115,9 @@ class __$$LoginRequestModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$LoginRequestModelImpl implements _LoginRequestModel {
-  const _$LoginRequestModelImpl({required this.email, required this.password});
+class _$LoginRequestModelImpl extends _LoginRequestModel {
+  const _$LoginRequestModelImpl({required this.email, required this.password})
+      : super._();
 
   factory _$LoginRequestModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$LoginRequestModelImplFromJson(json);
@@ -162,10 +163,11 @@ class _$LoginRequestModelImpl implements _LoginRequestModel {
   }
 }
 
-abstract class _LoginRequestModel implements LoginRequestModel {
+abstract class _LoginRequestModel extends LoginRequestModel {
   const factory _LoginRequestModel(
       {required final String email,
       required final String password}) = _$LoginRequestModelImpl;
+  const _LoginRequestModel._() : super._();
 
   factory _LoginRequestModel.fromJson(Map<String, dynamic> json) =
       _$LoginRequestModelImpl.fromJson;

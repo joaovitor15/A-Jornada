@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/shared/themes/app_colors.dart';
 import 'package:myapp/shared/themes/app_text_styles.dart';
 import 'package:myapp/core/utils/validators.dart';
 import '../controllers/auth_controller.dart';
+import 'package:myapp/features/auth/domain/entities/auth_entity.dart';
 
 class SignupPage extends ConsumerStatefulWidget {
   const SignupPage({super.key});
@@ -82,7 +84,9 @@ class _SignupPageState extends ConsumerState<SignupPage> {
     final password = _passwordController.text;
     final confirmPassword = _confirmPasswordController.text;
     setState(() {
-      if (confirmPassword != password) {
+      if (confirmPassword.isEmpty) {
+        _confirmPasswordError = 'Confirme a senha';
+      } else if (confirmPassword != password) {
         _confirmPasswordError = 'As senhas não correspondem';
       } else {
         _confirmPasswordError = null;
@@ -102,10 +106,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
         _confirmPasswordError == null &&
         _agreedToTerms) {
       ref.read(authProvider.notifier).signup(
-        email: _emailController.text,
-        password: _passwordController.text,
-        displayName: _displayNameController.text,
-      );
+            email: _emailController.text,
+            password: _passwordController.text,
+            displayName: _displayNameController.text,
+          );
     } else if (!_agreedToTerms) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -120,30 +124,28 @@ class _SignupPageState extends ConsumerState<SignupPage> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Listener para navegar após signup bem-sucedido e mostrar erro
-    ref.listen(authProvider, (previous, next) {
-      next.when(
-        data: (user) {
-          if (user != null && user.isAuthenticated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Conta criada com sucesso!'),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            Navigator.of(context).pushReplacementNamed('/home');
-          }
-        },
-        error: (error, stackTrace) {
+    ref.listen<AsyncValue<AuthEntity?>>(authProvider, (previous, next) {
+      if (previous != null && previous.isLoading && next.hasValue) {
+        final user = next.value;
+        if (user != null && user.isAuthenticated) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Erro: ${error.toString()}'),
-              backgroundColor: AppColors.error,
+              content: const Text('Conta criada com sucesso!'),
+              backgroundColor: AppColors.success,
             ),
           );
-        },
-        loading: () {},
-      );
+          context.go('/dashboard');
+        }
+      }
+
+      if (next.hasError) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(ref.read(authProvider.notifier).errorMessage ?? 'Erro ao criar conta'),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
     });
 
     return Scaffold(
@@ -175,7 +177,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-            // Display Name Field
+
             TextField(
               controller: _displayNameController,
               focusNode: _displayNameFocus,
@@ -204,7 +206,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Email Field
+
             TextField(
               controller: _emailController,
               focusNode: _emailFocus,
@@ -234,7 +236,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Password Field
+
             TextField(
               controller: _passwordController,
               focusNode: _passwordFocus,
@@ -279,7 +281,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Confirm Password Field
+
             TextField(
               controller: _confirmPasswordController,
               focusNode: _confirmPasswordFocus,
@@ -321,7 +323,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 20),
-            // Terms Checkbox
+
             Row(
               children: [
                 Checkbox(
@@ -350,7 +352,7 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ],
             ),
             const SizedBox(height: 24),
-            // Signup Button
+
             authState.when(
               loading: () => SizedBox(
                 height: 56,
@@ -381,10 +383,10 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Login Link
+
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
+                context.go('/login');
               },
               child: Text(
                 'Já tem conta? Faça login',

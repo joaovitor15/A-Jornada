@@ -126,9 +126,10 @@ class __$$SignupRequestModelImplCopyWithImpl<$Res>
 
 /// @nodoc
 @JsonSerializable()
-class _$SignupRequestModelImpl implements _SignupRequestModel {
+class _$SignupRequestModelImpl extends _SignupRequestModel {
   const _$SignupRequestModelImpl(
-      {required this.email, required this.password, required this.displayName});
+      {required this.email, required this.password, required this.displayName})
+      : super._();
 
   factory _$SignupRequestModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$SignupRequestModelImplFromJson(json);
@@ -178,11 +179,12 @@ class _$SignupRequestModelImpl implements _SignupRequestModel {
   }
 }
 
-abstract class _SignupRequestModel implements SignupRequestModel {
+abstract class _SignupRequestModel extends SignupRequestModel {
   const factory _SignupRequestModel(
       {required final String email,
       required final String password,
       required final String displayName}) = _$SignupRequestModelImpl;
+  const _SignupRequestModel._() : super._();
 
   factory _SignupRequestModel.fromJson(Map<String, dynamic> json) =
       _$SignupRequestModelImpl.fromJson;

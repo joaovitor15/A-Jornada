@@ -1,12 +1,14 @@
 import 'package:dio/dio.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/core/utils/logger.dart';
 import 'package:myapp/core/exceptions/app_network_exception.dart';
+import 'package:myapp/features/auth/presentation/providers/auth_providers.dart';
 
 class LoggingInterceptor extends Interceptor {
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     logger.info(
-      'Request: ${options.method} ${options.path}',
+      '🔵 Request: ${options.method} ${options.path}',
     );
     handler.next(options);
   }
@@ -14,7 +16,7 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     logger.info(
-      'Response: ${response.statusCode} ${response.requestOptions.path}',
+      '🟢 Response: ${response.statusCode} ${response.requestOptions.path}',
     );
     handler.next(response);
   }
@@ -22,9 +24,59 @@ class LoggingInterceptor extends Interceptor {
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
     logger.error(
-      'Error: ${err.message}',
+      '🔴 Error: ${err.message}',
       err: err,
     );
+    handler.next(err);
+  }
+}
+
+class AuthInterceptor extends Interceptor {
+  final Ref ref;
+
+  AuthInterceptor({required this.ref});
+
+  @override
+  Future<void> onRequest(
+    RequestOptions options,
+    RequestInterceptorHandler handler,
+  ) async {
+    try {
+      // ✅ Obter token via Riverpod (com tipo correto)
+      final tokenAsyncValue = ref.read(currentJwtTokenProvider);
+
+      // ✅ Extrair token do FutureProvider
+      final token = await tokenAsyncValue.when(
+        data: (value) => Future.value(value),
+        loading: () => Future.value(null),
+        error: (error, stack) => Future.value(null),
+      );
+
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+        logger.info('🔐 JWT adicionado ao header');
+      } else {
+        logger.warning('⚠️ Token não encontrado');
+      }
+
+      handler.next(options);
+    } catch (e) {
+      logger.error('AuthInterceptor error: $e', err: e);
+      handler.next(options);
+    }
+  }
+
+  @override
+  Future<void> onError(
+    DioException err,
+    ErrorInterceptorHandler handler,
+  ) async {
+    // ✅ Se 401 (token expirado), log
+    if (err.response?.statusCode == 401) {
+      logger.warning('🔄 Token expirado detectado (401)');
+      // TODO: Implementar refresh automático na próxima versão
+    }
+
     handler.next(err);
   }
 }

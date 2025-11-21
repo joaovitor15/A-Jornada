@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:myapp/shared/themes/app_colors.dart';
 import 'package:myapp/shared/themes/app_text_styles.dart';
 import 'package:myapp/core/utils/validators.dart';
@@ -17,7 +18,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   late TextEditingController _passwordController;
   late FocusNode _emailFocus;
   late FocusNode _passwordFocus;
-  
+
   bool _isPasswordVisible = false;
   String? _emailError;
   String? _passwordError;
@@ -60,42 +61,27 @@ class _LoginPageState extends ConsumerState<LoginPage> {
 
     if (_emailError == null && _passwordError == null) {
       ref.read(authProvider.notifier).login(
-        _emailController.text,
-        _passwordController.text,
-      );
+            _emailController.text,
+            _passwordController.text,
+          );
     }
+  }
+
+  void _handleGoogleSignIn() {
+    // ✅ PLACEHOLDER: Implementar signInWithGoogle() no controller depois
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Google Sign-In - Em desenvolvimento'),
+        backgroundColor: AppColors.warning,
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Listener para navegar após login bem-sucedido e mostrar erro
-    ref.listen(authProvider, (previous, next) {
-      next.when(
-        data: (user) {
-          if (user != null && user.isAuthenticated) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: const Text('Login realizado com sucesso!'),
-                backgroundColor: AppColors.success,
-              ),
-            );
-            Navigator.of(context).pushReplacementNamed('/home');
-          }
-        },
-        error: (error, stackTrace) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Erro: ${error.toString()}'),
-              backgroundColor: AppColors.error,
-            ),
-          );
-        },
-        loading: () {},
-      );
-    });
-
+    // ✅ CORRIGIDO: Usar when() ao invés de ref.listen com BuildContext
     return Scaffold(
       appBar: AppBar(
         title: const Text('Login'),
@@ -125,7 +111,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 48),
-            // Email Field
+
+            // ✅ Email Field
             TextField(
               controller: _emailController,
               focusNode: _emailFocus,
@@ -155,7 +142,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ),
             const SizedBox(height: 16),
-            // Password Field
+
+            // ✅ Password Field
             TextField(
               controller: _passwordController,
               focusNode: _passwordFocus,
@@ -197,8 +185,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ),
             const SizedBox(height: 24),
-            // Login Button
+
+            // ✅ Login Button with State Handling
             authState.when(
+              data: (user) {
+                return SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _handleLogin,
+                    child: const Text('Entrar'),
+                  ),
+                );
+              },
               loading: () => SizedBox(
                 height: 56,
                 child: ElevatedButton(
@@ -212,26 +210,61 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   ),
                 ),
               ),
-              data: (_) => SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _handleLogin,
-                  child: const Text('Entrar'),
+              error: (error, stack) {
+                return SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: _handleLogin,
+                    child: const Text('Tentar Novamente'),
+                  ),
+                );
+              },
+            ),
+            const SizedBox(height: 24),
+
+            // ✅ Divider com "OU"
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    height: 1,
+                  ),
                 ),
-              ),
-              error: (error, stack) => SizedBox(
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _handleLogin,
-                  child: const Text('Tentar Novamente'),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Text(
+                    'OU',
+                    style: AppTextStyles.bodySmall.copyWith(
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
                 ),
+                Expanded(
+                  child: Divider(
+                    color: AppColors.textSecondary.withValues(alpha: 0.3),
+                    height: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 24),
+
+            // ✅ Google Sign-In Button
+            SizedBox(
+              height: 56,
+              child: OutlinedButton.icon(
+                onPressed: _handleGoogleSignIn,
+                icon: const Icon(Icons.login),
+                label: const Text('Continuar com Google'),
               ),
             ),
             const SizedBox(height: 16),
-            // Signup Link
+
+            // ✅ Signup Link - CORRIGIDO
             TextButton(
               onPressed: () {
-                Navigator.of(context).pushNamed('/signup');
+                context.go('/signup');
               },
               child: Text(
                 'Não tem conta? Cadastre-se',
@@ -241,10 +274,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
               ),
             ),
             const SizedBox(height: 8),
-            // Forgot Password Link
+
+            // ✅ Forgot Password Link - CORRIGIDO
             TextButton(
               onPressed: () {
-                Navigator.of(context).pushNamed('/forgot-password');
+                context.go('/forgot-password');
               },
               child: Text(
                 'Esqueceu a senha?',

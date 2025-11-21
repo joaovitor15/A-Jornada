@@ -39,9 +39,14 @@ final clearMessagesProvider = Provider((ref) {
   };
 });
 
-// Current user provider (Auth)
+// ✅ CORRIGIDO: Current user provider (retorna AsyncValue para router)
+// Expõe authProvider diretamente como AsyncValue
 final currentUserProvider = FutureProvider<AuthEntity?>((ref) async {
-  final authController = ref.watch(authProvider);
+  final authState = ref.watch(authProvider);
   
-  return authController.whenData((auth) => auth).value;
+  return authState.when(
+    data: (user) => user,
+    loading: () => throw StateError('Loading'),
+    error: (error, stack) => throw error,
+  );
 });

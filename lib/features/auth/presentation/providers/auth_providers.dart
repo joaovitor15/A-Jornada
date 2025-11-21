@@ -14,11 +14,16 @@ import 'package:myapp/features/auth/data/datasources/auth_remote_datasource.dart
 import 'package:myapp/features/auth/data/datasources/auth_remote_datasource_impl.dart';
 import 'package:myapp/features/auth/data/datasources/auth_secure_storage.dart';
 import 'package:myapp/features/auth/data/datasources/auth_secure_storage_impl.dart';
+import 'package:myapp/features/auth/domain/entities/auth_entity.dart';
 // ============ DATA SOURCES ============
 
 final authRemoteDataSourceProvider = Provider<AuthRemoteDataSource>((ref) {
   final supabaseClient = Supabase.instance.client;
   return AuthRemoteDataSourceImpl(supabaseClient: supabaseClient);
+});
+
+final authSecureStorageProvider = Provider<AuthSecureStorage>((ref) {
+  return AuthSecureStorageImpl();
 });
 
 // ============ REPOSITORIES ============
@@ -69,6 +74,38 @@ final watchAuthStateUseCaseProvider = Provider<WatchAuthStateUseCase>((ref) {
   final repository = ref.watch(authRepositoryProvider);
   return WatchAuthStateUseCase(repository: repository);
 });
-final authSecureStorageProvider = Provider<AuthSecureStorage>((ref) {
-  return AuthSecureStorageImpl();
+
+// ============ AUTH TOKEN PROVIDER ============
+
+/// ✅ NOVO: Fornece o JWT token atual
+/// Usado pelo AuthInterceptor para adicionar ao header
+/// Retorna Future<String?> com o token salvo
+final currentJwtTokenProvider = FutureProvider<String?>((ref) async {
+  final secureStorage = ref.watch(authSecureStorageProvider);
+  try {
+    final token = await secureStorage.getJwtToken();
+    return token;
+  } catch (e) {
+    return null;
+  }
+});
+// ============ NOVO: AUTH USER PROVIDER ============
+
+/// Fornece o usuário autenticado atual
+/// Usado pelo GoRouter para redirecionar baseado em autenticação
+final currentAuthUserProvider = FutureProvider<AuthEntity?>((ref) async {
+  try {
+    final secureStorage = ref.watch(authSecureStorageProvider);
+    final token = await secureStorage.getJwtToken();
+
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+
+    // Se tem token, retorna usuário "autenticado"
+    // TODO: Validar token ou buscar usuário do Supabase
+    return null; // Por enquanto retorna null até implementar
+  } catch (e) {
+    return null;
+  }
 });

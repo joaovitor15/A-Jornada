@@ -12,4 +12,7 @@ abstract class AuthRemoteDataSource {
   Future<AuthModel> refreshToken();
   Future<bool> isAuthenticated();
   Stream<AuthModel?> watchAuthState();
+  
+  // ✅ NOVO: Método para obter JWT real
+  Future<String?> getAccessToken();
 }
