@@ -11,14 +11,14 @@ class Environment {
   static Future<void> init() async {
     try {
       await dotenv.load(fileName: '.env');
-      
+
       _supabaseUrl = dotenv.env['SUPABASE_URL'] ?? '';
       _supabaseAnonKey = dotenv.env['SUPABASE_ANON_KEY'] ?? '';
       _supabaseServiceRoleKey = dotenv.env['SUPABASE_SERVICE_ROLE_KEY'] ?? '';
 
       _validateEnvironment();
       _isInitialized = true;
-      
+
       logger.info('Environment loaded successfully');
     } catch (e, st) {
       logger.error('Failed to load environment', err: e, stackTrace: st);
@@ -55,7 +55,8 @@ class Environment {
 
   static void _ensureInitialized() {
     if (!_isInitialized) {
-      throw Exception('Environment not initialized. Call Environment.init() first.');
+      throw Exception(
+          'Environment not initialized. Call Environment.init() first.');
     }
   }
 }

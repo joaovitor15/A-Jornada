@@ -52,7 +52,8 @@ class LoginUseCase {
       return result;
     } catch (e, st) {
       // ✅ NOVO: Log de erro
-      _logger.error('LoginUseCase: Erro ao fazer login', err: e, stackTrace: st);
+      _logger.error('LoginUseCase: Erro ao fazer login',
+          err: e, stackTrace: st);
       rethrow;
     }
   }

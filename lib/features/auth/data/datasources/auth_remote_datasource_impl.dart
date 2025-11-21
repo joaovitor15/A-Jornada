@@ -78,14 +78,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       final user = response.user;
       if (user == null) {
-        _logger.warning('AuthRemoteDataSourceImpl: Login retornou usuário nulo');
+        _logger
+            .warning('AuthRemoteDataSourceImpl: Login retornou usuário nulo');
         throw AppAuthException(
           message: 'Usuário não encontrado',
           code: 'USER_NOT_FOUND',
         );
       }
 
-      _logger.info('AuthRemoteDataSourceImpl: Login bem-sucedido para ${user.id}');
+      _logger
+          .info('AuthRemoteDataSourceImpl: Login bem-sucedido para ${user.id}');
 
       return AuthModel(
         id: user.id,
@@ -126,14 +128,16 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       final user = response.user;
       if (user == null) {
-        _logger.warning('AuthRemoteDataSourceImpl: Signup retornou usuário nulo');
+        _logger
+            .warning('AuthRemoteDataSourceImpl: Signup retornou usuário nulo');
         throw AppAuthException(
           message: 'Falha ao criar conta',
           code: 'SIGNUP_ERROR',
         );
       }
 
-      _logger.info('AuthRemoteDataSourceImpl: Signup bem-sucedido para ${user.id}');
+      _logger.info(
+          'AuthRemoteDataSourceImpl: Signup bem-sucedido para ${user.id}');
 
       return AuthModel(
         id: user.id,
@@ -184,7 +188,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<void> resetPassword(String email) async {
     try {
-      _logger.info('AuthRemoteDataSourceImpl: Enviando reset de senha para $email');
+      _logger.info(
+          'AuthRemoteDataSourceImpl: Enviando reset de senha para $email');
 
       await _supabaseClient.auth.resetPasswordForEmail(email);
 
@@ -236,7 +241,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
       final session = _supabaseClient.auth.currentSession;
       if (session == null) {
-        _logger.warning('AuthRemoteDataSourceImpl: Sessão nula ao renovar token');
+        _logger
+            .warning('AuthRemoteDataSourceImpl: Sessão nula ao renovar token');
         throw AppAuthException(
           message: 'Sessão expirada',
           code: 'SESSION_EXPIRED',
@@ -302,7 +308,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Stream<AuthModel?> watchAuthState() {
-    _logger.info('AuthRemoteDataSourceImpl: Iniciando observação de auth state');
+    _logger
+        .info('AuthRemoteDataSourceImpl: Iniciando observação de auth state');
 
     return _supabaseClient.auth.onAuthStateChange.map((data) {
       final user = data.session?.user;
@@ -311,7 +318,8 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         return null;
       }
 
-      _logger.info('AuthRemoteDataSourceImpl: Estado atualizado para ${user.id}');
+      _logger
+          .info('AuthRemoteDataSourceImpl: Estado atualizado para ${user.id}');
 
       return AuthModel(
         id: user.id,
@@ -346,7 +354,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         _logger.warning('AuthRemoteDataSourceImpl: Access token vazio');
       }
 
-return accessToken.isNotEmpty ? accessToken : null;
+      return accessToken.isNotEmpty ? accessToken : null;
     } catch (e, st) {
       _logger.error(
         'AuthRemoteDataSourceImpl: Erro ao obter access token',

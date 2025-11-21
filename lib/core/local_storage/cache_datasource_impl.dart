@@ -4,7 +4,7 @@ import '../utils/logger.dart';
 
 class CacheDataSourceImpl implements CacheDataSource {
   static const String _defaultBoxName = 'app_cache';
-  
+
   late Box<dynamic> _box;
 
   /// Inicializar

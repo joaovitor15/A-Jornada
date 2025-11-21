@@ -69,8 +69,7 @@ class SignupRequestModel with _$SignupRequestModel {
 
   bool get isPasswordValid => AppValidators.isValidPassword(password);
 
-  bool get isDisplayNameValid =>
-      AppValidators.isValidDisplayName(displayName);
+  bool get isDisplayNameValid => AppValidators.isValidDisplayName(displayName);
 
   bool get isValid => isEmailValid && isPasswordValid && isDisplayNameValid;
 

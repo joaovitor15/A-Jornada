@@ -92,7 +92,8 @@ class AppValidators {
 
   // ✅ NOVO: Phone validation (Brasil)
   static bool isValidPhoneBR(String phone) {
-    final phoneRegex = RegExp(r'^(?:\+55\s?)?(?:\(?\d{2}\)?[\s\-]?)?9?\d{4}[\s\-]?\d{4}$');
+    final phoneRegex =
+        RegExp(r'^(?:\+55\s?)?(?:\(?\d{2}\)?[\s\-]?)?9?\d{4}[\s\-]?\d{4}$');
     return phoneRegex.hasMatch(phone.replaceAll(RegExp(r'\D'), ''));
   }
 

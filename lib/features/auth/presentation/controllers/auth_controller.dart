@@ -110,7 +110,8 @@ class AuthNotifier extends AsyncNotifier<AuthEntity?> {
             userId: user.id,
           );
 
-          _logger.info('AuthNotifier.login: Login bem-sucedido para ${user.email}');
+          _logger.info(
+              'AuthNotifier.login: Login bem-sucedido para ${user.email}');
           return user;
         });
       });
@@ -158,7 +159,8 @@ class AuthNotifier extends AsyncNotifier<AuthEntity?> {
             userId: user.id,
           );
 
-          _logger.info('AuthNotifier.signup: Signup bem-sucedido para ${user.email}');
+          _logger.info(
+              'AuthNotifier.signup: Signup bem-sucedido para ${user.email}');
           return user;
         });
       });
@@ -237,7 +239,8 @@ class AuthNotifier extends AsyncNotifier<AuthEntity?> {
           final verifyEmailUseCase = ref.read(verifyEmailUseCaseProvider);
           await verifyEmailUseCase(email: email, code: code);
 
-          _logger.info('AuthNotifier.verifyEmail: Email verificado com sucesso');
+          _logger
+              .info('AuthNotifier.verifyEmail: Email verificado com sucesso');
 
           return state.maybeWhen(
             data: (user) => user,
@@ -296,18 +299,18 @@ class AuthNotifier extends AsyncNotifier<AuthEntity?> {
   }
 
   bool get isAuthenticated => state.maybeWhen(
-    data: (user) => user != null && user.isAuthenticated,
-    orElse: () => false,
-  );
+        data: (user) => user != null && user.isAuthenticated,
+        orElse: () => false,
+      );
 
   bool get isLoading => state is AsyncLoading;
 
   bool get hasError => state is AsyncError;
 
   String? get errorMessage => state.maybeWhen(
-    error: (error, _) => _mapErrorToMessage(error),
-    orElse: () => null,
-  );
+        error: (error, _) => _mapErrorToMessage(error),
+        orElse: () => null,
+      );
 
   String _mapErrorToMessage(dynamic error) {
     if (error is AppAuthException) {

@@ -141,7 +141,8 @@ class _SignupPageState extends ConsumerState<SignupPage> {
       if (next.hasError) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(ref.read(authProvider.notifier).errorMessage ?? 'Erro ao criar conta'),
+            content: Text(ref.read(authProvider.notifier).errorMessage ??
+                'Erro ao criar conta'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -177,7 +178,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 40),
-
             TextField(
               controller: _displayNameController,
               focusNode: _displayNameFocus,
@@ -206,7 +206,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-
             TextField(
               controller: _emailController,
               focusNode: _emailFocus,
@@ -236,7 +235,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-
             TextField(
               controller: _passwordController,
               focusNode: _passwordFocus,
@@ -281,7 +279,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-
             TextField(
               controller: _confirmPasswordController,
               focusNode: _confirmPasswordFocus,
@@ -323,7 +320,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 20),
-
             Row(
               children: [
                 Checkbox(
@@ -352,7 +348,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ],
             ),
             const SizedBox(height: 24),
-
             authState.when(
               loading: () => SizedBox(
                 height: 56,
@@ -383,7 +378,6 @@ class _SignupPageState extends ConsumerState<SignupPage> {
               ),
             ),
             const SizedBox(height: 16),
-
             TextButton(
               onPressed: () {
                 context.go('/login');

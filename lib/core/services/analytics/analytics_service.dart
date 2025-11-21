@@ -24,7 +24,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
       );
       logger.info('📊 Analytics event logged: $name');
     } catch (e, st) {
-      logger.error('❌ Failed to log analytics event: $name', err: e, stackTrace: st);
+      logger.error('❌ Failed to log analytics event: $name',
+          err: e, stackTrace: st);
     }
   }
 
@@ -34,7 +35,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
       await _firebaseAnalytics.logScreenView(screenName: screenName);
       logger.info('📱 Analytics screen logged: $screenName');
     } catch (e, st) {
-      logger.error('❌ Failed to log screen: $screenName', err: e, stackTrace: st);
+      logger.error('❌ Failed to log screen: $screenName',
+          err: e, stackTrace: st);
     }
   }
 
@@ -50,7 +52,8 @@ class AnalyticsServiceImpl implements AnalyticsService {
       );
       logger.info('❌ Analytics error logged: $error');
     } catch (e, st) {
-      logger.error('❌ Failed to log error to analytics', err: e, stackTrace: st);
+      logger.error('❌ Failed to log error to analytics',
+          err: e, stackTrace: st);
     }
   }
 

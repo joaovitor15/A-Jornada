@@ -21,14 +21,15 @@ class AuthModel with _$AuthModel {
       _$AuthModelFromJson(json);
 
   /// Converte Model → Entity (adiciona status depois no Controller)
-  AuthEntity toEntity({AuthStatus status = AuthStatus.authenticated}) => AuthEntity(
-    id: id,
-    email: email,
-    displayName: displayName,
-    isEmailVerified: isEmailVerified,
-    createdAt: createdAt,
-    lastSignInAt: lastSignInAt,
-    status: status,
-    errorMessage: null,
-  );
+  AuthEntity toEntity({AuthStatus status = AuthStatus.authenticated}) =>
+      AuthEntity(
+        id: id,
+        email: email,
+        displayName: displayName,
+        isEmailVerified: isEmailVerified,
+        createdAt: createdAt,
+        lastSignInAt: lastSignInAt,
+        status: status,
+        errorMessage: null,
+      );
 }

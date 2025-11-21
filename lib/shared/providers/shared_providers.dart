@@ -43,7 +43,7 @@ final clearMessagesProvider = Provider((ref) {
 // Expõe authProvider diretamente como AsyncValue
 final currentUserProvider = FutureProvider<AuthEntity?>((ref) async {
   final authState = ref.watch(authProvider);
-  
+
   return authState.when(
     data: (user) => user,
     loading: () => throw StateError('Loading'),

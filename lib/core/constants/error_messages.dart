@@ -18,12 +18,12 @@ class ErrorMessages {
 
   // Auth errors
   static const String invalidEmail = 'Email inválido';
-  static const String weakPassword =
-      'Senha deve ter no mínimo 6 caracteres';
+  static const String weakPassword = 'Senha deve ter no mínimo 6 caracteres';
   static const String userNotFound = 'Usuário não encontrado';
   static const String wrongPassword = 'Senha incorreta';
   static const String userAlreadyExists = 'Usuário já existe';
-  static const String sessionExpired = 'Sua sessão expirou. Faça login novamente.';
+  static const String sessionExpired =
+      'Sua sessão expirou. Faça login novamente.';
   static const String loginFailed = 'Falha ao fazer login';
   static const String signupFailed = 'Falha ao criar conta';
   static const String logoutFailed = 'Falha ao sair da conta';
@@ -36,7 +36,8 @@ class ErrorMessages {
   static const String descriptionTooLong =
       'Descrição não pode ter mais de 500 caracteres';
   static const String invalidAmount = 'Valor deve ser maior que 0';
-  static const String amountTooLarge = 'Valor não pode ser maior que 999.999,99';
+  static const String amountTooLarge =
+      'Valor não pode ser maior que 999.999,99';
 
   // Database errors
   static const String recordNotFound = 'Registro não encontrado';
@@ -79,7 +80,8 @@ class ErrorMessages {
   static const String profileUpdatedSuccess = 'Perfil atualizado com sucesso';
   static const String profileDeletedSuccess = 'Perfil deletado com sucesso';
   static const String categoryCreatedSuccess = 'Categoria criada com sucesso';
-  static const String categoryUpdatedSuccess = 'Categoria atualizada com sucesso';
+  static const String categoryUpdatedSuccess =
+      'Categoria atualizada com sucesso';
   static const String categoryDeletedSuccess = 'Categoria deletada com sucesso';
   static const String transactionCreatedSuccess =
       'Transação criada com sucesso';

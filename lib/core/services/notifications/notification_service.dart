@@ -26,13 +26,15 @@ class NotificationServiceImpl implements NotificationService {
 
       // Handle background messages
       FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        logger.info('📭 Background message opened: ${message.notification?.title}');
+        logger.info(
+            '📭 Background message opened: ${message.notification?.title}');
         _handleMessage(message);
       });
 
       logger.info('✅ Notification service initialized');
     } catch (e, st) {
-      logger.error('❌ Failed to initialize notification service', err: e, stackTrace: st);
+      logger.error('❌ Failed to initialize notification service',
+          err: e, stackTrace: st);
     }
   }
 
@@ -55,7 +57,8 @@ class NotificationServiceImpl implements NotificationService {
       final status = settings.authorizationStatus.name;
       logger.info('🔔 Notification permission: $status');
     } catch (e, st) {
-      logger.error('❌ Failed to request notification permission', err: e, stackTrace: st);
+      logger.error('❌ Failed to request notification permission',
+          err: e, stackTrace: st);
     }
   }
 
@@ -65,7 +68,8 @@ class NotificationServiceImpl implements NotificationService {
       await _firebaseMessaging.subscribeToTopic(topic);
       logger.info('📢 Subscribed to topic: $topic');
     } catch (e, st) {
-      logger.error('❌ Failed to subscribe to topic: $topic', err: e, stackTrace: st);
+      logger.error('❌ Failed to subscribe to topic: $topic',
+          err: e, stackTrace: st);
     }
   }
 
@@ -75,7 +79,8 @@ class NotificationServiceImpl implements NotificationService {
       await _firebaseMessaging.unsubscribeFromTopic(topic);
       logger.info('🔇 Unsubscribed from topic: $topic');
     } catch (e, st) {
-      logger.error('❌ Failed to unsubscribe from topic: $topic', err: e, stackTrace: st);
+      logger.error('❌ Failed to unsubscribe from topic: $topic',
+          err: e, stackTrace: st);
     }
   }
 

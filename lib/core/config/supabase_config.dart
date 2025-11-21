@@ -24,10 +24,10 @@ class SupabaseConfig {
   // ✅ NOVO: Escuta mudanças de auth
   static void _setupAuthListener() {
     final client = Supabase.instance.client;
-    
+
     client.auth.onAuthStateChange.listen((data) {
       final event = data.event;
-      
+
       if (event == AuthChangeEvent.initialSession) {
         logger.info('✅ Initial session loaded');
       } else if (event == AuthChangeEvent.signedIn) {
@@ -82,12 +82,8 @@ class SupabaseConfig {
     String id,
   ) async {
     try {
-      final response = await client
-          .from(table)
-          .update(data)
-          .eq('id', id)
-          .select()
-          .single();
+      final response =
+          await client.from(table).update(data).eq('id', id).select().single();
       logger.info('Updated $table successfully');
       return response;
     } catch (e, st) {

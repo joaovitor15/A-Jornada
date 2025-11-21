@@ -40,7 +40,8 @@ class AppInitialization {
 
       logger.info('✅ Firebase Messaging initialized');
     } catch (e, st) {
-      logger.error('❌ Firebase Messaging initialization failed', err: e, stackTrace: st);
+      logger.error('❌ Firebase Messaging initialization failed',
+          err: e, stackTrace: st);
     }
   }
 }

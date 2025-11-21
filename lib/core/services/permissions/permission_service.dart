@@ -15,10 +15,12 @@ class PermissionServiceImpl implements PermissionService {
   Future<bool> requestCamera() async {
     try {
       final status = await Permission.camera.request();
-      logger.info('📷 Camera permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
+      logger.info(
+          '📷 Camera permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
       return status.isGranted;
     } catch (e, st) {
-      logger.error('❌ Failed to request camera permission', err: e, stackTrace: st);
+      logger.error('❌ Failed to request camera permission',
+          err: e, stackTrace: st);
       return false;
     }
   }
@@ -27,10 +29,12 @@ class PermissionServiceImpl implements PermissionService {
   Future<bool> requestGallery() async {
     try {
       final status = await Permission.photos.request();
-      logger.info('🖼️ Gallery permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
+      logger.info(
+          '🖼️ Gallery permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
       return status.isGranted;
     } catch (e, st) {
-      logger.error('❌ Failed to request gallery permission', err: e, stackTrace: st);
+      logger.error('❌ Failed to request gallery permission',
+          err: e, stackTrace: st);
       return false;
     }
   }
@@ -39,10 +43,12 @@ class PermissionServiceImpl implements PermissionService {
   Future<bool> requestLocation() async {
     try {
       final status = await Permission.location.request();
-      logger.info('📍 Location permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
+      logger.info(
+          '📍 Location permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
       return status.isGranted;
     } catch (e, st) {
-      logger.error('❌ Failed to request location permission', err: e, stackTrace: st);
+      logger.error('❌ Failed to request location permission',
+          err: e, stackTrace: st);
       return false;
     }
   }
@@ -51,10 +57,12 @@ class PermissionServiceImpl implements PermissionService {
   Future<bool> requestNotifications() async {
     try {
       final status = await Permission.notification.request();
-      logger.info('🔔 Notification permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
+      logger.info(
+          '🔔 Notification permission: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
       return status.isGranted;
     } catch (e, st) {
-      logger.error('❌ Failed to request notification permission', err: e, stackTrace: st);
+      logger.error('❌ Failed to request notification permission',
+          err: e, stackTrace: st);
       return false;
     }
   }
@@ -63,7 +71,8 @@ class PermissionServiceImpl implements PermissionService {
   Future<bool> checkPermission(Permission permission) async {
     try {
       final status = await permission.status;
-      logger.info('✅ Permission check: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
+      logger.info(
+          '✅ Permission check: ${status.isDenied ? 'denied' : status.isGranted ? 'granted' : 'restricted'}');
       return status.isGranted;
     } catch (e, st) {
       logger.error('❌ Failed to check permission', err: e, stackTrace: st);

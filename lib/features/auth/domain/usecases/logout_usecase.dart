@@ -18,7 +18,8 @@ class LogoutUseCase {
       _logger.info('LogoutUseCase: Logout bem-sucedido');
     } catch (e, st) {
       // ✅ NOVO: Log de erro
-      _logger.error('LogoutUseCase: Erro ao fazer logout', err: e, stackTrace: st);
+      _logger.error('LogoutUseCase: Erro ao fazer logout',
+          err: e, stackTrace: st);
       rethrow;
     }
   }

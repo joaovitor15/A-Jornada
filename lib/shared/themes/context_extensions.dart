@@ -5,9 +5,11 @@ extension BuildContextExtensions on BuildContext {
   Size get screenSize => MediaQuery.of(this).size;
   double get screenWidth => screenSize.width;
   double get screenHeight => screenSize.height;
-  bool get isPortrait => MediaQuery.of(this).orientation == Orientation.portrait;
-  bool get isLandscape => MediaQuery.of(this).orientation == Orientation.landscape;
-  
+  bool get isPortrait =>
+      MediaQuery.of(this).orientation == Orientation.portrait;
+  bool get isLandscape =>
+      MediaQuery.of(this).orientation == Orientation.landscape;
+
   // Device type
   bool get isMobile => screenWidth < 600;
   bool get isTablet => screenWidth >= 600 && screenWidth < 900;
@@ -26,7 +28,7 @@ extension BuildContextExtensions on BuildContext {
 
   // Navigation
   NavigatorState get navigator => Navigator.of(this);
-  
+
   void push(Widget page) {
     navigator.push(MaterialPageRoute(builder: (_) => page));
   }
@@ -59,7 +61,8 @@ extension BuildContextExtensions on BuildContext {
   }
 
   // SnackBar
-  void showSnackBar(String message, {Duration duration = const Duration(seconds: 2)}) {
+  void showSnackBar(String message,
+      {Duration duration = const Duration(seconds: 2)}) {
     ScaffoldMessenger.of(this).showSnackBar(
       SnackBar(
         content: Text(message),

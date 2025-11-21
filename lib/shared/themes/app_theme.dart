@@ -7,11 +7,11 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      
+
       // Colors
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primary,
-      
+
       // AppBar
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.surface,
@@ -20,14 +20,14 @@ class AppTheme {
         centerTitle: true,
         titleTextStyle: AppTextStyles.headlineSmall,
       ),
-      
+
       // FloatingActionButton
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
         elevation: 4,
       ),
-      
+
       // ElevatedButton
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -41,7 +41,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // OutlinedButton
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -54,7 +54,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // InputDecoration
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -84,7 +84,7 @@ class AppTheme {
         labelStyle: AppTextStyles.labelMedium,
         errorStyle: AppTextStyles.error,
       ),
-      
+
       // Card
       cardTheme: CardThemeData(
         color: AppColors.surface,
@@ -93,7 +93,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
-      
+
       // BottomSheet
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.surface,
@@ -101,7 +101,7 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
       ),
-      
+
       // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.surface,
@@ -109,7 +109,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Text styles
       textTheme: TextTheme(
         displayLarge: AppTextStyles.displayLarge,
@@ -128,7 +128,7 @@ class AppTheme {
         labelMedium: AppTextStyles.labelMedium,
         labelSmall: AppTextStyles.labelSmall,
       ),
-      
+
       // Color scheme
       colorScheme: ColorScheme.light(
         primary: AppColors.primary,
@@ -144,11 +144,11 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.dark,
-      
+
       // Colors
       scaffoldBackgroundColor: AppColors.neutral900,
       primaryColor: AppColors.primary,
-      
+
       // AppBar
       appBarTheme: AppBarTheme(
         backgroundColor: AppColors.neutral800,
@@ -159,14 +159,14 @@ class AppTheme {
           color: AppColors.neutral50,
         ),
       ),
-      
+
       // FloatingActionButton
       floatingActionButtonTheme: FloatingActionButtonThemeData(
         backgroundColor: AppColors.primary,
         foregroundColor: AppColors.textOnPrimary,
         elevation: 4,
       ),
-      
+
       // ElevatedButton
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
@@ -180,7 +180,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // OutlinedButton
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
@@ -193,7 +193,7 @@ class AppTheme {
           ),
         ),
       ),
-      
+
       // InputDecoration
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
@@ -225,7 +225,7 @@ class AppTheme {
         ),
         errorStyle: AppTextStyles.error,
       ),
-      
+
       // Card
       cardTheme: CardThemeData(
         color: AppColors.neutral800,
@@ -234,7 +234,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(8),
         ),
       ),
-      
+
       // BottomSheet
       bottomSheetTheme: BottomSheetThemeData(
         backgroundColor: AppColors.neutral800,
@@ -242,7 +242,7 @@ class AppTheme {
           borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
         ),
       ),
-      
+
       // Dialog
       dialogTheme: DialogThemeData(
         backgroundColor: AppColors.neutral800,
@@ -250,7 +250,7 @@ class AppTheme {
           borderRadius: BorderRadius.circular(12),
         ),
       ),
-      
+
       // Text styles
       textTheme: TextTheme(
         displayLarge: AppTextStyles.displayLarge.copyWith(
@@ -299,7 +299,7 @@ class AppTheme {
           color: AppColors.neutral500,
         ),
       ),
-      
+
       // Color scheme
       colorScheme: ColorScheme.dark(
         primary: AppColors.primary,

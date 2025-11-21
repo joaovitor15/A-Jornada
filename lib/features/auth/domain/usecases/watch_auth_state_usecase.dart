@@ -10,7 +10,8 @@ class WatchAuthStateUseCase {
 
   Stream<AuthEntity?> call() {
     // ✅ NOVO: Log do início do stream
-    _logger.info('WatchAuthStateUseCase: Iniciando observação de estado de auth');
+    _logger
+        .info('WatchAuthStateUseCase: Iniciando observação de estado de auth');
 
     return repository.watchAuthState().handleError((error, stackTrace) {
       // ✅ NOVO: Log de erro do stream

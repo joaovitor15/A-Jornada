@@ -22,7 +22,8 @@ class ResetPasswordUseCase {
       }
 
       // ✅ NOVO: Log do início
-      _logger.info('ResetPasswordUseCase: Solicitando reset para ${email.trim()}');
+      _logger
+          .info('ResetPasswordUseCase: Solicitando reset para ${email.trim()}');
 
       // Sanitiza email
       final sanitizedEmail = email.trim().toLowerCase();

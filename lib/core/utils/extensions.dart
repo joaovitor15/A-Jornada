@@ -14,9 +14,7 @@ extension StringExtensions on String {
   }
 
   String get capitalizeWords {
-    return split(' ')
-        .map((word) => word.capitalize)
-        .join(' ');
+    return split(' ').map((word) => word.capitalize).join(' ');
   }
 
   String get removeDiacritics {

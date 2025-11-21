@@ -27,7 +27,8 @@ class AuthRepositoryImpl implements AuthRepository {
       _logger.info('AuthRepositoryImpl: Usuário encontrado: ${model.id}');
       return model.toEntity(status: AuthStatus.authenticated);
     } on AppAuthException {
-      _logger.warning('AuthRepositoryImpl: Erro de autenticação ao buscar usuário');
+      _logger.warning(
+          'AuthRepositoryImpl: Erro de autenticação ao buscar usuário');
       rethrow;
     } catch (e, st) {
       _logger.error(
@@ -137,7 +138,8 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> resetPassword(String email) async {
     try {
-      _logger.info('AuthRepositoryImpl: Solicitando reset de senha para $email');
+      _logger
+          .info('AuthRepositoryImpl: Solicitando reset de senha para $email');
 
       await remoteDataSource.resetPassword(email);
 
