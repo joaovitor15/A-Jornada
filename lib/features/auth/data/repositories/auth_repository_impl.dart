@@ -1,38 +1,37 @@
-import 'package:myapp/core/exceptions/app_auth_exception.dart';
 import 'package:myapp/core/utils/logger.dart';
-import 'package:myapp/core/config/secure_storage_config.dart';
-import '../models/login_request_model.dart';
-import '../models/signup_request_model.dart';
 import '../../domain/entities/auth_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_datasource.dart';
+import '../models/login_request_model.dart';
+import '../models/signup_request_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final AuthRemoteDataSource remoteDataSource;
+  final AuthRemoteDataSource _remoteDataSource;
   final Logger _logger = Logger();
 
-  AuthRepositoryImpl({required this.remoteDataSource});
+  AuthRepositoryImpl({required AuthRemoteDataSource remoteDataSource})
+      : _remoteDataSource = remoteDataSource;
 
   @override
   Future<AuthEntity?> getCurrentUser() async {
     try {
       _logger.info('AuthRepositoryImpl: Buscando usuário atual');
 
-      final model = await remoteDataSource.getCurrentUser();
+      final model = await _remoteDataSource.getCurrentUser();
+
       if (model == null) {
-        _logger.info('AuthRepositoryImpl: Nenhum usuário ativo');
+        _logger.info('AuthRepositoryImpl: Nenhum usuário autenticado');
         return null;
       }
 
-      _logger.info('AuthRepositoryImpl: Usuário encontrado: ${model.id}');
-      return model.toEntity(status: AuthStatus.authenticated);
-    } on AppAuthException {
-      _logger.warning(
-          'AuthRepositoryImpl: Erro de autenticação ao buscar usuário');
-      rethrow;
+      final entity = model.toEntity();
+
+      _logger.info('AuthRepositoryImpl: Usuário atual encontrado: ${entity.id}');
+
+      return entity;
     } catch (e, st) {
       _logger.error(
-        'AuthRepositoryImpl: Erro ao buscar usuário',
+        'AuthRepositoryImpl: Erro ao buscar usuário atual',
         err: e,
         stackTrace: st,
       );
@@ -48,24 +47,21 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       _logger.info('AuthRepositoryImpl: Iniciando login para $email');
 
-      // ✅ NOVO: Valida antes de enviar
-      final request = LoginRequestModel.validated(
+      final request = LoginRequestModel(
         email: email,
         password: password,
       );
 
-      final model = await remoteDataSource.login(request);
+      final model = await _remoteDataSource.login(request);
 
-      _logger.info('AuthRepositoryImpl: Login bem-sucedido para ${model.id}');
-      return model.toEntity(status: AuthStatus.authenticated);
-    } on AppAuthException catch (e) {
-      _logger.warning(
-        'AuthRepositoryImpl: Erro de autenticação no login: ${e.code}',
-      );
-      rethrow;
+      final entity = model.toEntity();
+
+      _logger.info('AuthRepositoryImpl: Login bem-sucedido para ${entity.id}');
+
+      return entity;
     } catch (e, st) {
       _logger.error(
-        'AuthRepositoryImpl: Erro inesperado no login',
+        'AuthRepositoryImpl: Erro ao fazer login',
         err: e,
         stackTrace: st,
       );
@@ -82,25 +78,22 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       _logger.info('AuthRepositoryImpl: Iniciando signup para $email');
 
-      // ✅ NOVO: Valida antes de enviar
-      final request = SignupRequestModel.validated(
+      final request = SignupRequestModel(
         email: email,
         password: password,
         displayName: displayName,
       );
 
-      final model = await remoteDataSource.signup(request);
+      final model = await _remoteDataSource.signup(request);
 
-      _logger.info('AuthRepositoryImpl: Signup bem-sucedido para ${model.id}');
-      return model.toEntity(status: AuthStatus.authenticated);
-    } on AppAuthException catch (e) {
-      _logger.warning(
-        'AuthRepositoryImpl: Erro de autenticação no signup: ${e.code}',
-      );
-      rethrow;
+      final entity = model.toEntity();
+
+      _logger.info('AuthRepositoryImpl: Signup bem-sucedido para ${entity.id}');
+
+      return entity;
     } catch (e, st) {
       _logger.error(
-        'AuthRepositoryImpl: Erro inesperado no signup',
+        'AuthRepositoryImpl: Erro ao fazer signup',
         err: e,
         stackTrace: st,
       );
@@ -113,18 +106,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       _logger.info('AuthRepositoryImpl: Iniciando logout');
 
-      // 1️⃣ Faz logout no Supabase
-      await remoteDataSource.logout();
+      await _remoteDataSource.logout();
 
-      // 2️⃣ Limpa tokens do Secure Storage
-      await SecureStorageConfig.deleteAllTokens();
-
-      _logger.info('AuthRepositoryImpl: Logout bem-sucedido - Dados limpos');
-    } on AppAuthException catch (e) {
-      _logger.warning(
-        'AuthRepositoryImpl: Erro de autenticação no logout: ${e.code}',
-      );
-      rethrow;
+      _logger.info('AuthRepositoryImpl: Logout bem-sucedido');
     } catch (e, st) {
       _logger.error(
         'AuthRepositoryImpl: Erro ao fazer logout',
@@ -138,20 +122,14 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<void> resetPassword(String email) async {
     try {
-      _logger
-          .info('AuthRepositoryImpl: Solicitando reset de senha para $email');
+      _logger.info('AuthRepositoryImpl: Enviando reset de senha para $email');
 
-      await remoteDataSource.resetPassword(email);
+      await _remoteDataSource.resetPassword(email);
 
-      _logger.info('AuthRepositoryImpl: Email de reset enviado');
-    } on AppAuthException catch (e) {
-      _logger.warning(
-        'AuthRepositoryImpl: Erro ao resetar senha: ${e.code}',
-      );
-      rethrow;
+      _logger.info('AuthRepositoryImpl: Email de reset enviado com sucesso');
     } catch (e, st) {
       _logger.error(
-        'AuthRepositoryImpl: Erro ao resetar senha',
+        'AuthRepositoryImpl: Erro ao enviar reset de senha',
         err: e,
         stackTrace: st,
       );
@@ -164,14 +142,9 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       _logger.info('AuthRepositoryImpl: Verificando email $email');
 
-      await remoteDataSource.verifyEmail(email, code);
+      await _remoteDataSource.verifyEmail(email, code);
 
       _logger.info('AuthRepositoryImpl: Email verificado com sucesso');
-    } on AppAuthException catch (e) {
-      _logger.warning(
-        'AuthRepositoryImpl: Erro ao verificar email: ${e.code}',
-      );
-      rethrow;
     } catch (e, st) {
       _logger.error(
         'AuthRepositoryImpl: Erro ao verificar email',
@@ -185,20 +158,18 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<AuthEntity> refreshToken() async {
     try {
-      _logger.info('AuthRepositoryImpl: Renovando token');
+      _logger.info('AuthRepositoryImpl: Refreshando token');
 
-      final model = await remoteDataSource.refreshToken();
+      final model = await _remoteDataSource.refreshToken();
 
-      _logger.info('AuthRepositoryImpl: Token renovado com sucesso');
-      return model.toEntity(status: AuthStatus.authenticated);
-    } on AppAuthException catch (e) {
-      _logger.warning(
-        'AuthRepositoryImpl: Erro ao renovar token: ${e.code}',
-      );
-      rethrow;
+      final entity = model.toEntity();
+
+      _logger.info('AuthRepositoryImpl: Token refreshado com sucesso');
+
+      return entity;
     } catch (e, st) {
       _logger.error(
-        'AuthRepositoryImpl: Erro ao renovar token',
+        'AuthRepositoryImpl: Erro ao refreshar token',
         err: e,
         stackTrace: st,
       );
@@ -211,10 +182,11 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       _logger.info('AuthRepositoryImpl: Verificando autenticação');
 
-      final result = await remoteDataSource.isAuthenticated();
+      final isAuth = await _remoteDataSource.isAuthenticated();
 
-      _logger.info('AuthRepositoryImpl: Autenticado = $result');
-      return result;
+      _logger.info('AuthRepositoryImpl: Autenticado = $isAuth');
+
+      return isAuth;
     } catch (e, st) {
       _logger.error(
         'AuthRepositoryImpl: Erro ao verificar autenticação',
@@ -227,21 +199,20 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Stream<AuthEntity?> watchAuthState() {
-    _logger.info('AuthRepositoryImpl: Iniciando observação de estado de auth');
+    try {
+      _logger.info('AuthRepositoryImpl: Observando mudanças de auth state');
 
-    return remoteDataSource.watchAuthState().map((model) {
-      if (model == null) {
-        _logger.info('AuthRepositoryImpl: Usuário deslogado (stream)');
-        return null;
-      }
-      _logger.info('AuthRepositoryImpl: Estado de auth atualizado (stream)');
-      return model.toEntity(status: AuthStatus.authenticated);
-    }).handleError((error, stackTrace) {
+      return _remoteDataSource.watchAuthState().map((model) {
+        if (model == null) return null;
+        return model.toEntity();
+      });
+    } catch (e, st) {
       _logger.error(
-        'AuthRepositoryImpl: Erro no stream de auth',
-        err: error,
-        stackTrace: stackTrace,
+        'AuthRepositoryImpl: Erro ao observar auth state',
+        err: e,
+        stackTrace: st,
       );
-    });
+      rethrow;
+    }
   }
 }

@@ -5,13 +5,23 @@ import 'package:myapp/core/utils/logger.dart';
 final getIt = GetIt.instance;
 
 void setupGetIt() {
-  // Network
+  // ==================== CORE ====================
+
+  /// Network Client
   getIt.registerSingleton<DioClient>(
     DioClient(),
   );
 
-  // Logger
+  /// Logger
   getIt.registerSingleton<Logger>(
     Logger(),
   );
+
+  // ==================== DATA SOURCES ====================
+  // TODO: Serão implementadas com Supabase Studio
+  // Auth, Category, Transaction, Tag RemoteDataSource
+
+  // ==================== REPOSITORIES ====================
+  // TODO: Serão registradas quando DataSources forem implementadas
+  // Auth, Category, Transaction, Tag Repository
 }
