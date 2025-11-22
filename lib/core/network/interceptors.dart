@@ -1,8 +1,7 @@
 import 'package:dio/dio.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/core/utils/logger.dart';
 import 'package:myapp/core/exceptions/app_network_exception.dart';
-import 'package:myapp/features/auth/presentation/providers/auth_providers.dart';
+import 'package:myapp/core/network/dio_client.dart';
 
 class LoggingInterceptor extends Interceptor {
   @override
@@ -32,9 +31,9 @@ class LoggingInterceptor extends Interceptor {
 }
 
 class AuthInterceptor extends Interceptor {
-  final Ref ref;
+  final DioClient dioClient;
 
-  AuthInterceptor({required this.ref});
+  AuthInterceptor({required this.dioClient});
 
   @override
   Future<void> onRequest(
@@ -42,21 +41,14 @@ class AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     try {
-      // ✅ Obter token via Riverpod (com tipo correto)
-      final tokenAsyncValue = ref.read(currentJwtTokenProvider);
-
-      // ✅ Extrair token do FutureProvider
-      final token = await tokenAsyncValue.when(
-        data: (value) => Future.value(value),
-        loading: () => Future.value(null),
-        error: (error, stack) => Future.value(null),
-      );
+      // ✅ Obter token do DioClient (gerenciado internamente)
+      final token = dioClient.getAuthToken();
 
       if (token != null && token.isNotEmpty) {
         options.headers['Authorization'] = 'Bearer $token';
         logger.info('🔐 JWT adicionado ao header');
       } else {
-        logger.warning('⚠️ Token não encontrado');
+        logger.info('⚠️ Token não encontrado - requisição sem autenticação');
       }
 
       handler.next(options);
@@ -75,6 +67,7 @@ class AuthInterceptor extends Interceptor {
     if (err.response?.statusCode == 401) {
       logger.warning('🔄 Token expirado detectado (401)');
       // TODO: Implementar refresh automático na próxima versão
+      // Por enquanto, apenas loga para debug
     }
 
     handler.next(err);

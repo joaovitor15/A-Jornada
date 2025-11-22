@@ -8,6 +8,7 @@ class DioClient {
   static final DioClient _instance = DioClient._internal();
 
   late final Dio _dio;
+  String? _currentAuthToken;
 
   factory DioClient() {
     return _instance;
@@ -34,18 +35,22 @@ class DioClient {
       ),
     );
 
-    // Add interceptors (ordem importa!)
+    // ✅ Add interceptors (ordem importa!)
     _dio.interceptors.add(LoggingInterceptor());
     _dio.interceptors.add(ErrorInterceptor());
-    // AuthInterceptor será adicionado via Riverpod
+    // ✅ AuthInterceptor será adicionado no PASSO 1.5
   }
+
+  /// ✅ NOVO: Setter para atualizar token dinamicamente
+  void setAuthToken(String? token) {
+    _currentAuthToken = token;
+    logger.info('🔐 DioClient: Auth token atualizado');
+  }
+
+  /// ✅ NOVO: Getter para obter token atual
+  String? getAuthToken() => _currentAuthToken;
 
   Dio get dio => _dio;
-
-  /// ✅ NOVO: Adiciona AuthInterceptor dinamicamente (com token)
-  void addAuthInterceptor(AuthInterceptor interceptor) {
-    _dio.interceptors.add(interceptor);
-  }
 
   Future<T> get<T>(
     String path, {
@@ -140,13 +145,7 @@ class DioClient {
 
 /// ✅ Provider para DioClient (Singleton)
 final dioClientProvider = Provider<DioClient>((ref) {
-  final dioClient = DioClient();
-
-  // ✅ Adiciona AuthInterceptor com token automaticamente
-  final authInterceptor = AuthInterceptor(ref: ref);
-  dioClient.addAuthInterceptor(authInterceptor);
-
-  return dioClient;
+  return DioClient();
 });
 
 /// ✅ Para testes e uso manual

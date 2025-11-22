@@ -1,24 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:myapp/core/config/environment.dart';
+import 'package:myapp/core/config/get_it_config.dart';
 import 'package:myapp/core/config/app_initialization.dart';
 import 'package:myapp/core/config/app_router.dart';
+import 'package:myapp/core/config/supabase_config.dart';
 import 'package:myapp/shared/themes/app_theme.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 1. Carregar .env
+  // 1️⃣ Carregar .env
   await Environment.init();
 
-  // 2. Inicializar Supabase
-  await Supabase.initialize(
-    url: Environment.supabaseUrl,
-    anonKey: Environment.supabaseAnonKey,
-  );
+  // 2️⃣ Inicializar GetIt (DI)
+  setupGetIt();
 
-  // 3. Inicializar Hive + Cache + Notifications
+  // 3️⃣ Inicializar Supabase
+  await SupabaseConfig.init();
+
+  // 4️⃣ Inicializar Hive + Cache + Notifications
   await AppInitialization.initialize();
 
   runApp(const ProviderScope(child: MyApp()));
