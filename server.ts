@@ -1,0 +1,203 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import path from "path";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+
+  // JSON parsing middleware
+  app.use(express.json());
+
+  // API Route for Clash Royale
+  app.get("/api/clash-royale/player/:tag", async (req, res) => {
+    try {
+      const { tag } = req.params;
+      const apiKey = process.env.CLASH_ROYALE_API_KEY;
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "CLASH_ROYALE_API_KEY is minimally required on the server." });
+      }
+
+      // Clash Royale API expects the # to be URL encoded (%23) but here we can just pass the raw tag, and append %23
+      const cleanTag = tag.replace(/^#/, "");
+      
+      const targetUrl = `https://proxy.royaleapi.dev/v1/players/%23${cleanTag}`;
+      console.log(`[API] Fetching: ${targetUrl}`);
+      
+      const response = await fetch(targetUrl, {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[API] Invalid JSON from proxy:", responseText.substring(0, 200));
+        return res.status(502).json({ error: `Downstream API returned invalid JSON. Raw response: ${responseText.substring(0, 50)}...` });
+      }
+
+      if (!response.ok) {
+        return res.status(400).json({ error: data.reason || data.message || `CR API Error: ${response.status} ${response.statusText}`, ...data });
+      }
+
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // API Route for Clash Royale Chests
+  app.get("/api/clash-royale/player/:tag/chests", async (req, res) => {
+    try {
+      const { tag } = req.params;
+      const apiKey = process.env.CLASH_ROYALE_API_KEY;
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "CLASH_ROYALE_API_KEY missing" });
+      }
+
+      const cleanTag = tag.replace(/^#/, "");
+      const targetUrl = `https://proxy.royaleapi.dev/v1/players/%23${cleanTag}/upcomingchests`;
+      console.log(`[API] Fetching: ${targetUrl}`);
+      
+      const response = await fetch(targetUrl, {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[API] Invalid JSON from proxy (chests):", responseText.substring(0, 200));
+        return res.status(502).json({ error: `Downstream API returned invalid JSON. Raw response: ${responseText.substring(0, 50)}...` });
+      }
+
+      if (!response.ok) {
+        return res.status(400).json({ error: data.reason || data.message || `CR API Error: ${response.status} ${response.statusText}`, ...data });
+      }
+
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Temporary
+  app.get("/api/clash-royale/top-player", async (req, res) => {
+    try {
+      const apiKey = process.env.CLASH_ROYALE_API_KEY;
+      const r = await fetch(`https://proxy.royaleapi.dev/v1/locations/global/pathoflegend/players?limit=1`, {
+        headers: { "Authorization": `Bearer ${apiKey}` }
+      });
+      if (!r.ok) {
+         return res.status(400).json({ error: "Failed" });
+      }
+      const d = await r.json();
+      res.json(d.items[0]);
+    } catch(e) { res.status(500).json({}); }
+  });
+
+  // API Route for Clash Royale All Cards
+  app.get("/api/clash-royale/cards", async (req, res) => {
+    try {
+      const apiKey = process.env.CLASH_ROYALE_API_KEY;
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "CLASH_ROYALE_API_KEY missing" });
+      }
+
+      const response = await fetch(`https://proxy.royaleapi.dev/v1/cards`, {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let errData = {};
+        try { errData = JSON.parse(errorText); } catch(e) {}
+        return res.status(400).json({ error: `CR API Error: ${response.status} ${response.statusText}`, ...errData });
+      }
+
+      const data = await response.json();
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // API Route for Brawl Stars
+  app.get("/api/brawl-stars/player/:tag", async (req, res) => {
+    try {
+      const { tag } = req.params;
+      const apiKey = process.env.BRAWL_STARS_API_KEY || process.env.CLASH_ROYALE_API_KEY; // Fallback to CR key if they used one for all
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "BRAWL_STARS_API_KEY is missing on the server. Please add it to your secrets or environment variables." });
+      }
+
+      const cleanTag = tag.replace(/^#/, "");
+      
+      const targetUrl = `https://bsproxy.royaleapi.dev/v1/players/%23${cleanTag}`;
+      console.log(`[BS API] Fetching: ${targetUrl}`);
+      
+      const response = await fetch(targetUrl, {
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Accept": "application/json"
+        }
+      });
+
+      const responseText = await response.text();
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("[BS API] Invalid JSON from proxy:", responseText.substring(0, 200));
+        return res.status(502).json({ error: `Downstream API returned invalid JSON.` });
+      }
+
+      if (!response.ok) {
+        return res.status(400).json({ error: data.reason || data.message || `BS API Error: ${response.status} ${response.statusText}`, ...data });
+      }
+
+      res.json(data);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(process.cwd(), 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
