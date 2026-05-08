@@ -45,6 +45,9 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
            rawText = await playerRes.text();
            const errData = JSON.parse(rawText);
            errMessage = errData.error || errMessage;
+           if (errMessage === 'notFound' || errData.reason === 'notFound') {
+               errMessage = 'Jogador não encontrado. Verifique se a tag está correta.';
+           }
            if (errMessage === 'accessDenied.invalidIp' || (errData.message && errData.message.includes('API key does not allow access from IP'))) {
                const ipMatch = (errData.message || '').match(/IP ([\d\.]+)/);
                const ip = ipMatch ? ipMatch[1] : '45.79.218.79 (RoyaleAPI Proxy)';
@@ -93,7 +96,11 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
       }
 
     } catch (err: any) {
-      setError(err.message || 'Houve um erro ao buscar os dados.');
+      if (err.message === 'Failed to fetch') {
+         setError('Servidor indisponível ou falha de conexão. Tente novamente.');
+      } else {
+         setError(err.message || 'Houve um erro ao buscar os dados.');
+      }
     } finally {
       setLoading(false);
     }
@@ -119,6 +126,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
           .from('saved_tags')
           .select('id, tag, name, game')
           .eq('profile_id', activeProfileId)
+          .or('game.eq.clash_royale,game.is.null')
           .order('created_at', { ascending: false });
           
         if (data) {
@@ -455,14 +463,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 >
                   <X size={14} />
                 </button>
-                {/* 5. DEBUG TOGGLE */}
-                <button 
-                  onClick={() => setShowDebug(!showDebug)} 
-                  className={`bg-white border rounded-full h-9 px-3 flex items-center justify-center transition-colors text-[10px] font-black uppercase tracking-wider ${showDebug ? 'border-amber-400 text-amber-500 bg-amber-50' : 'border-slate-100 text-slate-500 hover:bg-slate-50'}`}
-                  title="Debug API Data"
-                >
-                  <AlertCircle size={14} className="mr-1" /> Debug
-                </button>
+
               </motion.div>
             ) : (
               <motion.button 
@@ -890,36 +891,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
       </>
       )}
 
-      {/* DEBUG SECTION */}
-      {showDebug && playerData && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm z-[9999]">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto shadow-2xl relative text-left">
-            <button 
-              onClick={() => setShowDebug(false)}
-              className="absolute top-4 right-4 bg-slate-800 text-slate-400 p-2 rounded-full hover:bg-slate-700 hover:text-white transition-colors"
-            >
-              <X size={20} />
-            </button>
-            <h3 className="text-xl font-black text-white mb-4 flex items-center gap-2">
-              <AlertCircle className="text-amber-500" />
-              API Player Data (RAW JSON)
-            </h3>
-            <div className="flex gap-4 mb-4">
-              <div className="bg-slate-800 p-3 rounded-lg flex-1">
-                <span className="text-[10px] text-slate-400 font-bold uppercase block mb-1">Top-Level Keys</span>
-                <div className="flex flex-wrap gap-2">
-                  {Object.keys(playerData).map(k => (
-                    <span key={k} className="text-xs text-amber-300 font-mono bg-amber-900/30 px-2 py-0.5 rounded border border-amber-500/20">{k}</span>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <pre className="text-[11px] font-mono text-emerald-400 bg-black p-4 rounded-xl overflow-x-auto whitespace-pre-wrap">
-              {JSON.stringify(playerData, null, 2)}
-            </pre>
-          </div>
-        </div>
-      )}
+
 
     </div>
   );

@@ -46,7 +46,11 @@ export default function CRBadgesPage({ activeProfileId }: CRBadgesPageProps) {
       
       setBadges(sortedBadges);
     } catch (err: any) {
-      setError(err.message || "Erro desconhecido");
+      if (err.message === 'Failed to fetch') {
+         setError('Servidor indisponível ou falha de conexão. Tente novamente.');
+      } else {
+         setError(err.message || 'Erro desconhecido ao carregar emblemas.');
+      }
     } finally {
       setLoading(false);
     }

@@ -169,7 +169,11 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
 
       setCards(uniqueCards);
     } catch (err: any) {
-      setError(err.message);
+      if (err.message === 'Failed to fetch') {
+         setError('Servidor indisponível ou falha de conexão. Tente novamente.');
+      } else {
+         setError(err.message || 'Houve um erro ao buscar os dados.');
+      }
     } finally {
       setLoading(false);
     }
