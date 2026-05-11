@@ -13,7 +13,7 @@ export default defineConfig(({mode}) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
-        includeAssets: ['icon.svg'],
+        includeAssets: ['icon.svg', 'icon-192.png', 'icon-512.png', 'screenshot-desktop.png', 'screenshot-mobile.png'],
         workbox: {
           maximumFileSizeToCacheInBytes: 5000000 // 5 MB
         },
@@ -24,11 +24,18 @@ export default defineConfig(({mode}) => {
           theme_color: '#0F172A',
           background_color: '#0F172A',
           display: 'standalone',
+          orientation: 'portrait',
           icons: [
             {
-              src: '/icon.svg',
+              src: '/icon-192.png',
               sizes: '192x192',
-              type: 'image/svg+xml',
+              type: 'image/png',
+              purpose: 'any maskable'
+            },
+            {
+              src: '/icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
               purpose: 'any maskable'
             },
             {
@@ -36,6 +43,20 @@ export default defineConfig(({mode}) => {
               sizes: '512x512',
               type: 'image/svg+xml',
               purpose: 'any maskable'
+            }
+          ],
+          screenshots: [
+            {
+              src: '/screenshot-desktop.png',
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide'
+            },
+            {
+              src: '/screenshot-mobile.png',
+              sizes: '720x1280',
+              type: 'image/png',
+              form_factor: 'narrow'
             }
           ]
         }
