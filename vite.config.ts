@@ -30,27 +30,25 @@ export default defineConfig(({mode}) => {
               src: '/icon-192.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: '/icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable'
             },
             {
               src: '/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
-            }
-          ],
-          screenshots: [
-            {
-              src: '/screenshot-desktop.png',
-              sizes: '1280x720',
-              type: 'image/png',
-              form_factor: 'wide'
+              purpose: 'any'
             },
             {
-              src: '/screenshot-mobile.png',
-              sizes: '720x1280',
+              src: '/icon-512.png',
+              sizes: '512x512',
               type: 'image/png',
-              form_factor: 'narrow'
+              purpose: 'maskable'
             }
           ]
         }
