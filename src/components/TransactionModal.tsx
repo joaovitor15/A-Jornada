@@ -7,6 +7,8 @@ import {
   CreditCard,
   AlertCircle,
   Search,
+  ChevronDown,
+  Check,
 } from "lucide-react";
 import { useTransacoes, Transacao } from "../hooks/useTransacoes";
 import { useCategories } from "../hooks/useCategories";
@@ -49,6 +51,8 @@ export function TransactionModal({
   const inputTagRef = useRef<HTMLInputElement>(null);
 
   const [parcelas, setParcelas] = useState("1");
+  const [mostrarDropdownParcelas, setMostrarDropdownParcelas] = useState(false);
+  const containerParcelasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isOpen && transacaoParaEditar) {
@@ -110,6 +114,24 @@ export function TransactionModal({
       };
     }
   }, [mostrarDropdownTag, tagSelecionada]);
+
+  useEffect(() => {
+    const handleClickForaParcelas = (e: MouseEvent) => {
+      if (
+        containerParcelasRef.current &&
+        !containerParcelasRef.current.contains(e.target as Node)
+      ) {
+        setMostrarDropdownParcelas(false);
+      }
+    };
+
+    if (mostrarDropdownParcelas) {
+      document.addEventListener("mousedown", handleClickForaParcelas);
+      return () => {
+        document.removeEventListener("mousedown", handleClickForaParcelas);
+      };
+    }
+  }, [mostrarDropdownParcelas]);
 
   // Limpar tag ao mudar de tipo
   useEffect(() => {
@@ -250,15 +272,15 @@ export function TransactionModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0F172A80] backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
-      <div className="bg-[#FFFFFF] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
+      <div className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[18px] font-[800] text-[#0F172A]">
+          <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">
             {transacaoParaEditar ? "Editar Transação" : "Nova Transação"}
           </h2>
           <button
             onClick={onClose}
-            className="text-[#94A3B8] hover:text-[#0F172A] transition-colors"
+            className="text-[#94A3B8] hover:text-[#0F172A] dark:text-white transition-colors"
           >
             <X size={18} />
           </button>
@@ -269,8 +291,8 @@ export function TransactionModal({
             onClick={() => setTipo("receita")}
             className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 ${
               tipo === "receita"
-                ? "bg-[#DCFCE7] text-[#16A34A] border-[1.5px] border-[#16A34A] shadow-[0_2px_8px_rgba(22,163,74,0.2)]"
-                : "bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]"
+                ? "bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] border-[1.5px] border-[#16A34A] shadow-[0_2px_8px_rgba(22,163,74,0.2)]"
+                : "bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155]"
             }`}
           >
             <TrendingUp size={15} />
@@ -280,8 +302,8 @@ export function TransactionModal({
             onClick={() => setTipo("despesa")}
             className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 ${
               tipo === "despesa"
-                ? "bg-[#FEE2E2] text-[#EF4444] border-[1.5px] border-[#EF4444] shadow-[0_2px_8px_rgba(239,68,68,0.2)]"
-                : "bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]"
+                ? "bg-[#FEE2E2] dark:bg-red-900/30 text-[#EF4444] border-[1.5px] border-[#EF4444] shadow-[0_2px_8px_rgba(239,68,68,0.2)]"
+                : "bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155]"
             }`}
           >
             <TrendingDown size={15} />
@@ -291,7 +313,7 @@ export function TransactionModal({
 
         <div className="space-y-[14px]">
           <div>
-            <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">
+            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">
               Descrição
             </label>
             <input
@@ -302,7 +324,7 @@ export function TransactionModal({
                 setErro((prev) => (prev?.campo === "descricao" ? null : prev));
               }}
               placeholder="Ex: Supermercado, Salário..."
-              className={`w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]`}
+              className={`w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]`}
             />
             {erro?.campo === "descricao" && (
               <div className="text-[#EF4444] text-[12px] mt-1.5 flex items-center gap-1 font-[600]">
@@ -312,7 +334,7 @@ export function TransactionModal({
           </div>
 
           <div className="relative" ref={containerTagRef}>
-            <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">
+            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">
               Tag
             </label>
             <div className="relative">
@@ -320,8 +342,8 @@ export function TransactionModal({
                 <div
                   className={`inline-flex items-center gap-[6px] rounded-[100px] p-[6px_12px] text-[13px] font-[600] border-[1.5px] w-fit shadow-sm ${
                     tipo === "receita"
-                      ? "bg-[#DCFCE7] text-[#16A34A] border-[#16A34A]"
-                      : "bg-[#FEE2E2] text-[#EF4444] border-[#EF4444]"
+                      ? "bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] border-[#16A34A]"
+                      : "bg-[#FEE2E2] dark:bg-red-900/30 text-[#EF4444] border-[#EF4444]"
                   }`}
                 >
                   <span>{tagSelecionada.nome}</span>
@@ -360,7 +382,7 @@ export function TransactionModal({
                       }
                     }}
                     placeholder="Buscar tag..."
-                    className="w-full bg-[#F8FAFC] border-[1.5px] border-[#E2E8F0] rounded-[12px] p-[10px_12px_10px_34px] text-[14px] font-[500] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
+                    className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[12px] p-[10px_12px_10px_34px] text-[14px] font-[500] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
                   />
                 </div>
               )}
@@ -373,7 +395,7 @@ export function TransactionModal({
             )}
 
             {mostrarDropdownTag && (
-              <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[#FFFFFF] border border-[#E2E8F0] rounded-[16px] shadow-[0_12px_32px_rgba(0,0,0,0.12)] max-h-[220px] overflow-y-auto z-[60] p-[6px] space-y-[2px]">
+              <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[#FFFFFF] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-[16px] shadow-[0_12px_32px_rgba(0,0,0,0.12)] max-h-[220px] overflow-y-auto z-[60] p-[6px] space-y-[2px]">
                 {tagsFiltradas.length > 0 ? (
                   tagsFiltradas.map((tag) => {
                     const categoria = categories.find(
@@ -386,7 +408,7 @@ export function TransactionModal({
                           e.stopPropagation();
                           selecionarTag({ id: tag.id, nome: tag.nome });
                         }}
-                        className="w-full p-[10px_14px] text-[14px] font-[500] rounded-[10px] text-left flex items-center gap-3 transition-colors hover:bg-[#F1F5F9] text-[#374151]"
+                        className="w-full p-[10px_14px] text-[14px] font-[500] rounded-[10px] text-left flex items-center gap-3 transition-colors hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0]"
                       >
                         <span
                           className="w-[8px] h-[8px] rounded-full shrink-0"
@@ -411,7 +433,7 @@ export function TransactionModal({
 
           <div className="grid grid-cols-2 gap-[12px]">
             <div>
-              <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">
+              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">
                 Data
               </label>
               <div className="relative">
@@ -423,13 +445,13 @@ export function TransactionModal({
                   type="date"
                   value={data}
                   onChange={(e) => setData(e.target.value)}
-                  className="w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_12px_10px_34px] text-[13px] font-[600] bg-[#F8FAFC] outline-none cursor-pointer transition-all focus:border-[#2563EB]"
+                  className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_12px_10px_34px] text-[13px] font-[600] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none cursor-pointer transition-all focus:border-[#2563EB]"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">
+              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">
                 Valor
               </label>
               <input
@@ -437,7 +459,7 @@ export function TransactionModal({
                 value={valorExibido}
                 onKeyDown={handleValorKeyDown}
                 readOnly
-                className={`w-full text-right border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] outline-none transition-all focus:border-[#2563EB] ${
+                className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] ${
                   tipo === "receita" ? "text-[#16A34A]" : "text-[#EF4444]"
                 }`}
               />
@@ -446,7 +468,7 @@ export function TransactionModal({
 
           {tipo === "despesa" && cards.length > 0 && (
             <div className="animate-in fade-in slide-in-from-top-1 duration-200">
-              <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">
+              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">
                 Forma de Pagamento
               </label>
               <div className="relative mb-3">
@@ -465,7 +487,7 @@ export function TransactionModal({
                       setCardId(val);
                     }
                   }}
-                  className="w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_12px_10px_34px] text-[14px] font-[500] bg-[#F8FAFC] text-[#0F172A] outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
+                  className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_12px_10px_34px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
                 >
                   <option value="dinheiro">Dinheiro</option>
                   {cards.map((c) => (
@@ -477,22 +499,49 @@ export function TransactionModal({
               </div>
 
               {formaPagamento !== "dinheiro" && !transacaoParaEditar && (
-                <div className="animate-in fade-in slide-in-from-top-1 duration-200 mt-3 flex items-center gap-3 bg-[#F8FAFC] p-3 rounded-xl border border-[#E2E8F0]">
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200 mt-3 flex items-center gap-3 bg-[#F8FAFC] dark:bg-[#0F172A] p-3 rounded-xl border border-[#E2E8F0] dark:border-[#334155]">
                   <div className="flex-1">
-                    <label className="block text-[10px] font-[800] text-[#64748B] uppercase tracking-wider mb-1">
+                    <label className="block text-[10px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">
                       Parcelas
                     </label>
-                    <select
-                      value={parcelas}
-                      onChange={(e) => setParcelas(e.target.value)}
-                      className="w-full bg-white border border-[#E2E8F0] rounded-lg px-3 py-1.5 text-xs font-bold text-[#0F172A] outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
-                    >
-                      {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
-                        <option key={n} value={String(n)}>
-                          {n}x de R$ {(valorNumerico / n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="relative" ref={containerParcelasRef}>
+                      <button
+                        type="button"
+                        onClick={() => setMostrarDropdownParcelas(!mostrarDropdownParcelas)}
+                        className="w-full flex items-center justify-between text-left bg-white border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-3 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white outline-none cursor-pointer focus:border-[#2563EB]"
+                      >
+                        <span>{parcelas}x de R$ {(valorNumerico / parseInt(parcelas)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                        <ChevronDown size={14} className={`text-[#64748B] dark:text-[#94A3B8] transition-transform ${mostrarDropdownParcelas ? 'rotate-180' : ''}`} />
+                      </button>
+
+                      {mostrarDropdownParcelas && (
+                        <div className="absolute top-[calc(100%+4px)] left-0 w-full min-w-[140px] bg-white border border-[#E2E8F0] dark:border-[#334155] rounded-xl shadow-xl z-[70] overflow-hidden">
+                          <div className="max-h-[180px] overflow-y-auto custom-scrollbar p-1">
+                            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => {
+                              const isActive = parcelas === String(n);
+                              return (
+                                <button
+                                  key={n}
+                                  type="button"
+                                  onClick={() => {
+                                    setParcelas(String(n));
+                                    setMostrarDropdownParcelas(false);
+                                  }}
+                                  className={`w-full text-left px-3 py-2 text-xs transition-colors rounded-lg flex items-center justify-between ${
+                                    isActive
+                                      ? "bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] font-bold"
+                                      : "text-[#0F172A] dark:text-white font-medium hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A] dark:bg-[#0F172A]"
+                                  }`}
+                                >
+                                  <span>{n}x de R$ {(valorNumerico / n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                                  {isActive && <Check size={14} className="text-[#2563EB]" />}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
@@ -503,7 +552,7 @@ export function TransactionModal({
         <div className="mt-[24px] flex gap-[12px]">
           <button
             onClick={onClose}
-            className="flex-1 bg-[#F1F5F9] text-[#64748B] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] transition-colors"
+            className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors"
           >
             Cancelar
           </button>

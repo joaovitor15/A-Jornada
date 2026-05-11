@@ -289,11 +289,11 @@ export default function Categories({ activeProfile }: CategoriesProps) {
     return (
       <div 
         key={category.id} 
-        className={`bg-white rounded-[16px] border border-[#F1F5F9] p-[14px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:border-[#E2E8F0] flex flex-col gap-[10px] relative tag-popover-container ${isArchivedView ? 'opacity-70 bg-[#F8FAFC]' : ''}`}
+        className={`bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#F1F5F9] dark:border-[#334155] p-[14px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:border-[#E2E8F0] dark:border-[#334155] flex flex-col gap-[10px] relative tag-popover-container ${isArchivedView ? 'opacity-70 bg-[#F8FAFC] dark:bg-[#0F172A]' : ''}`}
       >
         {isArchivedView && (
            <div>
-             <span className="bg-[#F1F5F9] text-[#6B7280] rounded-[100px] px-[10px] py-[3px] text-[11px] font-medium inline-block">
+             <span className="bg-[#F1F5F9] dark:bg-[#334155] text-[#6B7280] dark:text-[#94A3B8] rounded-[100px] px-[10px] py-[3px] text-[11px] font-medium inline-block">
                Arquivada
              </span>
            </div>
@@ -308,7 +308,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
             >
               <IconComp size={17} />
             </div>
-            <span className="text-[14px] font-bold text-[#0F172A] leading-tight break-words">
+            <span className="text-[14px] font-bold text-[#0F172A] dark:text-white leading-tight break-words">
               {category.nome}
             </span>
           </div>
@@ -316,14 +316,14 @@ export default function Categories({ activeProfile }: CategoriesProps) {
           {/* LADO DIREITO: TOPO DO CARD */}
           <div className="flex items-center gap-[2px] shrink-0">
             {category.nome.toLowerCase() === 'cartão de crédito' ? (
-              <div title="Categoria de Sistema" className="p-[5px] rounded-[7px] text-[#CBD5E1]">
+              <div title="Categoria de Sistema" className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569]">
                 <Lock size={13} />
               </div>
             ) : (
               <>
                 <button 
                   onClick={() => openCategoryModal(category)}
-                  className="p-[5px] rounded-[7px] text-[#CBD5E1] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all cursor-pointer"
+                  className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all cursor-pointer"
                 >
                   <Pencil size={13} />
                 </button>
@@ -331,7 +331,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                   <button 
                     title="Desarquivar"
                     onClick={async () => { await unarchiveCategory(category.id); }}
-                    className="p-[5px] rounded-[7px] text-[#CBD5E1] transition-all cursor-pointer hover:text-[#16A34A] hover:bg-[#DCFCE7]"
+                    className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569] transition-all cursor-pointer hover:text-[#16A34A] dark:text-green-400 hover:bg-[#DCFCE7] dark:bg-green-900/20"
                   >
                     <RotateCcw size={13} />
                   </button>
@@ -342,7 +342,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                       await archiveCategory(category.id); 
                       setToast({ show: true, type: 'archive', title: 'Categoria arquivada', message: 'Manualmente pelo usuário' });
                     }}
-                    className="p-[5px] rounded-[7px] text-[#CBD5E1] transition-all cursor-pointer hover:text-[#6B7280] hover:bg-[#F8FAFC]"
+                    className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569] transition-all cursor-pointer hover:text-[#6B7280] dark:text-[#94A3B8] hover:bg-[#F8FAFC] dark:bg-[#0F172A]"
                   >
                     <Archive size={13} />
                   </button>
@@ -380,7 +380,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                       });
                     }
                   }}
-                  className="p-[5px] rounded-[7px] text-[#CBD5E1] hover:text-[#EF4444] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
+                  className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569] hover:text-[#EF4444] dark:text-red-400 hover:bg-[#FEF2F2] dark:bg-red-900/20 transition-colors cursor-pointer"
                 >
                   <Trash2 size={13} />
                 </button>
@@ -390,7 +390,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
         </div>
 
         {/* ÁREA DE TAGS */}
-        <div className="pt-[10px] border-t border-[#F8FAFC] flex items-center gap-[6px] flex-nowrap">
+        <div className="pt-[10px] border-t border-[#F8FAFC] dark:border-[#0F172A] flex items-center gap-[6px] flex-nowrap">
           {(() => {
             const categoryTags = tags.filter(t => t.category_id === category.id && (!activeTab || (activeTab === 'em_uso' ? !t.archived : t.archived)));
             const tagsCount = categoryTags.length;
@@ -401,7 +401,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                   <div className="relative">
                     <button
                       onClick={() => setOpenTagPopoverId(openTagPopoverId === category.id ? null : category.id)}
-                      className="bg-[#F1F5F9] text-[#475569] px-[10px] py-[4px] rounded-[100px] text-[12px] font-[600] hover:bg-[#E2E8F0] transition-colors cursor-pointer"
+                      className="bg-[#F1F5F9] dark:bg-[#334155] text-[#475569] dark:text-[#CBD5E1] px-[10px] py-[4px] rounded-[100px] text-[12px] font-[600] hover:bg-[#E2E8F0] dark:bg-[#475569] transition-colors cursor-pointer"
                     >
                       {tagsCount} {tagsCount === 1 ? 'tag' : 'tags'}
                     </button>
@@ -413,15 +413,15 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                           initial={{ opacity: 0, y: -10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -10 }}
-                          className="absolute mt-2 left-0 bg-white rounded-[14px] border border-[#E2E8F0] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[14px] min-w-[220px] max-w-[280px] z-50 cursor-auto"
+                          className="absolute mt-2 left-0 bg-white dark:bg-[#1E293B] rounded-[14px] border border-[#E2E8F0] dark:border-[#334155] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[14px] min-w-[220px] max-w-[280px] z-50 cursor-auto"
                         >
                           <div className="flex items-center justify-between mb-0">
-                            <span className="text-[11px] font-[700] text-[#94A3B8] uppercase tracking-[0.08em]">
+                            <span className="text-[11px] font-[700] text-[#94A3B8] dark:text-[#475569] uppercase tracking-[0.08em]">
                               Tags da categoria
                             </span>
                             <button
                               onClick={() => setOpenTagPopoverId(null)}
-                              className="text-[#94A3B8] hover:text-[#374151] p-1 cursor-pointer"
+                              className="text-[#94A3B8] dark:text-[#475569] hover:text-[#374151] dark:text-[#E2E8F0] p-1 cursor-pointer"
                             >
                               <X size={14} />
                             </button>
@@ -430,7 +430,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                             {categoryTags.map(tag => (
                               <div 
                                 key={tag.id}
-                                className="inline-flex items-center gap-[6px] bg-[#F8FAFC] border border-[#E2E8F0] text-[#475569] px-[12px] py-[5px] rounded-[100px] text-[12px] font-[500]"
+                                className="inline-flex items-center gap-[6px] bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#475569] dark:text-[#CBD5E1] px-[12px] py-[5px] rounded-[100px] text-[12px] font-[500]"
                               >
                                 {tag.nome}
                                 <button 
@@ -466,7 +466,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                                       });
                                     }
                                   }}
-                                  className="text-[#CBD5E1] hover:text-[#EF4444] transition-colors cursor-pointer"
+                                  className="text-[#CBD5E1] dark:text-[#475569] hover:text-[#EF4444] dark:text-red-400 transition-colors cursor-pointer"
                                 >
                                   <X size={10} />
                                 </button>
@@ -488,7 +488,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                 setSelectedCategoryId(category.id);
                 setIsTagModalOpen(true);
               }}
-              className="border-[1.5px] border-dashed border-[#CBD5E1] bg-transparent text-[#94A3B8] px-[10px] py-[4px] rounded-[100px] text-[12px] font-medium hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all cursor-pointer"
+              className="border-[1.5px] border-dashed border-[#CBD5E1] dark:border-[#475569] bg-transparent text-[#94A3B8] dark:text-[#475569] px-[10px] py-[4px] rounded-[100px] text-[12px] font-medium hover:border-[#2563EB] hover:text-[#2563EB] hover:bg-[#EFF6FF] transition-all cursor-pointer"
             >
               + Tag
             </button>
@@ -499,35 +499,13 @@ export default function Categories({ activeProfile }: CategoriesProps) {
   };
 
   return (
-    <div className="px-[24px] py-7 min-h-screen bg-[#F8FAFC]">
+    <div className="px-[24px] py-7 min-h-screen bg-[#F8FAFC] dark:bg-[#0F172A]">
       <div className="w-full">
         {/* CABEÇALHO CENTRALIZADO */}
       <div className="text-center mb-[28px] flex flex-col items-center">
-        <h1 className="text-[24px] font-[800] text-[#0F172A] mb-4">Categorias & Tags</h1>
-        <div className="inline-flex gap-1 p-1 bg-[#F1F5F9] rounded-[100px] mb-[14px]">
-          <button 
-            onClick={() => setActiveTab('em_uso')}
-            className={`px-[22px] py-2 rounded-[100px] text-[13px] font-semibold transition-all cursor-pointer ${
-              activeTab === 'em_uso' 
-                ? 'bg-[#0F172A] text-white shadow-[0_2px_8px_rgba(15,23,42,0.25)]' 
-                : 'bg-transparent text-[#64748B] hover:bg-[#E2E8F0]'
-            }`}
-          >
-            Em Uso
-          </button>
-          <button 
-            onClick={() => setActiveTab('arquivadas')}
-            className={`px-[22px] py-2 rounded-[100px] text-[13px] font-semibold transition-all cursor-pointer ${
-              activeTab === 'arquivadas' 
-                ? 'bg-[#6B7280] text-white shadow-[0_2px_8px_rgba(107,114,128,0.25)]' 
-                : 'bg-transparent text-[#64748B] hover:bg-[#E2E8F0]'
-            }`}
-          >
-            Arquivadas
-          </button>
-        </div>
+        <h1 className="text-[24px] font-[800] text-[#0F172A] dark:text-white mb-4">Categorias & Tags</h1>
 
-        <div className="relative new-category-dropdown-container">
+        <div className="relative new-category-dropdown-container mb-[14px]">
           <button 
             onClick={() => setIsNewCategoryDropdownOpen(!isNewCategoryDropdownOpen)}
             className="flex items-center gap-[6px] bg-gradient-to-br from-[#2563EB] to-[#1D4ED8] text-white px-[22px] py-[10px] rounded-[100px] text-[14px] font-bold shadow-[0_4px_14px_rgba(37,99,235,0.35)] hover:shadow-[0_6px_18px_rgba(37,99,235,0.45)] hover:-translate-y-[1px] transition-all duration-200 cursor-pointer border-none"
@@ -541,32 +519,55 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-[100%] mt-2 left-1/2 -translate-x-1/2 bg-white rounded-[14px] border border-[#E2E8F0] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[6px] min-w-[200px] z-[100]"
+                className="absolute top-[100%] mt-2 left-1/2 -translate-x-1/2 bg-white dark:bg-[#1E293B] rounded-[14px] border border-[#E2E8F0] dark:border-[#334155] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[6px] min-w-[200px] z-[100]"
               >
                 <div 
                   onClick={() => {
                     setIsNewCategoryDropdownOpen(false);
                     openCategoryModal('receita');
                   }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#DCFCE7] transition-all duration-200 cursor-pointer"
+                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#DCFCE7] dark:bg-green-900/20 transition-all duration-200 cursor-pointer"
                 >
-                  <TrendingUp size={16} className="text-[#16A34A]" />
-                  <span className="text-[14px] font-[600] text-[#16A34A]">Receita</span>
+                  <TrendingUp size={16} className="text-[#16A34A] dark:text-green-400" />
+                  <span className="text-[14px] font-[600] text-[#16A34A] dark:text-green-400">Receita</span>
                 </div>
-                <div className="border-t border-[#F1F5F9] my-[4px]" />
+                <div className="border-t border-[#F1F5F9] dark:border-[#334155] my-[4px]" />
                 <div 
                   onClick={() => {
                     setIsNewCategoryDropdownOpen(false);
                     openCategoryModal('despesa');
                   }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] transition-all duration-200 cursor-pointer"
+                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] dark:bg-red-900/20 transition-all duration-200 cursor-pointer"
                 >
-                  <TrendingDown size={16} className="text-[#EF4444]" />
-                  <span className="text-[14px] font-[600] text-[#EF4444]">Despesa</span>
+                  <TrendingDown size={16} className="text-[#EF4444] dark:text-red-400" />
+                  <span className="text-[14px] font-[600] text-[#EF4444] dark:text-red-400">Despesa</span>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+
+        <div className="inline-flex gap-1 p-1 bg-[#F1F5F9] dark:bg-[#334155] rounded-[100px]">
+          <button 
+            onClick={() => setActiveTab('em_uso')}
+            className={`px-[22px] py-2 rounded-[100px] text-[13px] font-semibold transition-all cursor-pointer ${
+              activeTab === 'em_uso' 
+                ? 'bg-[#0F172A] text-white shadow-[0_2px_8px_rgba(15,23,42,0.25)]' 
+                : 'bg-transparent text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:bg-[#475569]'
+            }`}
+          >
+            Em Uso
+          </button>
+          <button 
+            onClick={() => setActiveTab('arquivadas')}
+            className={`px-[22px] py-2 rounded-[100px] text-[13px] font-semibold transition-all cursor-pointer ${
+              activeTab === 'arquivadas' 
+                ? 'bg-[#6B7280] text-white shadow-[0_2px_8px_rgba(107,114,128,0.25)]' 
+                : 'bg-transparent text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:bg-[#475569]'
+            }`}
+          >
+            Arquivadas
+          </button>
         </div>
       </div>
 
@@ -582,17 +583,17 @@ export default function Categories({ activeProfile }: CategoriesProps) {
               {/* SEÇÃO RECEITAS */}
               <section>
                 <div className="flex items-center gap-3 mb-4">
-                  <TrendingUp size={16} className="text-[#16A34A]" />
-                  <h3 className="text-[13px] font-bold text-[#16A34A] uppercase tracking-[0.08em] whitespace-nowrap">
-                    Receitas <span className="text-[#86EFAC]">({receitas.length})</span>
+                  <TrendingUp size={16} className="text-[#16A34A] dark:text-green-400" />
+                  <h3 className="text-[13px] font-bold text-[#16A34A] dark:text-green-400 uppercase tracking-[0.08em] whitespace-nowrap">
+                    Receitas <span className="text-[#86EFAC] dark:text-green-500">({receitas.length})</span>
                   </h3>
-                  <div className="flex-1 border-t-[1.5px] border-[#DCFCE7] ml-3" />
+                  <div className="flex-1 border-t-[1.5px] border-[#DCFCE7] dark:border-green-900/40 ml-3" />
                 </div>
                 
                 {receitas.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 bg-white border border-[#E2E8F0] border-dashed rounded-[16px] col-span-full mx-auto w-full">
+                  <div className="flex flex-col items-center justify-center py-10 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] border-dashed rounded-[16px] col-span-full mx-auto w-full">
                     <FolderOpen size={36} className="text-[#E2E8F0] mb-3" />
-                    <span className="text-[13px] text-[#CBD5E1] font-medium">Nenhuma categoria</span>
+                    <span className="text-[13px] text-[#CBD5E1] dark:text-[#475569] font-medium">Nenhuma categoria</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px] w-full">
@@ -604,17 +605,17 @@ export default function Categories({ activeProfile }: CategoriesProps) {
               {/* SEÇÃO DESPESAS */}
               <section>
                 <div className="flex items-center gap-3 mb-4">
-                  <TrendingDown size={16} className="text-[#EF4444]" />
-                  <h3 className="text-[13px] font-bold text-[#EF4444] uppercase tracking-[0.08em] whitespace-nowrap">
-                    Despesas <span className="text-[#FCA5A5]">({despesas.length})</span>
+                  <TrendingDown size={16} className="text-[#EF4444] dark:text-red-400" />
+                  <h3 className="text-[13px] font-bold text-[#EF4444] dark:text-red-400 uppercase tracking-[0.08em] whitespace-nowrap">
+                    Despesas <span className="text-[#FCA5A5] dark:text-red-500">({despesas.length})</span>
                   </h3>
-                  <div className="flex-1 border-t-[1.5px] border-[#FEE2E2] ml-3" />
+                  <div className="flex-1 border-t-[1.5px] border-[#FEE2E2] dark:border-red-900/40 ml-3" />
                 </div>
                 
                 {despesas.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 bg-white border border-[#E2E8F0] border-dashed rounded-[16px] col-span-full mx-auto w-full">
+                  <div className="flex flex-col items-center justify-center py-10 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] border-dashed rounded-[16px] col-span-full mx-auto w-full">
                     <FolderOpen size={36} className="text-[#E2E8F0] mb-3" />
-                    <span className="text-[13px] text-[#CBD5E1] font-medium">Nenhuma categoria</span>
+                    <span className="text-[13px] text-[#CBD5E1] dark:text-[#475569] font-medium">Nenhuma categoria</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px] w-full">
@@ -627,17 +628,17 @@ export default function Categories({ activeProfile }: CategoriesProps) {
             /* CONTEÚDO ARQUIVADAS */
             <section>
                <div className="flex items-center gap-3 mb-4">
-                  <Archive size={16} className="text-[#64748B]" />
-                  <h3 className="text-[13px] font-bold text-[#64748B] uppercase tracking-[0.08em] whitespace-nowrap">
-                    Categorias Arquivadas <span className="text-[#CBD5E1]">({displayedCategories.length})</span>
+                  <Archive size={16} className="text-[#64748B] dark:text-[#94A3B8]" />
+                  <h3 className="text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-[0.08em] whitespace-nowrap">
+                    Categorias Arquivadas <span className="text-[#CBD5E1] dark:text-[#475569]">({displayedCategories.length})</span>
                   </h3>
-                  <div className="flex-1 border-t-[1.5px] border-[#E2E8F0] ml-3" />
+                  <div className="flex-1 border-t-[1.5px] border-[#E2E8F0] dark:border-[#334155] ml-3" />
                </div>
                
                {displayedCategories.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-10 bg-transparent border border-[#E2E8F0] border-dashed rounded-[16px] col-span-full mx-auto w-full">
+                  <div className="flex flex-col items-center justify-center py-10 bg-transparent border border-[#E2E8F0] dark:border-[#334155] border-dashed rounded-[16px] col-span-full mx-auto w-full">
                     <FolderOpen size={36} className="text-[#E2E8F0] mb-3" />
-                    <span className="text-[13px] text-[#CBD5E1] font-medium">Nenhuma categoria</span>
+                    <span className="text-[13px] text-[#CBD5E1] dark:text-[#475569] font-medium">Nenhuma categoria</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px] w-full">
@@ -655,7 +656,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
       {/* MODAL CATEGORIA */}
       <AnimatePresence>
         {isCategoryModalOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -667,7 +668,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-[460px] bg-white rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] max-h-[90vh] overflow-y-auto overflow-x-hidden custom-modal-scroll"
+              className="relative w-full max-w-[460px] bg-white dark:bg-[#1E293B] rounded-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] max-h-[90vh] overflow-y-auto overflow-x-hidden custom-modal-scroll"
             >
               <style>{`
                 .custom-modal-scroll::-webkit-scrollbar { width: 5px; }
@@ -678,10 +679,10 @@ export default function Categories({ activeProfile }: CategoriesProps) {
               `}</style>
               <div className="p-7">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-[18px] font-bold text-[#0F172A]">
+                  <h2 className="text-[18px] font-bold text-[#0F172A] dark:text-white">
                     {editingCategory ? 'Editar Categoria' : `Nova Categoria (${catType === 'receita' ? 'Receita' : 'Despesa'})`}
                   </h2>
-                  <button onClick={() => setIsCategoryModalOpen(false)} className="text-[#6B7280] hover:bg-gray-100 p-1.5 rounded-full transition-colors cursor-pointer">
+                  <button onClick={() => setIsCategoryModalOpen(false)} className="text-[#6B7280] dark:text-[#94A3B8] hover:bg-gray-100 dark:hover:bg-gray-800 p-1.5 rounded-full transition-colors cursor-pointer">
                     <X size={20} />
                   </button>
                 </div>
@@ -689,19 +690,19 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                 <div className="space-y-6">
                   {/* NOME */}
                   <div>
-                    <label className="block text-[13px] font-bold text-[#64748B] mb-2 uppercase tracking-tight">Nome da Categoria</label>
+                    <label className="block text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] mb-2 uppercase tracking-tight">Nome da Categoria</label>
                     <input 
                       type="text" 
                       value={catName}
                       onChange={e => setCatName(e.target.value)}
                       placeholder="Ex: Mercado"
-                      className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-xl px-4 py-3 text-[14px] text-[#0F172A] focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-medium"
+                      className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 text-[14px] text-[#0F172A] dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 transition-all font-medium"
                     />
                   </div>
 
                   {/* CORES */}
                   <div>
-                    <label className="block text-[13px] font-bold text-[#64748B] mb-2 uppercase tracking-tight">Cor</label>
+                    <label className="block text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] mb-2 uppercase tracking-tight">Cor</label>
                     <div className="flex flex-wrap items-center gap-3">
                       <div className="grid grid-cols-6 gap-2">
                         {COLORS.map(color => (
@@ -751,7 +752,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                           />
                           <button 
                             onClick={(e) => { e.preventDefault(); colorInputRef.current?.click(); }}
-                            className="flex items-center gap-1.5 bg-[#F8FAFC] border-[1.5px] border-dashed border-[#CBD5E1] text-[#64748B] rounded-[8px] py-[6px] px-[12px] text-[12px] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors cursor-pointer whitespace-nowrap"
+                            className="flex items-center gap-1.5 bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-dashed border-[#CBD5E1] dark:border-[#475569] text-[#64748B] dark:text-[#94A3B8] rounded-[8px] py-[6px] px-[12px] text-[12px] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors cursor-pointer whitespace-nowrap"
                           >
                             <Pipette size={14} /> Personalizada
                           </button>
@@ -762,7 +763,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
 
                   {/* ÍCONES */}
                   <div className="flex flex-col gap-[10px]" ref={iconSelectorRef}>
-                    <label className="block text-[13px] font-bold text-[#64748B] uppercase tracking-tight">Ícone</label>
+                    <label className="block text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-tight">Ícone</label>
                     
                     {/* Select/Display Visual Current Icon */}
                     <button 
@@ -771,7 +772,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                         e.stopPropagation();
                         setIsIconDropdownOpen(prev => !prev);
                       }}
-                      className="flex items-center justify-between w-full bg-[#F8FAFC] border-[1px] border-[#E2E8F0] rounded-[10px] px-[14px] py-[10px] min-h-[44px] cursor-pointer hover:border-[#2563EB] transition-colors"
+                      className="flex items-center justify-between w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] px-[14px] py-[10px] min-h-[44px] cursor-pointer hover:border-[#2563EB] transition-colors"
                     >
                       <div className="flex items-center gap-[10px]">
                         <div 
@@ -783,11 +784,11 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                             return <SelectedIcon size={18} />;
                           })()}
                         </div>
-                        <span className="text-[14px] text-[#374151] font-medium capitalize">
+                        <span className="text-[14px] text-[#374151] dark:text-[#E2E8F0] font-medium capitalize">
                           {catIcon}
                         </span>
                       </div>
-                      <ChevronDown size={14} className="text-[#94A3B8]" />
+                      <ChevronDown size={14} className="text-[#94A3B8] dark:text-[#475569]" />
                     </button>
 
                     <AnimatePresence>
@@ -796,18 +797,18 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="w-full bg-[#FFFFFF] border-[1px] border-[#E2E8F0] rounded-[10px] flex flex-col gap-[10px] overflow-hidden p-[12px] shadow-sm transform-origin-top"
+                          className="w-full bg-[#FFFFFF] dark:bg-[#1E293B] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex flex-col gap-[10px] overflow-hidden p-[12px] shadow-sm transform-origin-top"
                         >
                           {/* Search Input inline */}
                           <div className="relative w-full">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] dark:text-[#475569]" />
                             <input
                               type="text"
                               placeholder="Buscar ícone..."
                               value={iconSearchTerm}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => setIconSearchTerm(e.target.value)}
-                              className="w-full bg-[#F8FAFC] border-[1px] border-[#E2E8F0] rounded-[8px] py-[8px] pr-[12px] pl-[34px] text-[16px] sm:text-[13px] text-[#0F172A] focus:outline-none focus:border-[#2563EB] transition-all"
+                              className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[8px] py-[8px] pr-[12px] pl-[34px] text-[16px] sm:text-[13px] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#2563EB] transition-all"
                             />
                           </div>
 
@@ -861,7 +862,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                 <div className="flex gap-3 pt-8">
                   <button 
                     onClick={() => setIsCategoryModalOpen(false)}
-                    className="flex-1 bg-[#F1F5F9] text-[#374151] font-semibold py-3 rounded-[10px] hover:bg-[#E2E8F0] transition-colors cursor-pointer text-[14px]"
+                    className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0] font-semibold py-3 rounded-[10px] hover:bg-[#E2E8F0] dark:bg-[#475569] transition-colors cursor-pointer text-[14px]"
                   >
                     Cancelar
                   </button>
@@ -881,7 +882,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
       {/* MODAL TAG */}
       <AnimatePresence>
         {isTagModalOpen && (
-          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -893,23 +894,23 @@ export default function Categories({ activeProfile }: CategoriesProps) {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-[360px] bg-white rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden"
+              className="relative w-full max-w-[360px] bg-white dark:bg-[#1E293B] rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden"
             >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-5">
-                  <h2 className="text-[16px] font-bold text-[#0F172A]">Adicionar Tag</h2>
-                  <button onClick={() => handleCloseTagModal()} className="text-[#6B7280] hover:bg-gray-100 p-1 rounded-full cursor-pointer">
+                  <h2 className="text-[16px] font-bold text-[#0F172A] dark:text-white">Adicionar Tag</h2>
+                  <button onClick={() => handleCloseTagModal()} className="text-[#6B7280] dark:text-[#94A3B8] hover:bg-gray-100 dark:hover:bg-gray-800 p-1 rounded-full cursor-pointer">
                     <X size={18} />
                   </button>
                 </div>
 
                 <div>
-                  <label className="block text-[12px] font-bold text-[#64748B] mb-2 uppercase tracking-tight">Nome da tag</label>
-                  <div className={`w-full bg-[#F8FAFC] border ${tagError ? 'border-[#EF4444]' : 'border-[#E2E8F0]'} rounded-xl p-[6px] focus-within:ring-2 focus-within:ring-[#2563EB]/20 focus-within:border-[#2563EB] transition-all min-h-[46px] flex flex-wrap gap-[6px] items-center`}>
+                  <label className="block text-[12px] font-bold text-[#64748B] dark:text-[#94A3B8] mb-2 uppercase tracking-tight">Nome da tag</label>
+                  <div className={`w-full bg-[#F8FAFC] dark:bg-[#0F172A] border ${tagError ? 'border-[#EF4444]' : 'border-[#E2E8F0] dark:border-[#334155]'} rounded-xl p-[6px] focus-within:ring-2 focus-within:ring-[#2563EB]/20 focus-within:border-[#2563EB] transition-all min-h-[46px] flex flex-wrap gap-[6px] items-center`}>
                     {tagNames.map((tag) => (
-                      <div key={tag} className="flex items-center gap-[4px] bg-[#E2E8F0] text-[#374151] px-[8px] py-[4px] rounded-[8px] text-[13px] font-medium">
+                      <div key={tag} className="flex items-center gap-[4px] bg-[#E2E8F0] dark:bg-[#475569] text-[#374151] dark:text-[#E2E8F0] px-[8px] py-[4px] rounded-[8px] text-[13px] font-medium">
                         {tag}
-                        <button onClick={() => removeBadge(tag)} className="text-[#64748B] hover:text-[#EF4444] p-[2px] transition-colors rounded-full hover:bg-white/50 cursor-pointer">
+                        <button onClick={() => removeBadge(tag)} className="text-[#64748B] dark:text-[#94A3B8] hover:text-[#EF4444] dark:hover:text-red-400 p-[2px] transition-colors rounded-full hover:bg-white/50 dark:hover:bg-[#1E293B]/50 cursor-pointer">
                           <X size={14} />
                         </button>
                       </div>
@@ -923,18 +924,18 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                       }}
                       placeholder={tagNames.length === 0 ? "Ex: Alimentação, Transporte, Lazer..." : "Adicionar outra..."}
                       autoFocus
-                      className="flex-1 bg-transparent min-w-[120px] px-[6px] py-[4px] text-[14px] focus:outline-none font-medium placeholder:text-[#94A3B8]"
+                      className="flex-1 bg-transparent min-w-[120px] px-[6px] py-[4px] text-[14px] focus:outline-none font-medium placeholder:text-[#94A3B8] dark:text-[#475569]"
                       onKeyDown={handleAddBadge}
                       onBlur={() => handleAddBadge()}
                     />
                   </div>
-                  {tagError && <span className="text-[12px] text-[#EF4444] mt-[6px] block">{tagError}</span>}
+                  {tagError && <span className="text-[12px] text-[#EF4444] dark:text-red-400 mt-[6px] block">{tagError}</span>}
                 </div>
 
                 <div className="flex gap-2 mt-6">
                   <button 
                     onClick={handleCloseTagModal}
-                    className="flex-1 bg-[#F1F5F9] text-[#374151] font-semibold py-2.5 rounded-[10px] hover:bg-[#E2E8F0] transition-colors cursor-pointer text-[14px]"
+                    className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0] font-semibold py-2.5 rounded-[10px] hover:bg-[#E2E8F0] dark:bg-[#475569] transition-colors cursor-pointer text-[14px]"
                   >
                     Cancelar
                   </button>
@@ -959,24 +960,24 @@ export default function Categories({ activeProfile }: CategoriesProps) {
             exit={{ opacity: 0, x: 100 }}
             className={`fixed bottom-[24px] right-[24px] z-[200] rounded-[12px] p-[14px_18px] flex items-start gap-[12px] border shadow-lg max-w-[320px] ${
               toast.type === 'archive' 
-                ? 'bg-[#FFFBEB] border-[#F59E0B]' 
-                : 'bg-[#F0FDF4] border-[#16A34A]'
+                ? 'bg-[#FFFBEB] dark:bg-yellow-900/20 border-[#F59E0B] dark:border-amber-500/50' 
+                : 'bg-[#F0FDF4] dark:bg-green-900/20 border-[#16A34A] dark:border-green-500/50'
             }`}
           >
-            <div className={`mt-0.5 ${toast.type === 'archive' ? 'text-[#F59E0B]' : 'text-[#16A34A]'}`}>
+            <div className={`mt-0.5 ${toast.type === 'archive' ? 'text-[#F59E0B] dark:text-amber-400' : 'text-[#16A34A] dark:text-green-400'}`}>
               {toast.type === 'archive' ? <Archive size={18} /> : <TrendingUp size={18} />}
             </div>
             <div className="flex flex-col gap-[2px]">
-              <span className={`text-[14px] font-[600] ${toast.type === 'archive' ? 'text-[#92400E]' : 'text-[#166534]'}`}>
+              <span className={`text-[14px] font-[600] ${toast.type === 'archive' ? 'text-[#92400E] dark:text-amber-300' : 'text-[#166534] dark:text-green-400'}`}>
                 {toast.title}
               </span>
-              <span className={`text-[12px] ${toast.type === 'archive' ? 'text-[#B45309]' : 'text-[#15803D]'}`}>
+              <span className={`text-[12px] ${toast.type === 'archive' ? 'text-[#B45309] dark:text-amber-500' : 'text-[#15803D] dark:text-green-300'}`}>
                 {toast.message || (toast.type === 'delete' ? 'Categoria excluída' : '')}
               </span>
             </div>
             <button 
               onClick={() => setToast(prev => prev ? { ...prev, show: false } : null)}
-              className="text-[#94A3B8] hover:text-[#374151] transition-colors ml-auto"
+              className="text-[#94A3B8] dark:text-[#475569] hover:text-[#374151] dark:text-[#E2E8F0] transition-colors ml-auto"
             >
               <X size={14} />
             </button>
@@ -987,7 +988,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
       {/* MODAL DE CONFIRMAÇÃO */}
       <AnimatePresence>
         {confirmModal?.isOpen && (
-          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-[#0F172A]/40 backdrop-blur-sm">
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -999,18 +1000,18 @@ export default function Categories({ activeProfile }: CategoriesProps) {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="relative w-full max-w-[360px] bg-white rounded-[16px] p-6 shadow-xl text-center"
+              className="relative w-full max-w-[360px] bg-white dark:bg-[#1E293B] rounded-[16px] p-6 shadow-xl text-center"
             >
-              <div className="w-[50px] h-[50px] bg-[#FEF2F2] text-[#EF4444] rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-[50px] h-[50px] bg-[#FEF2F2] dark:bg-red-900/20 text-[#EF4444] dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Trash2 size={24} />
               </div>
-              <h3 className="text-[18px] font-bold text-[#0F172A] mb-2">{confirmModal.title}</h3>
-              <p className="text-[14px] text-[#64748B] mb-6 leading-relaxed">{confirmModal.message}</p>
+              <h3 className="text-[18px] font-bold text-[#0F172A] dark:text-white mb-2">{confirmModal.title}</h3>
+              <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] mb-6 leading-relaxed">{confirmModal.message}</p>
               
               <div className="flex gap-3">
                 <button 
                   onClick={() => setConfirmModal(null)}
-                  className="flex-1 bg-[#F1F5F9] text-[#475569] font-bold py-3 rounded-[12px] hover:bg-[#E2E8F0] transition-colors text-[14px]"
+                  className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#475569] dark:text-[#CBD5E1] font-bold py-3 rounded-[12px] hover:bg-[#E2E8F0] dark:bg-[#475569] transition-colors text-[14px]"
                 >
                   Cancelar
                 </button>

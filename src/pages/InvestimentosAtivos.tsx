@@ -409,7 +409,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
       group.ativos.forEach((ativo: any) => {
         if (!classIsCompra) {
           ativo.status = ativo.diferenca > 0 ? 'ESPERE' : 'MANTER';
-          ativo.statusColor = ativo.diferenca > 0 ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-500';
+          ativo.statusColor = ativo.diferenca > 0 ? 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
         } else if (ativosParaComprarSimplificado.includes(ativo.id)) {
           ativo.status = 'COMPRA';
           ativo.statusColor = 'bg-green-100 text-green-700';
@@ -419,10 +419,10 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
           }
         } else if (ativo.diferenca > 0) {
           ativo.status = 'ESPERE';
-          ativo.statusColor = 'bg-amber-100 text-amber-700';
+          ativo.statusColor = 'bg-amber-100 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400';
         } else {
           ativo.status = 'MANTER';
-          ativo.statusColor = 'bg-slate-100 text-slate-500';
+          ativo.statusColor = 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
         }
       });
       
@@ -444,29 +444,42 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-            <Activity className="text-[#0F172A]" size={24} />
+          <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white flex items-center gap-2">
+            <Activity className="text-[#0F172A] dark:text-white" size={24} />
             Meus Ativos
           </h2>
-          <p className="text-[#64748B] text-sm mt-1">Gerencie e balanceie os ativos dentro de cada classe.</p>
+          <p className="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">Gerencie e balanceie os ativos.</p>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-[12px] w-full md:w-auto mt-4 md:mt-0 justify-end">
           <button 
             onClick={refetch} 
             disabled={cotacoesLoading}
-            className={`p-2 rounded-xl text-sm font-bold transition-colors flex items-center justify-center border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F8FAFC] shadow-sm ${cotacoesLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            className={`w-[44px] h-[44px] md:w-auto md:h-auto rounded-full md:rounded-[100px] md:px-[16px] md:py-[10px] text-sm font-[700] transition-colors flex items-center justify-center border-[1.5px] border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] shadow-sm shrink-0 ${cotacoesLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             title="Sincronizar cotações do Google Sheets"
           >
             <RefreshCw size={18} className={cotacoesLoading ? "animate-spin" : ""} />
+            <span className="hidden md:inline ml-2">Sincronizar</span>
           </button>
-          <button onClick={() => setIsModalOpen(true)} className="bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 shadow-sm">
-            <Plus size={16} />
-            NOVO ATIVO
+          
+          <button 
+            onClick={() => setIsModalOpen(true)} 
+            className="w-[44px] h-[44px] md:w-auto md:h-auto rounded-full md:rounded-[100px] md:px-[22px] md:py-[10px] text-white font-[700] md:text-[14px] shadow-[0_4px_14px_rgba(37,99,235,0.35)] hover:-translate-y-[1px] transition-transform cursor-pointer flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)' }}
+            title="Novo Ativo"
+          >
+            <Plus size={18} className="md:w-4 md:h-4" />
+            <span className="hidden md:inline ml-[6px]">NOVO ATIVO</span>
           </button>
-          <button onClick={() => handleOpenOrdemModal()} className="bg-[#10B981] hover:bg-[#059669] text-white px-4 py-2 rounded-xl text-sm font-bold transition-colors flex items-center gap-2 shadow-sm">
-            <ShoppingCart size={16} />
-            NOVA COMPRA
+
+          <button 
+            onClick={() => handleOpenOrdemModal()} 
+            className="w-[44px] h-[44px] md:w-auto md:h-auto rounded-full md:rounded-[100px] md:px-[22px] md:py-[10px] text-white font-[700] md:text-[14px] shadow-[0_4px_14px_rgba(16,185,129,0.35)] hover:-translate-y-[1px] transition-transform cursor-pointer flex items-center justify-center shrink-0"
+            style={{ background: 'linear-gradient(135deg, #10B981, #059669)' }}
+            title="Nova Compra"
+          >
+            <ShoppingCart size={18} className="md:w-4 md:h-4" />
+            <span className="hidden md:inline ml-[6px]">NOVA COMPRA</span>
           </button>
         </div>
       </div>
@@ -483,23 +496,23 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
       )}
 
       {isLoadingAtivos && (
-        <div className="flex flex-col items-center justify-center py-20 text-[#64748B]">
+        <div className="flex flex-col items-center justify-center py-20 text-[#64748B] dark:text-[#94A3B8]">
           <RefreshCw size={32} className="animate-spin mb-4 text-[#3B82F6]" />
           <p className="font-medium">Carregando seus ativos...</p>
         </div>
       )}
 
       {cotacoesLoading && !isLoadingAtivos && displayData.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-[#64748B]">
+        <div className="flex flex-col items-center justify-center py-20 text-[#64748B] dark:text-[#94A3B8]">
           <RefreshCw size={32} className="animate-spin mb-4 text-[#3B82F6]" />
           <p className="font-medium">Sincronizando cotações do Google Sheets...</p>
         </div>
       )}
 
       {!cotacoesLoading && !isLoadingAtivos && displayData.length === 0 && !cotacoesError && (
-        <div className="bg-white border-2 border-dashed border-[#E2E8F0] rounded-3xl p-12 text-center text-[#64748B]">
-           <Wallet className="mx-auto text-[#CBD5E1] mb-4" size={48} />
-           <h3 className="text-lg font-bold text-[#0F172A] mb-2">Nenhum ativo cadastrado</h3>
+        <div className="bg-white dark:bg-[#1E293B] border-2 border-dashed border-[#E2E8F0] dark:border-[#334155] rounded-3xl p-12 text-center text-[#64748B] dark:text-[#94A3B8]">
+           <Wallet className="mx-auto text-[#CBD5E1] dark:text-[#94A3B8] mb-4" size={48} />
+           <h3 className="text-lg font-bold text-[#0F172A] dark:text-white mb-2">Nenhum ativo cadastrado</h3>
            <p className="max-w-sm mx-auto mb-6">Comece adicionando seus ativos aqui para que as cotações sejam sincronizadas juntamente com seu Google Sheets.</p>
            <button onClick={() => setIsModalOpen(true)} className="bg-[#2563EB] text-white px-6 py-3 rounded-xl font-bold shadow hover:bg-[#1D4ED8]">
              Cadastrar Primeiro Ativo
@@ -514,11 +527,11 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
           const Icon = classe.icone;
 
           return (
-            <div key={classe.id} className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm overflow-hidden transition-all duration-200">
+            <div key={classe.id} className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm overflow-hidden transition-all duration-200">
               {/* Cabeçalho do Accordion */}
               <button 
                 onClick={() => toggleClass(classe.id)}
-                className="w-full flex items-center justify-between p-5 hover:bg-[#F8FAFC] transition-colors"
+                className="w-full flex items-center justify-between p-5 hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] transition-colors"
               >
                 <div className="flex items-center gap-4">
                   <div 
@@ -528,8 +541,8 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     <Icon size={20} />
                   </div>
                   <div className="flex items-center gap-3">
-                    <h3 className="font-bold text-lg text-[#0F172A]">{classe.nome}</h3>
-                    <div className="bg-[#F1F5F9] text-[#64748B] px-2 py-0.5 rounded-md text-xs font-bold">
+                    <h3 className="font-bold text-lg text-[#0F172A] dark:text-white">{classe.nome}</h3>
+                    <div className="bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] px-2 py-0.5 rounded-md text-xs font-bold">
                       {classe.ativos.length}
                     </div>
                   </div>
@@ -537,19 +550,19 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
 
                 <div className="flex items-center gap-6">
                   {classe.totalCotas && (
-                    <div className="hidden md:flex bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1 rounded-lg text-xs font-bold text-[#64748B] items-center gap-1">
+                    <div className="hidden md:flex bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] px-3 py-1 rounded-lg text-xs font-bold text-[#64748B] dark:text-[#94A3B8] items-center gap-1">
                       <span>#</span> {classe.totalCotas.toLocaleString('pt-BR')} cotas
                     </div>
                   )}
                   
                   <div className="text-right hidden sm:block">
-                    <div className="text-base font-bold text-[#2563EB]">
+                    <div className="text-base font-bold text-[#2563EB] dark:text-blue-400">
                       {formatCurrency(classe.valorTotal)}
                     </div>
                   </div>
 
                   {!classe.classIsCompra && (
-                    <div className="hidden lg:flex bg-slate-100 text-slate-500 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
+                    <div className="hidden lg:flex bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
                       Não Recomendada
                     </div>
                   )}
@@ -558,7 +571,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     Meta Ideal: {classe.metaAtingida}% 
                   </div>
 
-                  <div className="text-[#94A3B8]">
+                  <div className="text-[#94A3B8] dark:text-[#94A3B8]">
                     {isExpanded ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                   </div>
                 </div>
@@ -574,14 +587,15 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     transition={{ duration: 0.2 }}
                     className="overflow-hidden"
                   >
-                    <div className="border-t border-[#E2E8F0] px-5 py-4 bg-[#F8FAFC]/50">
+                    <div className="border-t border-[#E2E8F0] dark:border-[#334155] px-5 py-4 bg-[#F8FAFC] dark:bg-[#0F172A]/50 dark:bg-black/60">
                       
                       {classe.ativos.length > 0 ? (
-                        <div className="w-full overflow-x-auto md:overflow-visible">
+                        <div className="w-full">
                           
-                          <div className="min-w-[500px] md:min-w-0 w-full flex flex-col">
+                          {/* Desktop Layout */}
+                          <div className="hidden md:flex flex-col w-full">
                             {/* Cabeçalho da Tabela */}
-                            <div className="grid grid-cols-[1fr_0.95fr_1fr_1.1fr_0.8fr_0.9fr_1.2fr_70px] gap-2 pb-3 border-b border-[#E2E8F0] mb-3 text-[11px] font-[800] text-[#94A3B8] uppercase tracking-wider items-center">
+                            <div className="grid grid-cols-[1fr_0.95fr_1fr_1.1fr_0.8fr_0.9fr_1.2fr_70px] gap-2 pb-3 border-b border-[#E2E8F0] dark:border-[#334155] mb-3 text-[11px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider items-center">
                               <div className="text-left pl-2 text-nowrap">Ativo</div>
                               <div className="text-center">Quant.</div>
                               <div className="text-center">Cotação</div>
@@ -595,26 +609,26 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                             {/* Linhas da Tabela */}
                             <div className="space-y-1">
                               {classe.ativos.map((ativo: any, index: number) => (
-                                <div key={index} className="grid grid-cols-[1fr_0.95fr_1fr_1.1fr_0.8fr_0.9fr_1.2fr_70px] gap-2 items-center py-2 hover:bg-white rounded-xl transition-colors px-2 -mx-2">
+                                <div key={index} className="grid grid-cols-[1fr_0.95fr_1fr_1.1fr_0.8fr_0.9fr_1.2fr_70px] gap-2 items-center py-2 hover:bg-white dark:bg-[#1E293B] rounded-xl transition-colors px-2 -mx-2">
                                   
                                   <div className="text-left pl-2 truncate" title={ativo.ticker}>
-                                    <span className="font-bold text-[#0F172A] text-[14px] leading-none">{ativo.ticker}</span>
+                                    <span className="font-bold text-[#0F172A] dark:text-white text-[14px] leading-none">{ativo.ticker}</span>
                                   </div>
                                   
                                   <div className="text-center">
-                                    <span className="text-[15px] text-[#0F172A] font-medium leading-none">
+                                    <span className="text-[15px] text-[#0F172A] dark:text-white font-medium leading-none">
                                       {formatQuantity(ativo.qtd)}
                                     </span>
                                   </div>
 
                                   <div className="text-center">
-                                    <span className="text-[14px] text-[#0F172A] font-medium text-nowrap leading-none">
+                                    <span className="text-[14px] text-[#0F172A] dark:text-white font-medium text-nowrap leading-none">
                                       {formatCurrency(ativo.cotacao)}
                                     </span>
                                   </div>
 
                                   <div className="text-center">
-                                    <span className="text-[14px] text-[#0F172A] font-bold text-nowrap leading-none">
+                                    <span className="text-[14px] text-[#0F172A] dark:text-white font-bold text-nowrap leading-none">
                                       {ativo.total === 0 && ativo.isSyncing ? '--' : formatCurrency(ativo.total)}
                                     </span>
                                   </div>
@@ -624,12 +638,12 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                                       <input 
                                         type="text"
                                         inputMode="numeric"
-                                        className="bg-white border border-[#E2E8F0] rounded px-1 py-0.5 text-[12px] font-bold text-[#0F172A] text-center w-9 outline-none focus:border-[#2563EB]"
+                                        className="bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded px-1 py-0.5 text-[12px] font-bold text-[#0F172A] dark:text-white text-center w-9 outline-none focus:border-[#2563EB] dark:focus:border-blue-500"
                                         value={ativo.objetivo}
                                         onChange={(e) => handleObjetivoChange(ativo.id, e.target.value.replace(/[^0-9.]/g, ''))}
                                         onBlur={(e) => handleObjetivoBlur(ativo.id, e.target.value)}
                                       />
-                                      <span className="text-[#94A3B8] text-[11px] font-bold">%</span>
+                                      <span className="text-[#94A3B8] dark:text-[#94A3B8] text-[11px] font-bold">%</span>
                                     </div>
                                   </div>
 
@@ -641,21 +655,21 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
 
                                   <div className="text-center">
                                     {ativo.status === 'COMPRA' && (ativo.diferenca ?? 0) > 0 ? (
-                                      <span className="font-bold text-[#16A34A] text-[15px] whitespace-nowrap">+ {formatCurrency(ativo.diferenca)}</span>
+                                      <span className="font-bold text-[#16A34A] dark:text-green-400 text-[15px] whitespace-nowrap">+ {formatCurrency(ativo.diferenca)}</span>
                                     ) : (
-                                      <span className="text-[#94A3B8] text-[12px] font-medium">-</span>
+                                      <span className="text-[#94A3B8] dark:text-[#94A3B8] text-[12px] font-medium">-</span>
                                     )}
                                   </div>
 
-                                  <div className="flex items-center justify-end">
+                                  <div className="flex items-center justify-end gap-1">
                                     <button 
                                       onClick={(e) => { e.stopPropagation(); handleOpenOrdemModal(ativo.id); }} 
-                                      className={`p-1.5 rounded-lg transition-colors ${classe.id === 'renda-fixa' ? 'text-[#2563EB] hover:bg-[#EFF6FF]' : 'text-[#10B981] hover:bg-[#D1FAE5]'}`} 
+                                      className={`p-1.5 rounded-lg transition-colors ${classe.id === 'renda-fixa' ? 'text-[#2563EB] dark:text-blue-400 hover:bg-[#EFF6FF]' : 'text-[#10B981] hover:bg-[#D1FAE5]'}`} 
                                       title={classe.id === 'renda-fixa' ? "Atualizar Direto" : "Nova Ordem"}
                                     >
                                       {classe.id === 'renda-fixa' ? <RefreshCw size={16} /> : <ShoppingCart size={16} />}
                                     </button>
-                                    <button onClick={(e) => { e.stopPropagation(); deleteAtivo(ativo.id); }} className="p-1.5 text-[#EF4444] hover:bg-[#FEE2E2] rounded-lg transition-colors" title="Excluir">
+                                    <button onClick={(e) => { e.stopPropagation(); deleteAtivo(ativo.id); }} className="p-1.5 text-[#EF4444] dark:text-red-400 hover:bg-[#FEE2E2] dark:bg-red-900/20 rounded-lg transition-colors" title="Excluir">
                                       <Trash2 size={16} />
                                     </button>
                                   </div>
@@ -664,6 +678,78 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                               ))}
                             </div>
                           </div>
+
+                          {/* Mobile Layout */}
+                          <div className="md:hidden flex flex-col gap-3">
+                            {classe.ativos.map((ativo: any, index: number) => (
+                              <div key={index} className="bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-2xl p-4 flex flex-col gap-4 shadow-sm relative">
+                                {/* Header */}
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-black text-[#0F172A] dark:text-white text-[16px]">{ativo.ticker}</span>
+                                    <div className={`px-2 py-0.5 rounded-md text-[10px] font-bold uppercase tracking-wider ${ativo.statusColor}`}>
+                                      {ativo.status}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1">
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); handleOpenOrdemModal(ativo.id); }} 
+                                      className={`p-2 rounded-xl transition-colors ${classe.id === 'renda-fixa' ? 'text-[#2563EB] dark:text-blue-400 bg-[#EFF6FF]' : 'text-[#10B981] bg-[#D1FAE5]'}`} 
+                                    >
+                                      {classe.id === 'renda-fixa' ? <RefreshCw size={16} /> : <ShoppingCart size={16} />}
+                                    </button>
+                                    <button 
+                                      onClick={(e) => { e.stopPropagation(); deleteAtivo(ativo.id); }} 
+                                      className="p-2 text-[#EF4444] dark:text-red-400 bg-[#FEE2E2] dark:bg-red-900/20 rounded-xl transition-colors"
+                                    >
+                                      <Trash2 size={16} />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Main Data */}
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Valor Total</span>
+                                    <span className="font-bold text-[#0F172A] dark:text-white text-[15px]">{ativo.total === 0 && ativo.isSyncing ? '--' : formatCurrency(ativo.total)}</span>
+                                  </div>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Aporte/Dif.</span>
+                                    {ativo.status === 'COMPRA' && (ativo.diferenca ?? 0) > 0 ? (
+                                      <span className="font-bold text-[#16A34A] dark:text-green-400 text-[14px] bg-[#DCFCE7] dark:bg-green-900/20 px-2 py-0.5 rounded-md inline-block whitespace-nowrap">+ {formatCurrency(ativo.diferenca)}</span>
+                                    ) : (
+                                      <span className="text-[#94A3B8] dark:text-[#94A3B8] font-bold">-</span>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Quantidade</span>
+                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">{formatQuantity(ativo.qtd)}</span>
+                                  </div>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Cotação</span>
+                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">{formatCurrency(ativo.cotacao)}</span>
+                                  </div>
+                                </div>
+
+                                {/* Objetivos Footer */}
+                                <div className="flex items-center justify-between pt-3 border-t border-[#E2E8F0] dark:border-[#334155] mt-1 gap-2">
+                                  <span className="text-[11px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider">Objetivo</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <input 
+                                      type="text"
+                                      inputMode="numeric"
+                                      className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#CBD5E1] dark:border-[#475569] rounded-md px-2 py-1.5 text-[14px] font-bold text-[#0F172A] dark:text-white text-center w-14 outline-none focus:border-[#2563EB] dark:focus:border-blue-500"
+                                      value={ativo.objetivo}
+                                      onChange={(e) => handleObjetivoChange(ativo.id, e.target.value.replace(/[^0-9.]/g, ''))}
+                                      onBlur={(e) => handleObjetivoBlur(ativo.id, e.target.value)}
+                                    />
+                                    <span className="text-[#94A3B8] dark:text-[#94A3B8] text-[13px] font-bold">%</span>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
                         </div>
                       ) : null}
 
@@ -678,17 +764,17 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
 
        {/* Modal Novo Ativo */}
        {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-[#0F172A]/50 dark:bg-black/60 backdrop-blur-sm">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
+            className="bg-white dark:bg-[#1E293B] rounded-3xl shadow-xl w-full max-w-md overflow-hidden flex flex-col max-h-[90vh]"
           >
-             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0]">
-              <h3 className="font-bold text-[#0F172A] text-lg">Adicionar Novo Ativo</h3>
+             <div className="flex items-center justify-between px-6 py-5 border-b border-[#E2E8F0] dark:border-[#334155]">
+              <h3 className="font-bold text-[#0F172A] dark:text-white text-lg">Adicionar Novo Ativo</h3>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="text-[#94A3B8] hover:bg-[#F1F5F9] p-2 rounded-full transition-colors"
+                className="text-[#94A3B8] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] p-2 rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
@@ -696,11 +782,11 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
             
             <div className="p-6 space-y-4 overflow-y-auto">
               <div>
-                <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                <label className="block text-xs font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
                   Classe do Ativo
                 </label>
                 <select 
-                  className="w-full border-2 border-[#E2E8F0] rounded-xl px-4 py-3 bg-[#F8FAFC] text-[#0F172A] font-medium outline-none focus:border-[#2563EB] transition-colors appearance-none"
+                  className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white font-medium outline-none focus:border-[#2563EB] dark:focus:border-blue-500 transition-colors appearance-none"
                   value={novoAtivo.classe}
                   onChange={(e) => setNovoAtivo({...novoAtivo, classe: e.target.value})}
                 >
@@ -712,28 +798,28 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
                     Ticker (Símbolo)
                   </label>
                   <input 
                     type="text" 
                     placeholder="Ex: ITUB3, AAPL, O, BTC" 
-                    className="w-full border-2 border-[#E2E8F0] rounded-xl px-4 py-3 text-[#0F172A] font-bold outline-none focus:border-[#2563EB] transition-colors uppercase"
+                    className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 text-[#0F172A] dark:text-white font-bold outline-none focus:border-[#2563EB] dark:focus:border-blue-500 transition-colors uppercase"
                     value={novoAtivo.ticker}
                     onChange={(e) => setNovoAtivo({...novoAtivo, ticker: e.target.value})}
                   />
-                  <p className="text-[10px] text-[#94A3B8] mt-1 font-medium">Basta digitar o ticker livremente. Não é necessário informar a bolsa (NASDAQ, NYSE).</p>
+                  <p className="text-[10px] text-[#94A3B8] dark:text-[#94A3B8] mt-1 font-medium">Basta digitar o ticker livremente. Não é necessário informar a bolsa (NASDAQ, NYSE).</p>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-[#64748B] uppercase tracking-wider mb-2">
+                  <label className="block text-xs font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
                     Quantidade Inicial
                   </label>
                   <input 
                     type="text" 
                     inputMode="decimal"
                     placeholder="Ex: 100 ou 0,50" 
-                    className="w-full border-2 border-[#E2E8F0] rounded-xl px-4 py-3 text-[#0F172A] font-medium outline-none focus:border-[#2563EB] transition-colors"
+                    className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 text-[#0F172A] dark:text-white font-medium outline-none focus:border-[#2563EB] dark:focus:border-blue-500 transition-colors"
                     value={novoAtivo.qtd}
                     onChange={(e) => setNovoAtivo({...novoAtivo, qtd: e.target.value.replace(/[^0-9.,]/g, '')})}
                   />
@@ -741,11 +827,11 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
               </div>
             </div>
 
-            <div className="p-6 bg-[#F8FAFC] border-t border-[#E2E8F0] flex justify-end gap-3">
+            <div className="p-6 bg-[#F8FAFC] dark:bg-[#0F172A] border-t border-[#E2E8F0] dark:border-[#334155] flex justify-end gap-3">
               <button 
                 onClick={() => setIsModalOpen(false)}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 rounded-xl font-bold text-[#64748B] hover:bg-[#E2E8F0] transition-colors"
+                className="px-5 py-2.5 rounded-xl font-bold text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:bg-[#475569] transition-colors"
               >
                 Cancelar
               </button>
@@ -768,17 +854,17 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
       
       {/* Modal Nova Ordem */}
       {isOrdemModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0F172A80] backdrop-blur-[4px]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#0F172A80] dark:bg-black/60 backdrop-blur-[4px]">
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="bg-[#FFFFFF] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
-              <h2 className="text-[18px] font-[800] text-[#0F172A]">Nova Ordem</h2>
+              <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">Nova Ordem</h2>
               <button 
                 onClick={() => setIsOrdemModalOpen(false)}
-                className="text-[#94A3B8] hover:text-[#0F172A] transition-colors cursor-pointer"
+                className="text-[#94A3B8] dark:text-[#94A3B8] hover:text-[#0F172A] dark:text-white transition-colors cursor-pointer"
               >
                 <X size={18} />
               </button>
@@ -789,8 +875,8 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                 onClick={() => setOrdemType('compra')}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
                   ordemType === 'compra' 
-                    ? 'bg-[#DCFCE7] text-[#16A34A] border-[1.5px] border-[#16A34A] shadow-[0_2px_8px_rgba(22,163,74,0.2)]' 
-                    : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                    ? 'bg-[#DCFCE7] dark:bg-green-900/20 text-[#16A34A] dark:text-green-400 border-[1.5px] border-[#16A34A] dark:border-green-500/50 shadow-[0_2px_8px_rgba(22,163,74,0.2)]' 
+                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                 }`}
               >
                 {ordemClasse === 'renda-fixa' ? 'Aporte' : 'Compra'}
@@ -799,8 +885,8 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                 onClick={() => setOrdemType('venda')}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
                   ordemType === 'venda' 
-                    ? 'bg-[#FEE2E2] text-[#EF4444] border-[1.5px] border-[#EF4444] shadow-[0_2px_8px_rgba(239,68,68,0.2)]' 
-                    : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                    ? 'bg-[#FEE2E2] dark:bg-red-900/20 text-[#EF4444] dark:text-red-400 border-[1.5px] border-[#EF4444] dark:border-red-500/50 shadow-[0_2px_8px_rgba(239,68,68,0.2)]' 
+                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                 }`}
               >
                 {ordemClasse === 'renda-fixa' ? 'Resgate' : 'Venda'}
@@ -809,8 +895,8 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                 onClick={() => setOrdemType('ajuste')}
                 className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
                   ordemType === 'ajuste' 
-                    ? 'bg-[#EFF6FF] text-[#2563EB] border-[1.5px] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
-                    : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                    ? 'bg-[#EFF6FF] text-[#2563EB] dark:text-blue-400 border-[1.5px] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
+                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                 }`}
               >
                 {ordemClasse === 'renda-fixa' ? 'Total Atual' : 'Ajustar'}
@@ -820,9 +906,9 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
             <div className="space-y-[14px]">
               <div className="flex gap-[14px]">
                  <div className="flex-1">
-                    <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">Classe</label>
+                    <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Classe</label>
                     <select 
-                      className="w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] text-[#0F172A] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] appearance-none cursor-pointer"
+                      className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] appearance-none cursor-pointer"
                       value={ordemClasse}
                       onChange={(e) => {
                          setOrdemClasse(e.target.value);
@@ -838,10 +924,10 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                  </div>
                  
                  <div className="flex-1">
-                    <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">Ativo</label>
+                    <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Ativo</label>
                     <div className="relative">
                       <select
-                        className="w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] text-[#0F172A] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] appearance-none cursor-pointer"
+                        className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] appearance-none cursor-pointer"
                         value={ordemAtivoId}
                         onChange={(e) => setOrdemAtivoId(e.target.value)}
                       >
@@ -857,12 +943,12 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
               </div>
 
               <div>
-                <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px] text-center">{ordemClasse === 'renda-fixa' ? 'Valor (R$)' : 'Quantidade (Cotas)'}</label>
+                <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px] text-center">{ordemClasse === 'renda-fixa' ? 'Valor (R$)' : 'Quantidade (Cotas)'}</label>
                 <input 
                   type="text"
                   inputMode="decimal"
                   placeholder="0"
-                  className={`w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_14px] text-center text-[18px] font-[800] bg-[#F8FAFC] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] ${ordemType === 'compra' ? 'text-[#16A34A]' : (ordemType === 'venda' ? 'text-[#EF4444]' : 'text-[#2563EB]')}`}
+                  className={`w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-center text-[18px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] ${ordemType === 'compra' ? 'text-[#16A34A] dark:text-green-400' : (ordemType === 'venda' ? 'text-[#EF4444] dark:text-red-400' : 'text-[#2563EB] dark:text-blue-400')}`}
                   value={ordemQtd}
                   onChange={(e) => {
                     if (ordemClasse === 'renda-fixa') {
@@ -881,19 +967,19 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
               </div>
 
               {/* Preview Qtd */}
-              <div className="w-full bg-[#F1F5F9] rounded-[14px] p-[16px] flex justify-between items-center mt-[14px]">
+              <div className="w-full bg-[#F1F5F9] dark:bg-[#334155] rounded-[14px] p-[16px] flex justify-between items-center mt-[14px]">
                  <div className="flex flex-col items-center flex-1">
-                   <span className="text-[11px] font-[700] text-[#64748B] uppercase tracking-wider">Atual</span>
-                   <span className="font-[800] text-[#0F172A] mt-1 text-[16px]">{formatQuantity(currentQtdForOrdem)}</span>
+                   <span className="text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">Atual</span>
+                   <span className="font-[800] text-[#0F172A] dark:text-white mt-1 text-[16px]">{formatQuantity(currentQtdForOrdem)}</span>
                  </div>
                  
-                 <div className="text-[#94A3B8] px-2 flex items-center justify-center">
+                 <div className="text-[#94A3B8] dark:text-[#94A3B8] px-2 flex items-center justify-center">
                     <ArrowRight size={16} />
                  </div>
 
                  <div className="flex flex-col items-center flex-1">
-                   <span className="text-[11px] font-[700] text-[#64748B] uppercase tracking-wider">Nova QTD</span>
-                   <span className={`font-[800] mt-1 text-[16px] ${ordemAtivoId ? (ordemType === 'compra' ? 'text-[#16A34A]' : (ordemType === 'venda' ? 'text-[#EF4444]' : 'text-[#2563EB]')) : 'text-[#0F172A]'}`}>
+                   <span className="text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">Nova QTD</span>
+                   <span className={`font-[800] mt-1 text-[16px] ${ordemAtivoId ? (ordemType === 'compra' ? 'text-[#16A34A] dark:text-green-400' : (ordemType === 'venda' ? 'text-[#EF4444] dark:text-red-400' : 'text-[#2563EB] dark:text-blue-400')) : 'text-[#0F172A] dark:text-white'}`}>
                       {ordemAtivoId ? formatQuantity(newQtdForOrdem < 0 ? 0 : newQtdForOrdem) : '0'}
                    </span>
                  </div>
@@ -904,7 +990,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
               <button 
                 onClick={() => setIsOrdemModalOpen(false)}
                 disabled={isSubmitting}
-                className="flex-1 bg-[#F8FAFC] text-[#64748B] font-[700] text-[14px] rounded-[100px] py-[12px] hover:bg-[#F1F5F9] border-[1.5px] border-[#E2E8F0] transition-colors cursor-pointer disabled:opacity-50"
+                className="flex-1 bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[100px] py-[12px] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] transition-colors cursor-pointer disabled:opacity-50"
               >
                 Cancelar
               </button>

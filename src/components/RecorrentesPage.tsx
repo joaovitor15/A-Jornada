@@ -19,7 +19,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const [loading, setLoading] = useState(true);
   const [recorrentes, setRecorrentes] = useState<any[]>([]);
   const [editingRec, setEditingRec] = useState<any>(null);
-
+  
   // New states for validation and launching
   const [duplicateModal, setDuplicateModal] = useState<{isOpen: boolean, rec: any, targetStr: string, valorFinal: number} | null>(null);
   const [variableValueModal, setVariableValueModal] = useState<{isOpen: boolean, rec: any} | null>(null);
@@ -53,6 +53,15 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   useEffect(() => {
     fetchRecorrentes();
   }, [activeProfileId]);
+
+  const usedFreqs = Array.from(new Set(recorrentes.map(r => r.frequencia)));
+  const freqOptions: { id: FrequenciaTab; label: string }[] = [
+    { id: 'diaria', label: 'Diárias' },
+    { id: 'semanal', label: 'Semanais' },
+    { id: 'mensal', label: 'Mensais' },
+    { id: 'anual', label: 'Anuais' }
+  ];
+  const visibleFreqs = freqOptions.filter(f => usedFreqs.includes(f.id));
 
   const filtrados = recorrentes.filter(r => {
     if (activeTab === 'todas') return true;
@@ -304,45 +313,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   return (
     <div className="p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[24px]">
       <div className="flex flex-col items-center text-center gap-2">
-        <h2 className="text-[22px] font-[800] text-[#0F172A]">Transações Recorrentes</h2>
-        <p className="text-[13px] text-[#94A3B8]">Gerencie seus pagamentos e recebimentos agendados.</p>
+        <h2 className="text-[22px] font-[800] text-[#0F172A] dark:text-white">Transações Recorrentes</h2>
       </div>
 
       <div className="flex flex-col items-center gap-[24px]">
-        {/* Filtros em Pílulas */}
-        <div className="flex p-1 bg-[#E2E8F0]/40 rounded-[100px] w-fit">
-          <button 
-            onClick={() => setActiveTab('todas')}
-            className={`px-[16px] py-[6px] rounded-[100px] text-[13px] font-[600] transition-colors ${activeTab === 'todas' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-          >
-            Todas
-          </button>
-          <button 
-            onClick={() => setActiveTab('diaria')}
-            className={`px-[16px] py-[6px] rounded-[100px] text-[13px] font-[600] transition-colors ${activeTab === 'diaria' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-          >
-            Diárias
-          </button>
-          <button 
-            onClick={() => setActiveTab('semanal')}
-            className={`px-[16px] py-[6px] rounded-[100px] text-[13px] font-[600] transition-colors ${activeTab === 'semanal' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-          >
-            Semanais
-          </button>
-          <button 
-            onClick={() => setActiveTab('mensal')}
-            className={`px-[16px] py-[6px] rounded-[100px] text-[13px] font-[600] transition-colors ${activeTab === 'mensal' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-          >
-            Mensais
-          </button>
-          <button 
-            onClick={() => setActiveTab('anual')}
-            className={`px-[16px] py-[6px] rounded-[100px] text-[13px] font-[600] transition-colors ${activeTab === 'anual' ? 'bg-white shadow-sm text-[#0F172A]' : 'text-[#64748B] hover:text-[#0F172A]'}`}
-          >
-            Anuais
-          </button>
-        </div>
-
         <div className="relative">
           <button 
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
@@ -358,7 +332,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-[100%] mt-2 left-1/2 -translate-x-1/2 bg-white rounded-[14px] border border-[#E2E8F0] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[6px] min-w-[200px] z-[100]"
+                className="absolute top-[100%] mt-2 left-1/2 -translate-x-1/2 bg-white dark:bg-[#1E293B] rounded-[14px] border border-[#E2E8F0] dark:border-[#334155] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[6px] min-w-[200px] z-[100]"
               >
                 <div 
                   onClick={() => {
@@ -367,12 +341,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     setEditingRec(null);
                     setIsModalOpen(true);
                   }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#DCFCE7] transition-all duration-200 cursor-pointer"
+                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#DCFCE7] dark:bg-green-900/30 transition-all duration-200 cursor-pointer"
                 >
                   <TrendingUp size={16} className="text-[#16A34A]" />
                   <span className="text-[14px] font-[600] text-[#16A34A]">Receita</span>
                 </div>
-                <div className="border-t border-[#F1F5F9] my-[4px]" />
+                <div className="border-t border-[#F1F5F9] dark:border-[#334155] my-[4px]" />
                 <div 
                   onClick={() => {
                     setIsDropdownOpen(false);
@@ -380,7 +354,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     setEditingRec(null);
                     setIsModalOpen(true);
                   }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] transition-all duration-200 cursor-pointer"
+                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] dark:bg-red-900/30 transition-all duration-200 cursor-pointer"
                 >
                   <TrendingDown size={16} className="text-[#EF4444]" />
                   <span className="text-[14px] font-[600] text-[#EF4444]">Despesa</span>
@@ -391,111 +365,110 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(260px,1fr))] gap-[16px]">
+      <div className="flex flex-col gap-[40px] w-full">
         {loading ? (
-          <p className="text-sm text-slate-500 col-span-full text-center py-10">Carregando...</p>
-        ) : filtrados.length === 0 ? (
-          <p className="text-sm text-slate-500 col-span-full text-center py-10">Nenhuma transação recorrente encontrada.</p>
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-4">
+              <div className="h-4 w-20 bg-slate-200 animate-pulse rounded"></div>
+              <div className="h-[1px] w-full bg-[#F1F5F9] dark:bg-[#334155]" />
+            </div>
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[16px]">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex flex-col gap-[12px] animate-pulse">
+                  <div className="flex justify-between items-start gap-2">
+                    <div className="h-5 w-32 bg-slate-200 rounded"></div>
+                    <div className="h-5 w-16 bg-slate-200 rounded-full"></div>
+                  </div>
+                  <div className="flex flex-col gap-[4px] mt-2">
+                    <div className="h-6 w-24 bg-slate-200 rounded"></div>
+                    <div className="h-4 w-28 bg-slate-200 rounded mt-1"></div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#F8FAFC] dark:border-[#0F172A]">
+                    <div className="h-8 w-24 bg-slate-200 rounded-lg"></div>
+                    <div className="h-8 w-16 bg-slate-200 rounded-lg"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : recorrentes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-[32px] border-2 border-dashed border-[#E2E8F0] dark:border-[#334155]">
+            <Repeat size={48} className="text-[#94A3B8] mb-4 opacity-20" />
+            <p className="text-[#64748B] dark:text-[#94A3B8] font-medium">Nenhuma transação recorrente encontrada</p>
+          </div>
         ) : (
-          filtrados.map(rec => {
-            const status = getStatus(rec);
-            
+          freqOptions.map(freq => {
+            const items = recorrentes.filter(r => r.frequencia === freq.id);
+            if (items.length === 0) return null;
+
             return (
-              <div key={rec.id} className="bg-white rounded-[20px] p-[20px] border-[1.5px] border-[#F1F5F9] shadow-[0_2px_12px_rgba(0,0,0,0.06)] flex flex-col gap-[12px]">
+              <div key={freq.id} className="flex flex-col gap-4">
+                <div className="flex items-center gap-4">
+                  <h3 className="text-[13px] font-[700] text-[#94A3B8] uppercase tracking-widest whitespace-nowrap">
+                    {freq.label}
+                  </h3>
+                  <div className="h-[1px] w-full bg-[#F1F5F9] dark:bg-[#334155]" />
+                </div>
                 
-                {/* Header */}
-                <div className="flex justify-between items-start gap-2">
-                  <h3 className="text-[16px] font-[700] text-[#0F172A] leading-tight flex-1">{rec.nome}</h3>
-                  {status === 'pago' && (
-                    <span className="bg-[#DCFCE7] text-[#16A34A] text-[11px] font-[600] px-[8px] py-[4px] rounded-[8px] shrink-0">Pago</span>
-                  )}
-                  {status === 'pendente' && (
-                    <span className="bg-[#FEF9C3] text-[#CA8A04] text-[11px] font-[600] px-[8px] py-[4px] rounded-[8px] shrink-0">Pendente</span>
-                  )}
-                  {status === 'aguardando' && (
-                    <span className="bg-[#E2E8F0] text-[#64748B] text-[11px] font-[600] px-[8px] py-[4px] rounded-[8px] shrink-0">Aguardando</span>
-                  )}
-                </div>
-
-                {/* Details */}
-                <div className="flex flex-col gap-[6px]">
-                  {/* Valor */}
-                  {rec.valor === null ? (
-                    <div className="text-[20px] font-[800] text-[#0F172A]">Valor Variável</div>
-                  ) : (
-                    <div className={`text-[20px] font-[800] ${rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
-                      {rec.tipo === 'receita' ? '+' : '-'} R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                    </div>
-                  )}
-
-                  {/* Vencimento */}
-                  <div className="flex items-center gap-[6px] text-[13px] text-[#64748B] mt-1">
-                    <Calendar size={14} />
-                    <span>{formatPeriodText(rec)}</span>
-                  </div>
-
-                  {/* Período & Tags */}
-                  <div className="flex flex-wrap items-center gap-x-[12px] gap-y-[6px]">
-                    <div className="flex items-center gap-[6px] text-[13px] text-[#64748B]">
-                      <Repeat size={14} />
-                      <span className="capitalize">{rec.frequencia}</span>
-                    </div>
-
-                    <div className="flex items-center gap-[6px]">
-                      {rec.categories && (
-                        <div className="flex items-center gap-[4px] bg-[#F8FAFC] px-[6px] py-[2px] rounded-[6px]">
-                          <div className="w-[8px] h-[8px] rounded-full" style={{ backgroundColor: rec.categories.cor }} />
-                          <span className="text-[11px] text-[#0F172A] font-[600]">{rec.categories.nome}</span>
+                <div className="grid grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-[16px]">
+                  {items.map(rec => {
+                    const status = getStatus(rec);
+                    return (
+                      <div key={rec.id} className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex flex-col gap-[12px] hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] transition-all group">
+                        <div className="flex justify-between items-start gap-2">
+                          <h3 className="text-[15px] font-[700] text-[#0F172A] dark:text-white leading-tight flex-1">{rec.nome}</h3>
+                          {status === 'pago' && (
+                            <span className="bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] text-[10px] font-[700] px-[8px] py-[3px] rounded-[6px] shrink-0 uppercase tracking-wider">Pago</span>
+                          )}
+                          {status === 'pendente' && (
+                            <span className="bg-[#FEF9C3] text-[#CA8A04] text-[10px] font-[700] px-[8px] py-[3px] rounded-[6px] shrink-0 uppercase tracking-wider">Pendente</span>
+                          )}
+                          {status === 'aguardando' && (
+                            <span className="bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] text-[10px] font-[700] px-[8px] py-[3px] rounded-[6px] shrink-0 uppercase tracking-wider">Esperando</span>
+                          )}
                         </div>
-                      )}
-                      {rec.tags && (
-                        <div className="flex items-center gap-[4px] bg-[#F8FAFC] px-[6px] py-[2px] rounded-[6px]">
-                          <TagIcon size={10} className="text-[#94A3B8]" />
-                          <span className="text-[11px] text-[#0F172A] font-[500]">{rec.tags.nome}</span>
+
+                        <div className="flex flex-col gap-[4px]">
+                          {rec.valor === null ? (
+                            <div className="text-[18px] font-[800] text-[#0F172A] dark:text-white">Valor Variável</div>
+                          ) : (
+                            <div className={`text-[18px] font-[800] ${rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
+                              {rec.tipo === 'receita' ? '+' : '-'} R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </div>
+                          )}
+                          <div className="flex items-center gap-[6px] text-[12px] text-[#94A3B8]">
+                            <Calendar size={13} />
+                            <span>{formatPeriodText(rec)}</span>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
 
-                  {/* Forma Pagamento */}
-                  {rec.forma_pagamento && (
-                    <div className="flex items-center gap-[6px] text-[13px] text-[#64748B]">
-                      <CreditCard size={14} />
-                      <span className="capitalize">{rec.forma_pagamento.replace('_', ' ')}</span>
-                    </div>
-                  )}
+                        <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#F8FAFC] dark:border-[#0F172A]">
+                          <button 
+                            onClick={() => iniciarLancamento(rec)}
+                            className={`flex items-center gap-[6px] px-[12px] py-[6px] rounded-[8px] text-[12px] font-[700] transition-colors ${status === 'pendente' ? 'bg-[#2563EB] text-white hover:bg-[#1D4ED8]' : 'bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:hover:bg-[#475569]'}`}
+                          >
+                            <Check size={14} />
+                            Lançar
+                          </button>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button 
+                              onClick={() => { setEditingRec(rec); setIsModalOpen(true); }}
+                              className="p-2 text-[#94A3B8] hover:text-[#0F172A] dark:text-white hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155] rounded-lg transition-colors"
+                            >
+                              <Edit size={14} />
+                            </button>
+                            <button 
+                              onClick={() => handleExcluir(rec.id)}
+                              className="p-2 text-[#94A3B8] hover:text-[#EF4444] hover:bg-[#FEF2F2] rounded-lg transition-colors"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {/* Actions */}
-                <div className="flex justify-between items-center mt-[4px] pt-[12px] border-t border-[#F1F5F9]">
-                  <button 
-                    onClick={() => iniciarLancamento(rec)}
-                    className="flex items-center gap-[6px] bg-[#2563EB] text-white px-[16px] py-[8px] rounded-[10px] text-[13px] font-[600] hover:bg-[#1D4ED8] transition-colors"
-                  >
-                    <Check size={14} />
-                    Lançar
-                  </button>
-                  <div className="flex items-center gap-[8px]">
-                    <button 
-                      onClick={() => {
-                        setEditingRec(rec);
-                        setIsModalOpen(true);
-                      }}
-                      className="flex items-center justify-center bg-[#F1F5F9] text-[#64748B] w-[34px] h-[34px] rounded-[10px] hover:bg-[#E2E8F0] transition-colors"
-                      title="Editar"
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button 
-                      onClick={() => handleExcluir(rec.id)}
-                      className="flex items-center justify-center bg-[#FEF2F2] text-[#EF4444] w-[34px] h-[34px] rounded-[10px] hover:bg-[#FEE2E2] transition-colors"
-                      title="Excluir"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                </div>
-
               </div>
             );
           })
@@ -504,28 +477,28 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       {variableValueModal?.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#0F172A80] backdrop-blur-[4px]" onClick={() => setVariableValueModal(null)} />
+            <div className="absolute inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]" onClick={() => setVariableValueModal(null)} />
             <motion.div 
                initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} 
-               className="bg-white rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl"
+               className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl"
             >
-               <h3 className="text-[18px] font-[800] text-[#0F172A] mb-[4px]">Informar Valor da Transação</h3>
-               <p className="text-[13px] text-[#64748B] mb-[20px]">Esta recorrência tem valor variável. Informe o valor para este lançamento.</p>
+               <h3 className="text-[18px] font-[800] text-[#0F172A] dark:text-white mb-[4px]">Informar Valor da Transação</h3>
+               <p className="text-[13px] text-[#64748B] dark:text-[#94A3B8] mb-[20px]">Esta recorrência tem valor variável. Informe o valor para este lançamento.</p>
                
                <div className="mb-[20px]">
-                  <label className="block text-[12px] font-[700] text-[#64748B] uppercase tracking-wider mb-[6px]">Valor</label>
+                  <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Valor</label>
                   <input 
                     type="text" 
                     value={formatarValor(variableValorStr)} 
                     onKeyDown={handleVariableValorKeyDown}
                     readOnly
-                    className="w-full border-[1.5px] border-[#E2E8F0] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
+                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
                     autoFocus
                   />
                </div>
 
                <div className="flex gap-[12px]">
-                 <button onClick={() => setVariableValueModal(null)} className="flex-1 bg-[#F1F5F9] text-[#64748B] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] transition-colors">Cancelar</button>
+                 <button onClick={() => setVariableValueModal(null)} className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors">Cancelar</button>
                  <button 
                     onClick={() => {
                        const num = parseInt(variableValorStr) / 100;
@@ -544,19 +517,19 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       {duplicateModal?.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#0F172A80] backdrop-blur-[4px]" onClick={() => setDuplicateModal(null)} />
+            <div className="absolute inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]" onClick={() => setDuplicateModal(null)} />
             <motion.div 
                initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} 
-               className="bg-white rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl text-center"
+               className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl text-center"
             >
                <div className="w-[48px] h-[48px] bg-[#FEF2F2] rounded-full flex items-center justify-center mx-auto mb-[16px]">
                   <TrendingUp className="text-[#EF4444]" size={24} />
                </div>
-               <h3 className="text-[18px] font-[800] text-[#0F172A] mb-[12px]">Lançamento Duplicado?</h3>
-               <p className="text-[14px] text-[#64748B] mb-[24px]">Esta transação recorrente já foi lançada para o período atual. Deseja lançar novamente?</p>
+               <h3 className="text-[18px] font-[800] text-[#0F172A] dark:text-white mb-[12px]">Lançamento Duplicado?</h3>
+               <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] mb-[24px]">Esta transação recorrente já foi lançada para o período atual. Deseja lançar novamente?</p>
                
                <div className="flex gap-[12px]">
-                 <button onClick={() => setDuplicateModal(null)} className="flex-1 bg-[#F1F5F9] text-[#64748B] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] transition-colors">Cancelar</button>
+                 <button onClick={() => setDuplicateModal(null)} className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors">Cancelar</button>
                  <button 
                     onClick={() => {
                        setDuplicateModal(null);
@@ -573,19 +546,19 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       {deleteModal?.isOpen && deleteModal.id && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <div className="absolute inset-0 bg-[#0F172A80] backdrop-blur-[4px]" onClick={() => setDeleteModal(null)} />
+            <div className="absolute inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]" onClick={() => setDeleteModal(null)} />
             <motion.div 
                initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} 
-               className="bg-white rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl text-center"
+               className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl text-center"
             >
                <div className="w-[48px] h-[48px] bg-[#FEF2F2] rounded-full flex items-center justify-center mx-auto mb-[16px]">
                   <Trash2 className="text-[#EF4444]" size={24} />
                </div>
-               <h3 className="text-[18px] font-[800] text-[#0F172A] mb-[12px]">Excluir Recorrência</h3>
-               <p className="text-[14px] text-[#64748B] mb-[24px]">Tem certeza que deseja excluir esta recorrência? Suas transações já lançadas não serão afetadas.</p>
+               <h3 className="text-[18px] font-[800] text-[#0F172A] dark:text-white mb-[12px]">Excluir Recorrência</h3>
+               <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] mb-[24px]">Tem certeza que deseja excluir esta recorrência? Suas transações já lançadas não serão afetadas.</p>
                
                <div className="flex gap-[12px]">
-                 <button onClick={() => setDeleteModal(null)} className="flex-1 bg-[#F1F5F9] text-[#64748B] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] transition-colors">Cancelar</button>
+                 <button onClick={() => setDeleteModal(null)} className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors">Cancelar</button>
                  <button 
                     onClick={() => executarExclusao(deleteModal.id!)}
                     className="flex-1 bg-[#EF4444] text-white font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#DC2626] transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] active:scale-[0.98]"

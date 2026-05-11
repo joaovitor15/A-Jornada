@@ -335,7 +335,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
   const getTextColor = (type: CofreType) => {
     if (type === 'reserva') return 'text-[#10B981]';
     if (type === 'meta') return 'text-[#3B82F6]';
-    return 'text-[#EF4444]';
+    return 'text-[#EF4444] dark:text-red-400';
   };
 
   const getFormatVencimento = (dateStr?: string) => {
@@ -392,7 +392,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
     }
 
     return (
-      <div key={c.id} className="bg-white rounded-[24px] border border-slate-100 p-6 flex flex-col justify-between shadow-sm relative overflow-hidden group">
+      <div key={c.id} className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-slate-100 dark:border-[#334155] p-6 flex flex-col justify-between shadow-sm relative overflow-hidden group">
         
         {/* Card Header */}
         <div className="flex justify-between items-start mb-6">
@@ -401,7 +401,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               <Icon size={18} strokeWidth={3}/>
               <h3 className="font-[900] text-[14px] uppercase tracking-wider">{c.name}</h3>
             </div>
-            <div className="flex items-center gap-1.5 text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider pl-[26px]">
+            <div className="flex items-center gap-1.5 text-[#94A3B8] dark:text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider pl-[26px]">
                <PiggyBank size={12} strokeWidth={2.5} />
                {c.local}
             </div>
@@ -409,7 +409,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
           <div className="relative cofre-card-dropdown">
             <button 
               onClick={(e) => { e.stopPropagation(); setOpenDropdownId(openDropdownId === c.id ? null : c.id); }}
-              className="text-[#64748B] hover:bg-slate-50 p-1.5 rounded-lg transition-colors"
+              className="text-[#64748B] dark:text-[#94A3B8] hover:bg-slate-50 dark:hover:bg-slate-800/50 p-1.5 rounded-lg transition-colors"
             >
               <MoreVertical size={20} strokeWidth={2.5} />
             </button>
@@ -421,18 +421,18 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: -5, scale: 0.95 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute top-full right-0 mt-1 bg-white rounded-[12px] border border-[#E2E8F0] shadow-[0_4px_20px_rgba(0,0,0,0.08)] py-1.5 min-w-[140px] z-20"
+                  className="absolute top-full right-0 mt-1 bg-white dark:bg-[#1E293B] rounded-[12px] border border-[#E2E8F0] dark:border-[#334155] shadow-[0_4px_20px_rgba(0,0,0,0.08)] py-1.5 min-w-[140px] z-20"
                 >
                   <button 
                     onClick={() => handleEditCofre(c)}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-[13px] font-bold text-[#64748B] hover:bg-slate-50 hover:text-[#3B82F6] transition-colors"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-[#3B82F6] transition-colors"
                   >
                     <Settings size={14} strokeWidth={2.5} />
                     Configuração
                   </button>
                   <button 
                     onClick={() => handleDeleteCofre(c.id)}
-                    className="w-full flex items-center gap-2 px-4 py-2 text-[13px] font-bold text-[#64748B] hover:bg-red-50 hover:text-[#EF4444] transition-colors whitespace-nowrap"
+                    className="w-full flex items-center gap-2 px-4 py-2 text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] hover:bg-red-50 hover:text-[#EF4444] dark:text-red-400 transition-colors whitespace-nowrap"
                   >
                     <Trash2 size={14} strokeWidth={2.5} />
                     Excluir
@@ -445,61 +445,73 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
 
         {/* MIDDLE SECTION FOR PROVISOES */}
         {isProvisao && !isAnual && (
-           <div className="grid grid-cols-2 gap-4 mb-6 relative mt-2">
-              <div className="absolute left-1/2 top-0 bottom-0 w-[1px] -translate-x-1/2 bg-slate-100"></div>
+           <div className="flex flex-col md:grid md:grid-cols-2 gap-3 md:gap-2 mb-6 relative mt-2 bg-slate-50 dark:bg-slate-800/50 md:bg-transparent rounded-xl p-4 md:p-0">
+              <div className="absolute left-1/2 top-0 bottom-0 w-[1px] -translate-x-1/2 bg-slate-200 dark:bg-[#334155] hidden md:block"></div>
 
-              <div className="pe-2 text-center">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 line-clamp-1">Falta no ciclo</p>
-                <div className="text-[15px] font-black text-[#EF4444] leading-tight mb-0.5">{formatCurrency(faltaNoCiclo)}</div>
-                <div className="text-[10px] font-semibold text-[#94A3B8]">(Saldo cobre: {saldoCobreMeses} meses)</div>
+              <div className="text-center flex flex-col justify-center items-center md:pe-2">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 leading-tight">Falta no ciclo</p>
+                <div className="text-[16px] md:text-[15px] font-black text-[#EF4444] dark:text-red-400 leading-tight mb-0.5 whitespace-nowrap">{formatCurrency(faltaNoCiclo)}</div>
+                <div className="text-[10px] font-semibold text-[#94A3B8] dark:text-[#94A3B8] leading-tight">(Cobre: {saldoCobreMeses}m)</div>
               </div>
-              <div className="pl-2 text-center flex flex-col items-center">
+
+              {/* Mobile divider */}
+              <div className="w-full h-[1px] bg-slate-200 dark:bg-[#334155] md:hidden my-1"></div>
+
+              <div className="text-center flex flex-col justify-center items-center md:pl-2">
                 <div className="flex items-center gap-1 mb-1 justify-center">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Já Utilizado</p>
-                  <button onClick={() => confirmResetUtilizado(c)} className="text-[#EF4444] cursor-pointer hover:bg-red-50 p-1 rounded transition-colors" title="Resetar Já Utilizado">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Já Utilizado</p>
+                  <button onClick={() => confirmResetUtilizado(c)} className="text-[#EF4444] dark:text-red-400 cursor-pointer hover:bg-red-100 dark:hover:bg-red-900/30 p-1 rounded transition-colors shrink-0" title="Resetar Já Utilizado">
                      <RotateCw size={12} strokeWidth={3} />
                   </button>
                 </div>
-                <div className="text-[15px] font-black text-[#EF4444] leading-tight mb-0.5">{formatCurrency(c.provisao_ja_utilizado || 0)} <span className="text-[12px] font-bold">({jaUtilizadoMeses}/{maxCiclos})</span></div>
+                <div className="text-[16px] md:text-[15px] font-black text-[#EF4444] dark:text-red-400 leading-tight mb-0.5 whitespace-nowrap">
+                  {formatCurrency(c.provisao_ja_utilizado || 0)} <span className="text-[11px] md:text-[12px] font-bold">({jaUtilizadoMeses}/{maxCiclos})</span>
+                </div>
               </div>
            </div>
         )}
 
         {isProvisao && isAnual && (
-           <div className="grid grid-cols-2 gap-4 mb-6 relative mt-2">
-               <div className="absolute left-1/2 top-0 bottom-0 w-[1px] -translate-x-1/2 bg-slate-100"></div>
-               <div className="pe-2 text-center">
-                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 line-clamp-1">Falta P/ Pagar</p>
-                 <div className="text-[15px] font-black text-[#EF4444] leading-tight mb-0.5">{formatCurrency(faltaValue)}</div>
-                 <div className="text-[10px] font-semibold text-[#94A3B8]">Faltam {mesesFaltantes} meses</div>
-                 <div className="text-[10px] font-semibold text-[#94A3B8]">Ideal: {formatCurrency(aporteIdeal)}/mês</div>
+           <div className="flex flex-col md:grid md:grid-cols-2 gap-3 md:gap-2 mb-6 relative mt-2 bg-slate-50 dark:bg-slate-800/50 md:bg-transparent rounded-xl p-4 md:p-0">
+               <div className="absolute left-1/2 top-0 bottom-0 w-[1px] -translate-x-1/2 bg-slate-200 dark:bg-[#334155] hidden md:block"></div>
+               
+               <div className="text-center flex flex-col justify-center items-center md:pe-2">
+                 <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 leading-tight">Falta P/ Pagar</p>
+                 <div className="text-[16px] md:text-[15px] font-black text-[#EF4444] dark:text-red-400 leading-tight mb-0.5 whitespace-nowrap">{formatCurrency(faltaValue)}</div>
+                 <div className="text-[10px] font-semibold text-[#94A3B8] dark:text-[#94A3B8] leading-tight">Ideal: {formatCurrency(aporteIdeal)}/m</div>
                </div>
-               <div className="pl-2 text-center flex flex-col items-center justify-center">
-                 <div className="flex items-center gap-1 mb-1 justify-center">
-                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Vencimento</p>
+
+               {/* Mobile divider */}
+               <div className="w-full h-[1px] bg-slate-200 dark:bg-[#334155] md:hidden my-1"></div>
+
+               <div className="text-center flex flex-col items-center justify-center md:pl-2">
+                 <div className="flex items-center gap-1 mb-1 justify-center w-full">
+                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight">Vencimento</p>
                  </div>
-                 <div className="text-[13px] font-black text-[#EF4444] leading-tight mb-0.5 uppercase tracking-wide">{getFormatVencimento(c.provisao_vencimento)}</div>
+                 <div className="text-[13px] font-black text-[#EF4444] dark:text-red-400 leading-tight mb-0.5 uppercase tracking-wide whitespace-nowrap">{getFormatVencimento(c.provisao_vencimento)}</div>
                </div>
            </div>
         )}
 
         {/* SALDO & OBJETIVO */}
-        <div className="flex items-center justify-between mt-auto mb-8">
-          <div className="text-center w-full">
-            <p className="text-[10px] font-extrabold text-[#0F172A] uppercase tracking-wider mb-1">Saldo Atual</p>
-            <div className="text-[18px] font-black text-[#0F172A] tracking-tight">{formatCurrency(c.saldo_atual)}</div>
+        <div className="flex flex-col md:flex-row items-center justify-between mt-auto mb-8 gap-3 md:gap-2">
+          <div className="text-center flex flex-col items-center justify-center min-w-0">
+            <p className="text-[10px] font-extrabold text-[#0F172A] dark:text-white uppercase tracking-wider mb-1 leading-tight">Saldo Atual</p>
+            <div className="text-[18px] font-black text-[#0F172A] dark:text-white tracking-tight whitespace-nowrap">{formatCurrency(c.saldo_atual)}</div>
           </div>
           
-          <button 
-            onClick={() => openTransactionModal(c)}
-            className="h-8 w-8 rounded-full flex items-center justify-center text-[#10B981] hover:bg-[#10B981]/10 transition-colors mx-2 shrink-0 cursor-pointer"
-          >
-             <ArrowLeftRight size={20} strokeWidth={3}/>
-          </button>
+          <div className="flex flex-col items-center justify-center py-1 md:py-0">
+            <button 
+              onClick={() => openTransactionModal(c)}
+              className="h-8 w-8 rounded-full flex items-center justify-center text-[#10B981] bg-[#10B981]/5 border border-[#10B981]/20 hover:bg-[#10B981]/10 transition-colors shrink-0 cursor-pointer shadow-sm rotate-90 md:rotate-0"
+            >
+               <ArrowLeftRight size={16} strokeWidth={3}/>
+            </button>
+          </div>
           
-          <div className="text-center w-full">
-            <p className="text-[10px] font-extrabold text-[#0F172A] uppercase tracking-wider mb-1">Objetivo Total</p>
-             <div className="text-[18px] font-black text-[#0F172A] tracking-tight">{formatCurrency(c.objetivo_total)}</div>
+          <div className="text-center flex flex-col items-center justify-center min-w-0">
+            <p className="text-[10px] font-extrabold text-[#0F172A] dark:text-white uppercase tracking-wider mb-1 leading-tight">Objetivo Total</p>
+             <div className="text-[18px] font-black text-[#0F172A] dark:text-white tracking-tight whitespace-nowrap">{formatCurrency(c.objetivo_total)}</div>
           </div>
         </div>
 
@@ -510,7 +522,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               <span className="text-[11px] font-bold text-slate-800">{percent.toFixed(1)}%</span>
            </div>
            {/* Progress Line */}
-           <div className="w-full bg-[#F1F5F9] rounded-full h-2 mb-2 overflow-hidden flex">
+           <div className="w-full bg-[#F1F5F9] dark:bg-[#334155] rounded-full h-2 mb-2 overflow-hidden flex">
               {percent > 0 && (
                 <div 
                   className="h-full rounded-full transition-all duration-1000 ease-out" 
@@ -539,9 +551,9 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         <div>
           <div className="flex items-center gap-3 mb-1">
             <Shield size={24} className="text-[#10B981]" />
-            <h2 className="text-2xl font-bold text-[#0F172A] tracking-tight">Cofres & Provisões</h2>
+            <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">Cofres & Provisões</h2>
           </div>
-          <p className="text-[#64748B] text-sm font-medium">Separe o dinheiro da sobrevivência do dinheiro dos sonhos.</p>
+          <p className="text-[#64748B] dark:text-[#94A3B8] text-sm font-medium">Guarde Dinheiro.</p>
         </div>
         
         <div className="relative new-cofre-dropdown-container w-full md:w-auto">
@@ -560,14 +572,14 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-[100%] mt-2 right-0 md:left-1/2 md:-translate-x-1/2 bg-white rounded-[14px] border border-[#E2E8F0] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[6px] min-w-[240px] z-[100]"
+                className="absolute top-[100%] mt-2 right-0 md:left-1/2 md:-translate-x-1/2 bg-white dark:bg-[#1E293B] rounded-[14px] border border-[#E2E8F0] dark:border-[#334155] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-[6px] min-w-[240px] z-[100]"
               >
                 <div 
                   onClick={() => {
                     setIsNewCofreDropdownOpen(false);
                     openCofreModal('reserva');
                   }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#DCFCE7] transition-all duration-200 cursor-pointer"
+                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#DCFCE7] dark:bg-green-900/20 transition-all duration-200 cursor-pointer"
                 >
                   <Shield size={16} className="text-[#10B981]" />
                   <span className="text-[14px] font-[600] text-[#10B981]">Reserva de Emergência</span>
@@ -578,10 +590,10 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                     setIsNewCofreDropdownOpen(false);
                     openCofreModal('provisao');
                   }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] transition-all duration-200 cursor-pointer"
+                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] dark:bg-red-900/20 transition-all duration-200 cursor-pointer"
                 >
-                  <CalendarDays size={16} className="text-[#EF4444]" />
-                  <span className="text-[14px] font-[600] text-[#EF4444]">Provisões</span>
+                  <CalendarDays size={16} className="text-[#EF4444] dark:text-red-400" />
+                  <span className="text-[14px] font-[600] text-[#EF4444] dark:text-red-400">Provisões</span>
                 </div>
                 <div className="border-t border-[#F1F5F9] my-[4px]" />
                 <div 
@@ -602,40 +614,40 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
 
       {/* DASHBOARD CARDS */}
       {isLoading ? (
-        <div className="text-center py-12 text-[#94A3B8] font-bold">Carregando...</div>
+        <div className="text-center py-12 text-[#94A3B8] dark:text-[#94A3B8] font-bold">Carregando...</div>
       ) : (
       <>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* TOTAL GERAL */}
-        <div className="bg-white rounded-[24px] p-6 border-l-[6px] border-l-[#64748B] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-l-[6px] border-l-[#64748B] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-[#64748B] font-[800] text-[10px] uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-[#64748B] dark:text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
               <PiggyBank size={14} />
               Total Geral
             </div>
-            <div className="text-3xl font-black text-[#0F172A] tracking-tight mb-4">
+            <div className="text-3xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4">
               {formatCurrency(totalGeral)}
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] pt-4 mt-auto">
-            <span className="text-[12px] text-[#64748B] font-bold">Objetivo: {formatCurrency(totalGeralObjetivo)}</span>
-            <span className="text-[11px] font-[900] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md">{totalGeralPorcentagem.toFixed(1)}%</span>
+          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] dark:border-[#334155] pt-4 mt-auto">
+            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Objetivo: {formatCurrency(totalGeralObjetivo)}</span>
+            <span className="text-[11px] font-[900] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-md">{totalGeralPorcentagem.toFixed(1)}%</span>
           </div>
         </div>
 
         {/* RESERVA EMERGÊNCIA */}
-        <div className="bg-white rounded-[24px] p-6 border-l-[6px] border-l-[#10B981] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-l-[6px] border-l-[#10B981] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-[#94A3B8] dark:text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
               <Shield size={14} className="text-[#10B981]" strokeWidth={3} />
               Reserva Emergência
             </div>
-            <div className="text-3xl font-black text-[#0F172A] tracking-tight mb-4">
+            <div className="text-3xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4">
               {formatCurrency(totalReserva)}
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] pt-4 mt-auto">
-            <span className="text-[12px] text-[#64748B] font-bold">Objetivo: {formatCurrency(totalReservaObjetivo)}</span>
+          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] dark:border-[#334155] pt-4 mt-auto">
+            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Objetivo: {formatCurrency(totalReservaObjetivo)}</span>
             <span className="text-[11px] font-[900] bg-[#10B981]/10 text-[#10B981] px-2 py-0.5 rounded-md">
               {totalReservaObjetivo > 0 ? ((totalReserva / totalReservaObjetivo) * 100).toFixed(1) : '0.0'}%
             </span>
@@ -643,35 +655,35 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         </div>
 
         {/* PROVISÕES */}
-        <div className="bg-white rounded-[24px] p-6 border-l-[6px] border-l-[#EF4444] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-l-[6px] border-l-[#EF4444] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
-              <CalendarDays size={14} className="text-[#EF4444]" strokeWidth={3} />
+            <div className="flex items-center gap-2 text-[#94A3B8] dark:text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
+              <CalendarDays size={14} className="text-[#EF4444] dark:text-red-400" strokeWidth={3} />
               Provisões (Saldo)
             </div>
-            <div className="text-3xl font-black text-[#0F172A] tracking-tight mb-4">
+            <div className="text-3xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4">
               {formatCurrency(totalProvisao)}
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] pt-4 mt-auto">
-            <span className="text-[12px] text-[#64748B] font-bold">Mensal: {formatCurrency(mensalidadeProvisoes)}</span>
-            <span className="text-[12px] text-[#64748B] font-bold">Anual: {formatCurrency(anualProvisoes)}</span>
+          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] dark:border-[#334155] pt-4 mt-auto">
+            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Mensal: {formatCurrency(mensalidadeProvisoes)}</span>
+            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Anual: {formatCurrency(anualProvisoes)}</span>
            </div>
         </div>
 
         {/* METAS */}
-        <div className="bg-white rounded-[24px] p-6 border-l-[6px] border-l-[#3B82F6] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-l-[6px] border-l-[#3B82F6] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div>
-            <div className="flex items-center gap-2 text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
+            <div className="flex items-center gap-2 text-[#94A3B8] dark:text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
               <Flag size={14} className="text-[#3B82F6]" strokeWidth={3} />
               Metas (Longo Prazo)
             </div>
-            <div className="text-3xl font-black text-[#0F172A] tracking-tight mb-4">
+            <div className="text-3xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4">
               {formatCurrency(totalMeta)}
             </div>
           </div>
-          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] pt-4 mt-auto">
-            <span className="text-[12px] text-[#64748B] font-bold">Objetivo: {formatCurrency(totalMetaObjetivo)}</span>
+          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] dark:border-[#334155] pt-4 mt-auto">
+            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Objetivo: {formatCurrency(totalMetaObjetivo)}</span>
             <span className="text-[11px] font-[900] bg-[#3B82F6]/10 text-[#3B82F6] px-2 py-0.5 rounded-md">
               {totalMetaObjetivo > 0 ? ((totalMeta / totalMetaObjetivo) * 100).toFixed(1) : '0.0'}%
             </span>
@@ -683,22 +695,22 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
       <div className="space-y-6 pt-4">
         
         {/* RESERVA DE EMERGÊNCIA BLOCO */}
-        <div className="bg-white/80 rounded-[24px] border border-[#E2E8F0] shadow-sm">
-           <div className="px-6 py-5 border-b border-[#E2E8F0] flex items-center justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-sm">
+           <div className="px-6 py-5 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                 <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100">
+                 <div className="bg-white dark:bg-[#1E293B] p-2 rounded-xl shadow-sm border border-slate-100 dark:border-[#334155]">
                    <Shield className="text-[#10B981]" size={20} strokeWidth={2.5}/>
                  </div>
-                 <h3 className="font-[900] text-[#0F172A] text-lg">Reserva de Emergência</h3>
+                 <h3 className="font-[900] text-[#0F172A] dark:text-white text-lg">Reserva de Emergência</h3>
               </div>
               <div className="text-right hidden sm:block">
                  <span className="font-bold text-[#10B981]">{formatCurrency(totalReserva)}</span>
-                 <span className="text-[#94A3B8] text-sm font-medium"> / {formatCurrency(totalReservaObjetivo)}</span>
+                 <span className="text-[#94A3B8] dark:text-[#94A3B8] text-sm font-medium"> / {formatCurrency(totalReservaObjetivo)}</span>
               </div>
            </div>
-           <div className="p-6 bg-[#F8FAFC]/50 rounded-b-[24px]">
+           <div className="p-6 bg-[#F8FAFC] dark:bg-[#020817]/40 rounded-b-[24px]">
               {reservas.length === 0 ? (
-                  <div className="text-center text-[#94A3B8] font-bold py-8">
+                  <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-8">
                     Nenhum cofre de emergência criado ainda.
                   </div>
               ) : (
@@ -710,30 +722,30 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         </div>
 
         {/* PROVISÕES BLOCO */}
-        <div className="bg-white/80 rounded-[24px] border border-[#E2E8F0] shadow-sm">
-           <div className="px-6 py-5 border-b border-[#E2E8F0] flex items-center justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-sm">
+           <div className="px-6 py-5 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                 <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100">
-                   <CalendarDays className="text-[#EF4444]" size={20} strokeWidth={2.5}/>
+                 <div className="bg-white dark:bg-[#1E293B] p-2 rounded-xl shadow-sm border border-slate-100 dark:border-[#334155]">
+                   <CalendarDays className="text-[#EF4444] dark:text-red-400" size={20} strokeWidth={2.5}/>
                  </div>
-                 <h3 className="font-[900] text-[#0F172A] text-lg">Provisões</h3>
+                 <h3 className="font-[900] text-[#0F172A] dark:text-white text-lg">Provisões</h3>
               </div>
               <div className="text-right flex items-center gap-3 hidden sm:flex">
-                 <span className="font-bold text-[#EF4444]">{formatCurrency(totalProvisao)}</span>
-                 <div className="h-4 w-[1px] bg-[#E2E8F0]"></div>
-                 <span className="text-xs text-[#94A3B8] font-semibold">Mensal: <span className="text-[#64748B]">{formatCurrency(mensalidadeProvisoes)}</span></span>
-                 <span className="text-xs text-[#94A3B8] font-semibold">Anual: <span className="text-[#64748B]">{formatCurrency(anualProvisoes)}</span></span>
+                 <span className="font-bold text-[#EF4444] dark:text-red-400">{formatCurrency(totalProvisao)}</span>
+                 <div className="h-4 w-[1px] bg-[#E2E8F0] dark:bg-[#475569]"></div>
+                 <span className="text-xs text-[#94A3B8] dark:text-[#94A3B8] font-semibold">Mensal: <span className="text-[#64748B] dark:text-[#94A3B8]">{formatCurrency(mensalidadeProvisoes)}</span></span>
+                 <span className="text-xs text-[#94A3B8] dark:text-[#94A3B8] font-semibold">Anual: <span className="text-[#64748B] dark:text-[#94A3B8]">{formatCurrency(anualProvisoes)}</span></span>
               </div>
            </div>
-           <div className="p-6 bg-[#F8FAFC]/50 rounded-b-[24px] space-y-10">
+           <div className="p-6 bg-[#F8FAFC] dark:bg-[#020817]/40 rounded-b-[24px] space-y-10">
               
               {/* Provisões Mensais */}
               <div>
                 <div className="flex items-center mb-6">
-                   <span className="bg-[#FEF3C7] text-[#F59E0B] text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-xl rounded-tl-none -ml-6 -mt-2">Planos Mensais</span>
+                   <span className="bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#F59E0B] dark:text-[#FBBF24] text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-xl rounded-tl-none -ml-6 -mt-2">Planos Mensais</span>
                 </div>
                 {provisoesMensais.length === 0 ? (
-                    <div className="text-center text-[#94A3B8] font-bold py-6">Nenhuma provisão mensal detalhada.</div>
+                    <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-6">Nenhuma provisão mensal detalhada.</div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {provisoesMensais.map(renderCardTemplate)}
@@ -744,10 +756,10 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               {/* Provisões Anuais / Únicas */}
               <div>
                 <div className="flex items-center mb-6">
-                   <span className="bg-[#FEF3C7] text-[#F59E0B] text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-xl rounded-tl-none -ml-6 border-t border-slate-100">Pagamentos Únicos / Anuais</span>
+                   <span className="bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#F59E0B] dark:text-[#FBBF24] text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-xl rounded-tl-none -ml-6 border-t border-slate-100 dark:border-[#334155]">Pagamentos Únicos / Anuais</span>
                 </div>
                 {provisoesAnuais.length === 0 ? (
-                    <div className="text-center text-[#94A3B8] font-bold py-6">Nenhuma provisão anual detalhada.</div>
+                    <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-6">Nenhuma provisão anual detalhada.</div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                       {provisoesAnuais.map(renderCardTemplate)}
@@ -759,22 +771,22 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         </div>
 
         {/* METAS LONG PRAZO BLOCO */}
-        <div className="bg-white/80 rounded-[24px] border border-[#E2E8F0] shadow-sm">
-           <div className="px-6 py-5 border-b border-[#E2E8F0] flex items-center justify-between">
+        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-sm">
+           <div className="px-6 py-5 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center justify-between">
               <div className="flex items-center gap-3">
-                 <div className="bg-white p-2 rounded-xl shadow-sm border border-slate-100">
+                 <div className="bg-white dark:bg-[#1E293B] p-2 rounded-xl shadow-sm border border-slate-100 dark:border-[#334155]">
                    <Flag className="text-[#3B82F6]" size={20} strokeWidth={2.5}/>
                  </div>
-                 <h3 className="font-[900] text-[#0F172A] text-lg">Metas (Longo Prazo)</h3>
+                 <h3 className="font-[900] text-[#0F172A] dark:text-white text-lg">Metas (Longo Prazo)</h3>
               </div>
               <div className="text-right hidden sm:block">
                  <span className="font-bold text-[#3B82F6]">{formatCurrency(totalMeta)}</span>
-                 <span className="text-[#94A3B8] text-sm font-medium"> / {formatCurrency(totalMetaObjetivo)}</span>
+                 <span className="text-[#94A3B8] dark:text-[#94A3B8] text-sm font-medium"> / {formatCurrency(totalMetaObjetivo)}</span>
               </div>
            </div>
-           <div className="p-6 bg-[#F8FAFC]/50 rounded-b-[24px]">
+           <div className="p-6 bg-[#F8FAFC] dark:bg-[#020817]/40 rounded-b-[24px]">
               {metas.length === 0 ? (
-                  <div className="text-center text-[#94A3B8] font-bold py-8">
+                  <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-8">
                     Nenhuma meta detalhada ainda.
                   </div>
               ) : (
@@ -798,13 +810,13 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setIsCofreModalOpen(false)}
-              className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" 
+              className="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-[2px]" 
             />
             <motion.div 
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-[460px] bg-white rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden"
+              className="relative w-full max-w-[460px] bg-white dark:bg-[#1E293B] rounded-[24px] shadow-[0_20px_60px_rgba(0,0,0,0.15)] overflow-hidden"
             >
               <div className="p-7">
                 <div className="flex items-center justify-between mb-8">
@@ -814,11 +826,11 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                     }`}>
                       {cofreType === 'reserva' ? <Shield size={22} strokeWidth={2.5} /> : cofreType === 'provisao' ? <CalendarDays size={22} strokeWidth={2.5} /> : <Flag size={22} strokeWidth={2.5} />}
                     </div>
-                    <h2 className="text-[20px] font-black text-[#0F172A]">
+                    <h2 className="text-[20px] font-black text-[#0F172A] dark:text-white">
                       {cofreType === 'reserva' ? (editingCofreId ? 'Editar Reserva' : 'Reserva de Emergência') : cofreType === 'provisao' ? (editingCofreId ? 'Editar Provisão' : 'Nova Provisão') : (editingCofreId ? 'Editar Meta' : 'Meta de Longo Prazo')}
                     </h2>
                   </div>
-                  <button onClick={() => setIsCofreModalOpen(false)} className="text-[#64748B] hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer">
+                  <button onClick={() => setIsCofreModalOpen(false)} className="text-[#64748B] dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors cursor-pointer">
                     <X size={20} strokeWidth={3} />
                   </button>
                 </div>
@@ -829,7 +841,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                       <button 
                         onClick={() => setCofrePaymentType('mensal')}
                         className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
-                          cofrePaymentType === 'mensal' ? 'bg-[#EFF6FF] text-[#3B82F6] border-[1.5px] border-[#3B82F6] shadow-[0_2px_8px_rgba(59,130,246,0.2)]' : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                          cofrePaymentType === 'mensal' ? 'bg-[#EFF6FF] text-[#3B82F6] border-[1.5px] border-[#3B82F6] shadow-[0_2px_8px_rgba(59,130,246,0.2)]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                         }`}
                       >
                         Mensal
@@ -837,7 +849,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                       <button 
                         onClick={() => setCofrePaymentType('anual')}
                         className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
-                          cofrePaymentType === 'anual' ? 'bg-[#EFF6FF] text-[#3B82F6] border-[1.5px] border-[#3B82F6] shadow-[0_2px_8px_rgba(59,130,246,0.2)]' : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                          cofrePaymentType === 'anual' ? 'bg-[#EFF6FF] text-[#3B82F6] border-[1.5px] border-[#3B82F6] shadow-[0_2px_8px_rgba(59,130,246,0.2)]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                         }`}
                       >
                         Anual
@@ -847,26 +859,26 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
 
                   {/* NOME */}
                   <div>
-                    <label className="block text-[11px] font-extrabold text-[#64748B] mb-2 uppercase tracking-wider">Nome</label>
+                    <label className="block text-[11px] font-extrabold text-[#64748B] dark:text-[#94A3B8] mb-2 uppercase tracking-wider">Nome</label>
                     <input 
                       type="text" 
                       value={cofreName}
                       onChange={e => setCofreName(e.target.value)}
                       placeholder={cofreType === 'reserva' ? 'Ex: Caixa Rápido' : cofreType === 'provisao' ? 'Ex: IPVA' : 'Ex: Viagem Europa'}
-                      className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-[14px] px-5 py-4 text-[15px] font-bold text-[#0F172A] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-[14px] px-5 py-4 text-[15px] font-bold text-[#0F172A] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                       autoFocus
                     />
                   </div>
 
                   {/* LOCAL */}
                   <div>
-                    <label className="block text-[11px] font-extrabold text-[#64748B] mb-2 uppercase tracking-wider">Local/Banco</label>
+                    <label className="block text-[11px] font-extrabold text-[#64748B] dark:text-[#94A3B8] mb-2 uppercase tracking-wider">Local/Banco</label>
                     <input 
                       type="text" 
                       value={cofreLocal}
                       onChange={e => setCofreLocal(e.target.value)}
                       placeholder="Ex: Caixinha Nubank"
-                      className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-[14px] px-5 py-4 text-[15px] font-bold text-[#0F172A] placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
+                      className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-[14px] px-5 py-4 text-[15px] font-bold text-[#0F172A] dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all"
                     />
                   </div>
                 </div>
@@ -874,7 +886,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                 <div className="mt-8 flex gap-3">
                   <button 
                     onClick={() => setIsCofreModalOpen(false)}
-                    className="flex-1 px-4 py-4 rounded-[14px] border border-[#E2E8F0] text-[#64748B] font-bold hover:bg-slate-50 transition-colors"
+                    className="flex-1 px-4 py-4 rounded-[14px] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] font-bold hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
                   >
                     Cancelar
                   </button>
@@ -909,12 +921,12 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-[480px] bg-white rounded-[24px] shadow-2xl overflow-hidden flex flex-col"
+              className="relative w-full max-w-[480px] bg-white dark:bg-[#1E293B] rounded-[24px] shadow-2xl overflow-hidden flex flex-col"
             >
               <div className="p-7 flex flex-col items-center">
                 <div className="w-full flex justify-between items-center mb-5 relative">
-                  <h2 className="text-[18px] font-black text-[#0F172A] w-full text-center uppercase tracking-tight">{selectedCofre.name}</h2>
-                  <button onClick={closeTransactionModal} className="absolute right-0 top-1/2 -translate-y-1/2 text-[#64748B] hover:bg-slate-100 p-2 rounded-full transition-colors cursor-pointer">
+                  <h2 className="text-[18px] font-black text-[#0F172A] dark:text-white w-full text-center uppercase tracking-tight">{selectedCofre.name}</h2>
+                  <button onClick={closeTransactionModal} className="absolute right-0 top-1/2 -translate-y-1/2 text-[#64748B] dark:text-[#94A3B8] hover:bg-slate-100 dark:hover:bg-slate-800 p-2 rounded-full transition-colors cursor-pointer">
                     <X size={20} strokeWidth={3} />
                   </button>
                 </div>
@@ -923,7 +935,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                   <button 
                     onClick={() => setOperationMode('aportar')}
                     className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
-                      operationMode === 'aportar' ? 'bg-[#DCFCE7] text-[#16A34A] border-[1.5px] border-[#16A34A] shadow-[0_2px_8px_rgba(22,163,74,0.2)]' : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                      operationMode === 'aportar' ? 'bg-[#DCFCE7] dark:bg-green-900/20 text-[#16A34A] dark:text-green-400 border-[1.5px] border-[#16A34A] dark:border-green-500/50 shadow-[0_2px_8px_rgba(22,163,74,0.2)]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                     }`}
                   >
                     Aportar (Guardar)
@@ -931,7 +943,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                   <button 
                     onClick={() => setOperationMode('resgatar')}
                     className={`flex-1 flex items-center justify-center gap-2 rounded-[100px] py-[8px] px-[16px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
-                      operationMode === 'resgatar' ? 'bg-[#FEE2E2] text-[#EF4444] border-[1.5px] border-[#EF4444] shadow-[0_2px_8px_rgba(239,68,68,0.2)]' : 'bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]'
+                      operationMode === 'resgatar' ? 'bg-[#FEE2E2] dark:bg-red-900/20 text-[#EF4444] dark:text-red-400 border-[1.5px] border-[#EF4444] dark:border-red-500/50 shadow-[0_2px_8px_rgba(239,68,68,0.2)]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
                     }`}
                   >
                     Resgatar (Tirar)
@@ -942,23 +954,23 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                 {selectedCofre.type !== 'provisao' && (
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col items-center">
-                      <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
+                      <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
                       <input 
                         type="text" 
                         value={inputValue}
                         onChange={(e) => handleGenericCurrencyChange(e, setInputValue)}
                         placeholder="0,00"
-                        className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                        className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                       />
                     </div>
                     <div className="flex flex-col items-center">
-                      <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Objetivo Total (R$)</label>
+                      <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Objetivo Total (R$)</label>
                       <input 
                         type="text" 
                         value={objetivoValue}
                         onChange={(e) => handleGenericCurrencyChange(e, setObjetivoValue)}
                         placeholder="0,00"
-                        className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                        className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                       />
                     </div>
                   </div>
@@ -968,35 +980,35 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col items-center">
-                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
+                        <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
                         <input 
                           type="text" 
                           value={inputValue}
                           onChange={(e) => handleGenericCurrencyChange(e, setInputValue)}
                           placeholder="0,00"
-                          className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                          className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                         />
                       </div>
                       <div className="flex flex-col items-center">
-                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Valor da Parcela (R$)</label>
+                        <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor da Parcela (R$)</label>
                         <input 
                           type="text" 
                           value={parcelaValue}
                           onChange={(e) => handleGenericCurrencyChange(e, setParcelaValue)}
                           placeholder="0,00"
-                          className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                          className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                         />
                       </div>
                     </div>
                     <div className="px-12">
                       <div className="flex flex-col items-center">
-                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Duração (Meses)</label>
+                        <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Duração (Meses)</label>
                         <input 
                           type="text" 
                           value={duracaoValue}
                           onChange={(e) => setDuracaoValue(e.target.value.replace(/\D/g, ''))}
                           placeholder="12"
-                          className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                          className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                         />
                       </div>
                     </div>
@@ -1007,34 +1019,34 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       <div className="flex flex-col items-center">
-                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
+                        <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
                         <input 
                           type="text" 
                           value={inputValue}
                           onChange={(e) => handleGenericCurrencyChange(e, setInputValue)}
                           placeholder="0,00"
-                          className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                          className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                         />
                       </div>
                       <div className="flex flex-col items-center">
-                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Valor Total (R$)</label>
+                        <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor Total (R$)</label>
                         <input 
                           type="text" 
                           value={objetivoValue}
                           onChange={(e) => handleGenericCurrencyChange(e, setObjetivoValue)}
                           placeholder="0,00"
-                          className="w-full border-2 border-[#E2E8F0] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1]"
+                          className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center py-3 text-[18px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all placeholder:text-[#CBD5E1] dark:text-[#94A3B8]"
                         />
                       </div>
                     </div>
                     <div className="px-4">
                       <div className="flex flex-col items-center">
-                        <label className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-2">Vencimento</label>
+                        <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Vencimento</label>
                         <input 
                           type="month" 
                           value={vencimentoValue}
                           onChange={(e) => setVencimentoValue(e.target.value)}
-                          className="w-full border-2 border-[#E2E8F0] rounded-full text-center px-4 py-3 text-[16px] font-black text-[#0F172A] focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all uppercase"
+                          className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-full text-center px-4 py-3 text-[16px] font-black text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-4 focus:ring-[#3B82F6]/10 transition-all uppercase"
                         />
                       </div>
                     </div>
@@ -1047,15 +1059,15 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                   const novoSaldoNumber = currentSaldoNumber + (operationMode === 'aportar' ? valChangeNumber : -valChangeNumber);
                   
                   return (
-                    <div className="bg-[#F8FAFC] rounded-[16px] p-4 flex items-center justify-center gap-6 border border-[#E2E8F0]/80">
+                    <div className="bg-[#F8FAFC] dark:bg-[#0F172A] rounded-[16px] p-4 flex items-center justify-center gap-6 border border-[#E2E8F0] dark:border-[#334155]/80">
                       <div className="text-center">
-                        <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-1">Saldo Atual</p>
-                        <p className="text-[16px] font-black text-[#0F172A]">{formatCurrency(currentSaldoNumber)}</p>
+                        <p className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Saldo Atual</p>
+                        <p className="text-[16px] font-black text-[#0F172A] dark:text-white">{formatCurrency(currentSaldoNumber)}</p>
                       </div>
-                      <ArrowRight size={20} className="text-[#CBD5E1]" />
+                      <ArrowRight size={20} className="text-[#CBD5E1] dark:text-[#94A3B8]" />
                       <div className="text-center">
-                        <p className="text-[10px] font-black text-[#94A3B8] uppercase tracking-wider mb-1">Novo Saldo</p>
-                        <p className={`text-[16px] font-black ${novoSaldoNumber < 0 ? 'text-[#EF4444]' : 'text-[#0F172A]'}`}>{formatCurrency(novoSaldoNumber)}</p>
+                        <p className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Novo Saldo</p>
+                        <p className={`text-[16px] font-black ${novoSaldoNumber < 0 ? 'text-[#EF4444] dark:text-red-400' : 'text-[#0F172A] dark:text-white'}`}>{formatCurrency(novoSaldoNumber)}</p>
                       </div>
                     </div>
                   );
@@ -1064,7 +1076,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                 <div className="flex gap-3 w-full mt-2">
                   <button 
                     onClick={closeTransactionModal}
-                    className="flex-1 py-4 rounded-[16px] font-bold text-[#64748B] hover:bg-[#F1F5F9] transition-colors"
+                    className="flex-1 py-4 rounded-[16px] font-bold text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors"
                   >
                     CANCELAR
                   </button>
@@ -1099,20 +1111,20 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative w-full max-w-[400px] bg-white rounded-[24px] shadow-2xl overflow-hidden flex flex-col p-7 items-center text-center"
+              className="relative w-full max-w-[400px] bg-white dark:bg-[#1E293B] rounded-[24px] shadow-2xl overflow-hidden flex flex-col p-7 items-center text-center"
             >
               <div className="h-14 w-14 rounded-full bg-red-100 flex items-center justify-center mb-4">
-                <RotateCw size={28} className="text-[#EF4444]" strokeWidth={2.5} />
+                <RotateCw size={28} className="text-[#EF4444] dark:text-red-400" strokeWidth={2.5} />
               </div>
-              <h3 className="text-[18px] font-black text-[#0F172A] mb-2 uppercase tracking-tight">Resetar Já Utilizado?</h3>
-              <p className="text-[#64748B] text-[14px] leading-relaxed mb-6">
+              <h3 className="text-[18px] font-black text-[#0F172A] dark:text-white mb-2 uppercase tracking-tight">Resetar Já Utilizado?</h3>
+              <p className="text-[#64748B] dark:text-[#94A3B8] text-[14px] leading-relaxed mb-6">
                 Você tem certeza que deseja resetar os meses utilizados do cofre <strong>{resetCofre.name}</strong> para zero?
               </p>
               
               <div className="flex gap-3 w-full">
                 <button 
                   onClick={() => setResetCofre(null)}
-                  className="flex-1 py-3 rounded-[14px] font-bold text-[#64748B] hover:bg-[#F1F5F9] transition-colors"
+                  className="flex-1 py-3 rounded-[14px] font-bold text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors"
                 >
                   CANCELAR
                 </button>

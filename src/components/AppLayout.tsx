@@ -21,7 +21,7 @@ import {
   Coffee, Rocket, Award, Target, Zap, Globe, Landmark, PiggyBank,
   DollarSign, GraduationCap, Baby, Dog, Car, Plane, Gamepad2,
   Camera, Gift, Music, Book, Repeat, Banknote, CreditCard,
-  LineChart, PieChart, Activity
+  LineChart, PieChart, Activity, Menu, X, Sun, Moon
 } from 'lucide-react';
 import { Page } from '../types';
 import { SupabaseProfile } from '../hooks/useProfiles';
@@ -56,20 +56,34 @@ export default function AppLayout({
   selectedGame
 }: AppLayoutProps) {
   
-  const { logout } = useAuth();
   const [isProfileOpen, setIsProfileOpen] = React.useState(false);
-  const [isSettingsOpen, setIsSettingsOpen] = React.useState(false);
-  const dropdownRef = React.useRef<HTMLDivElement>(null);
-  const settingsRef = React.useRef<HTMLDivElement>(null);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  
+  const [isDarkMode, setIsDarkMode] = React.useState(false);
 
-  const handleLogout = async () => {
-    setIsSettingsOpen(false);
-    try {
-      await logout();
-    } catch (err) {
-      console.error("Erro ao fazer logout:", err);
+  React.useEffect(() => {
+    // Check initial preference from localStorage or system
+    const isDark = localStorage.getItem('darkMode') === 'true' || 
+                   (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDarkMode(isDark);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem('darkMode', newMode.toString());
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
     }
   };
+  const dropdownRef = React.useRef<HTMLDivElement>(null);
   
   const [pendingRecorrentesCount, setPendingRecorrentesCount] = useState(0);
 
@@ -150,99 +164,67 @@ export default function AppLayout({
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsProfileOpen(false);
       }
-      if (settingsRef.current && !settingsRef.current.contains(event.target as Node)) {
-        setIsSettingsOpen(false);
-      }
     }
     document.addEventListener("click", handleClickOutside);
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
   
-  const menuItems = [
-    ...(activeProfile?.enable_sistema_financeiro !== false ? [
-      ...(activeProfile?.financeiro_show_dashboard !== false ? [{ id: 'dashboard' as Page, icon: LayoutDashboard }] : []),
-      ...(activeProfile?.financeiro_show_transacoes !== false ? [{ id: 'transactions' as Page, icon: Wallet }] : []),
-      ...(activeProfile?.financeiro_show_cartoes !== false ? [{ id: 'cartoes' as Page, icon: CreditCard }] : []),
-      ...(activeProfile?.financeiro_show_transacoes_recorrentes !== false ? [{ id: 'recorrentes' as Page, icon: Repeat, badge: pendingRecorrentesCount }] : []),
-      ...(activeProfile?.financeiro_show_relatorios !== false ? [{ id: 'relatorios' as Page, icon: BarChart2 }] : []),
-      ...(activeProfile?.financeiro_show_categorias !== false ? [{ id: 'categories' as Page, icon: Tag }] : []),
+  const financeiroItems = activeProfile?.enable_sistema_financeiro !== false ? [
+    ...(activeProfile?.financeiro_show_dashboard !== false ? [{ id: 'dashboard' as Page, icon: LayoutDashboard, title: 'Dashboard' }] : []),
+    ...(activeProfile?.financeiro_show_transacoes !== false ? [{ id: 'transactions' as Page, icon: Wallet, title: 'Transações' }] : []),
+    ...(activeProfile?.financeiro_show_cartoes !== false ? [{ id: 'cartoes' as Page, icon: CreditCard, title: 'Cartões' }] : []),
+    ...(activeProfile?.financeiro_show_transacoes_recorrentes !== false ? [{ id: 'recorrentes' as Page, icon: Repeat, badge: pendingRecorrentesCount, title: 'Recorrentes' }] : []),
+    ...(activeProfile?.financeiro_show_relatorios !== false ? [{ id: 'relatorios' as Page, icon: BarChart2, title: 'Relatórios' }] : []),
+    ...(activeProfile?.financeiro_show_categorias !== false ? [{ id: 'categories' as Page, icon: Tag, title: 'Categorias' }] : []),
+  ] : [];
+
+  const investimentosItems = activeProfile?.investimentos_ativo === true ? [
+    ...(activeProfile?.investimentos_show_dashboard !== false ? [{ id: 'investimentos' as Page, icon: PieChart, title: 'Painel' }] : []),
+    ...(activeProfile?.investimentos_show_ativos !== false ? [{ id: 'investimentos_ativos' as Page, icon: Activity, title: 'Ativos' }] : []),
+    ...(activeProfile?.investimentos_show_operacoes !== false ? [{ id: 'investimentos_cofres' as Page, icon: Shield, title: 'Reserva' }] : [])
+  ] : [];
+
+  const gameItems = activeProfile?.game_ativo === true ? [
+    { id: 'game' as Page, icon: Gamepad2, title: 'Jogos' },
+    ...((selectedGame === 'cr' && activeProfile?.game_show_clash_royale !== false) ? [
+      { id: 'cr_profile' as Page, icon: Crown, title: 'Dados' },
+      { id: 'cr_cards' as Page, icon: Book, title: 'Cartas' },
+      { id: 'cr_badges' as Page, icon: Award, title: 'Emblemas' }
     ] : []),
-    ...(activeProfile?.investimentos_ativo === true ? [
-      ...(activeProfile?.investimentos_show_dashboard !== false ? [{ id: 'investimentos' as Page, icon: PieChart }] : []),
-      ...(activeProfile?.investimentos_show_ativos !== false ? [{ id: 'investimentos_ativos' as Page, icon: Activity }] : []),
-      ...(activeProfile?.investimentos_show_operacoes !== false ? [{ id: 'investimentos_cofres' as Page, icon: Shield }] : [])
+    ...((selectedGame === 'bs' && activeProfile?.game_show_brawl_stars !== false) ? [
+      { id: 'bs_profile' as Page, icon: Star, title: 'Dados' },
+      { id: 'bs_brawlers' as Page, icon: Users, title: 'Brawlers' },
     ] : []),
-    ...(activeProfile?.game_ativo === true ? [
-      { id: 'game' as Page, icon: Gamepad2, title: 'Game' },
-      ...(selectedGame === 'cr' ? [
-        { id: 'cr_profile' as Page, icon: Crown, title: 'Perfil CR' },
-        { id: 'cr_cards' as Page, icon: Book, title: 'Cartas CR' },
-        { id: 'cr_badges' as Page, icon: Award, title: 'Emblemas CR' }
-      ] : []),
-      ...(selectedGame === 'bs' ? [
-        { id: 'bs_profile' as Page, icon: Star, title: 'Perfil BS' },
-        { id: 'bs_brawlers' as Page, icon: Users, title: 'Brawlers' },
-      ] : []),
-    ] : [])
-  ];
+  ] : [];
+
+  const menuGroups = [
+    { id: 'financeiro', title: 'FINANCEIRO', items: financeiroItems },
+    { id: 'investimentos', title: 'Investimentos', items: investimentosItems },
+    { id: 'game', title: 'Game', items: gameItems },
+  ].filter(g => g.items.length > 0);
 
   return (
-    <div className="flex flex-col h-screen bg-[#F0F2F5] overflow-hidden font-sans">
-      <header className="h-[60px] bg-white border-b border-[#E5E7EB] flex items-center justify-between px-6 z-40 shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="text-[#2563EB]">
+    <div className="flex flex-col h-screen bg-[#F0F2F5] dark:bg-[#0F172A] overflow-hidden font-sans">
+      <header className="h-[60px] bg-white dark:bg-[#1E293B] border-b border-[#E5E7EB] dark:border-[#334155] flex items-center justify-between px-3 md:px-6 z-50 shrink-0 relative transition-colors duration-300">
+        <div className="flex items-center gap-2 md:gap-3">
+          <button 
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-1.5 rounded-xl text-[#2563EB] dark:text-[#3B82F6] hover:bg-blue-50 dark:hover:bg-[#0F172A] transition-colors"
+          >
+            {isMobileMenuOpen ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
+          </button>
+          <div className="text-[#2563EB] dark:text-[#3B82F6]">
              <Wallet size={24} fill="currentColor" fillOpacity={0.1} />
           </div>
-          <h1 className="text-lg font-bold text-[#111827] tracking-tight">A Jornada</h1>
+          <h1 className="text-base md:text-lg font-bold text-[#111827] dark:text-white tracking-tight truncate max-w-[120px] sm:max-w-none">A Jornada</h1>
         </div>
 
-        <div className="flex items-center gap-5">
-          {/* SYSTEM INDICATORS */}
-          {activeProfile && (
-            <div className="flex items-center gap-2 pr-4 border-r border-[#E5E7EB]">
-              {/* Indicador de Sistema Financeiro */}
-              <button
-                onClick={async () => {
-                  const newValue = activeProfile.enable_sistema_financeiro === false;
-                  await updateProfileModules(activeProfile.id, { enable_sistema_financeiro: newValue });
-                }}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer hover:bg-gray-50`}
-                title={activeProfile.enable_sistema_financeiro !== false ? "Desativar Sistema Financeiro" : "Ativar Sistema Financeiro"}
-              >
-                <Banknote size={18} strokeWidth={2} className={activeProfile.enable_sistema_financeiro !== false ? 'text-[#2563EB]' : 'text-[#94A3B8]'} />
-              </button>
-
-              {/* Indicador de Sistema de Investimentos */}
-              <button
-                onClick={async () => {
-                  const newValue = !activeProfile.investimentos_ativo;
-                  await updateProfileModules(activeProfile.id, { investimentos_ativo: newValue });
-                }}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer hover:bg-gray-50`}
-                title={activeProfile.investimentos_ativo ? "Desativar Sistema de Investimentos" : "Ativar Sistema de Investimentos"}
-              >
-                <TrendingUp size={18} strokeWidth={2} className={activeProfile.investimentos_ativo ? 'text-[#16A34A]' : 'text-[#94A3B8]'} />
-              </button>
-
-              {/* Indicador de Sistema Game */}
-              <button
-                onClick={async () => {
-                  const newValue = !activeProfile.game_ativo;
-                  await updateProfileModules(activeProfile.id, { game_ativo: newValue });
-                }}
-                className={`p-1.5 rounded-lg transition-colors cursor-pointer hover:bg-gray-50`}
-                title={activeProfile.game_ativo ? "Desativar Sistema Game" : "Ativar Sistema Game"}
-              >
-                <Gamepad2 size={18} strokeWidth={2} className={activeProfile.game_ativo ? 'text-[#8B5CF6]' : 'text-[#94A3B8]'} />
-              </button>
-            </div>
-          )}
-
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-5">
           {/* PROFILE SELECTOR REFINED */}
-          <div className="relative pr-2 border-r border-[#E5E7EB]" ref={dropdownRef}>
+          <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-2 py-1 px-2 rounded-full hover:bg-gray-50 transition-all cursor-pointer group"
+              className="flex items-center gap-2 py-1 px-2 rounded-full hover:bg-gray-50 dark:hover:bg-[#334155] transition-all cursor-pointer group"
             >
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-105"
@@ -254,9 +236,9 @@ export default function AppLayout({
                  })()}
               </div>
               <div className="flex flex-col items-start leading-tight">
-                <span className="text-[13px] font-bold text-[#0F172A]">{activeProfile?.name || 'Selecione'}</span>
+                <span className="text-[13px] font-bold text-[#0F172A] dark:text-white">{activeProfile?.name || 'Selecione'}</span>
               </div>
-              <ChevronDown size={14} className={`text-[#6B7280] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+              <ChevronDown size={14} className={`text-[#6B7280] dark:text-[#94A3B8] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -265,9 +247,9 @@ export default function AppLayout({
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-3 w-56 bg-white rounded-xl shadow-2xl border border-[#E2E8F0] p-2 z-[999]"
+                  className="absolute right-0 mt-3 w-56 bg-white dark:bg-[#1E293B] rounded-xl shadow-2xl border border-[#E2E8F0] dark:border-[#334155] p-2 z-[999]"
                 >
-                  <p className="px-3 py-2 text-[10px] font-bold text-[#9CA3AF] uppercase tracking-widest">Alternar Perfil</p>
+                  <p className="px-3 py-2 text-[10px] font-bold text-[#9CA3AF] dark:text-[#64748B] uppercase tracking-widest">Alternar Perfil</p>
                   <div className="max-h-[240px] overflow-y-auto space-y-1 custom-scrollbar">
                     {profiles.map(p => {
                       const ProfileIcon = p.icone ? PROFILE_ICONS[p.icone] || User : User;
@@ -279,7 +261,7 @@ export default function AppLayout({
                             setIsProfileOpen(false);
                           }}
                           className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                            p.is_active ? 'bg-[#EFF6FF]' : 'hover:bg-[#F8FAFC]'
+                            p.is_active ? 'bg-[#EFF6FF] dark:bg-[#1E3A8A]' : 'hover:bg-[#F8FAFC] dark:hover:bg-[#334155]'
                           }`}
                         >
                           <div 
@@ -292,96 +274,137 @@ export default function AppLayout({
                             <ProfileIcon size={16} />
                           </div>
                           <span className={`text-[13px] font-medium truncate flex-1 text-left ${
-                            p.is_active ? 'text-[#2563EB]' : 'text-[#0F172A]'
+                            p.is_active ? 'text-[#2563EB] dark:text-[#60A5FA]' : 'text-[#0F172A] dark:text-[#E2E8F0]'
                           }`}>
                             {p.name}
                           </span>
-                          {p.is_active && <CheckCircle2 size={16} className="text-[#2563EB]" />}
+                          {p.is_active && <CheckCircle2 size={16} className="text-[#2563EB] dark:text-[#60A5FA]" />}
                         </button>
                       );
                     })}
                   </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
-          <div className="relative" ref={settingsRef}>
-            <button 
-              onClick={() => setIsSettingsOpen(!isSettingsOpen)}
-              className="text-[#6B7280] hover:text-[#2563EB] transition-colors cursor-pointer p-1.5 rounded-lg hover:bg-gray-50"
-            >
-              <Settings size={18} />
-            </button>
-
-            <AnimatePresence>
-              {isSettingsOpen && (
-                <motion.div 
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-3 w-[180px] bg-white rounded-[10px] shadow-[0_8px_24px_rgba(0,0,0,0.10)] border border-[#E2E8F0] p-[6px] z-[999]"
-                >
+                  <div className="my-1 border-t border-[#E2E8F0] dark:border-[#334155]" />
                   <button 
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onPageChange('profiles');
-                      setIsSettingsOpen(false);
+                      setIsProfileOpen(false);
                     }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium text-[#2563EB] hover:bg-[#EFF6FF] transition-colors cursor-pointer"
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-[13px] font-medium text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#334155] transition-colors cursor-pointer"
                   >
-                    <UserPlus size={15} className="text-[#2563EB]" />
-                    Novo Perfil
-                  </button>
-                  <div className="my-[6px] border-t border-[#E2E8F0]" />
-                  <button 
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleLogout();
-                    }}
-                    className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] text-[#EF4444] hover:bg-[#FEF2F2] transition-colors cursor-pointer"
-                  >
-                    <LogOut size={15} className="text-[#EF4444]" />
-                    Sair
+                    <Settings size={15} />
+                    Configurações
                   </button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-full hover:bg-gray-100 transition-colors text-gray-600 dark:text-gray-300 dark:hover:bg-gray-800"
+            title="Alternar Modo Escuro"
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
-        <aside className="w-[64px] bg-white border-r border-[#E5E7EB] flex flex-col items-center py-4 z-30 shrink-0">
-          <div className="flex-1 w-full flex flex-col items-center gap-3">
-            {menuItems.map((item) => {
-              const isActive = activePage === item.id;
-              return (
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Mobile menu overlay */}
+        {isMobileMenuOpen && (
+          <div 
+            className="fixed inset-0 bg-[#0F172A]/20 backdrop-blur-sm z-30" 
+            onClick={() => setIsMobileMenuOpen(false)} 
+          />
+        )}
+
+        <aside className={`fixed inset-y-0 left-0 top-[60px] w-[200px] bg-white dark:bg-[#1E293B] border-r border-[#E5E7EB] dark:border-[#334155] flex flex-col items-start py-4 z-40 shrink-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+          <div className="flex flex-col w-full pb-8">
+            {/* SYSTEM INDICATORS (SIDEBAR) */}
+            {activeProfile && (
+              <div className="flex items-center justify-center gap-3 w-full px-4 mb-4 pb-4 border-b border-[#E5E7EB] dark:border-[#334155] shrink-0">
                 <button
-                  key={item.id}
-                  onClick={() => onPageChange(item.id)}
-                  title={item.title || item.id}
-                  className={`relative flex items-center justify-center transition-all duration-200 ease-in-out w-[40px] h-[40px] rounded-full ${
-                    isActive 
-                      ? 'bg-[#3B82F6] text-[#FFFFFF] shadow-sm' 
-                      : 'bg-transparent text-[#94A3B8] hover:bg-[#F1F5F9] hover:text-[#4B5563]'
-                  }`}
+                  onClick={async () => {
+                    const newValue = activeProfile.enable_sistema_financeiro === false;
+                    await updateProfileModules(activeProfile.id, { enable_sistema_financeiro: newValue });
+                  }}
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${activeProfile.enable_sistema_financeiro !== false ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40' : 'bg-gray-50 dark:bg-[#0F172A] hover:bg-gray-100 dark:hover:bg-[#334155]'}`}
+                  title={activeProfile.enable_sistema_financeiro !== false ? "Desativar Sistema Financeiro" : "Ativar Sistema Financeiro"}
                 >
-                  <item.icon size={20} strokeWidth={isActive ? 2 : 1.5} />
-                  {item.badge !== undefined && item.badge > 0 && (
-                    <span className="absolute top-[-2px] right-[-2px] w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white">
-                      {item.badge}
-                    </span>
-                  )}
+                  <Banknote size={20} strokeWidth={2} className={activeProfile.enable_sistema_financeiro !== false ? 'text-[#2563EB] dark:text-[#3B82F6]' : 'text-[#94A3B8] dark:text-[#64748B]'} />
                 </button>
-              );
-            })}
+
+                <button
+                  onClick={async () => {
+                    const newValue = !activeProfile.investimentos_ativo;
+                    await updateProfileModules(activeProfile.id, { investimentos_ativo: newValue });
+                  }}
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${activeProfile.investimentos_ativo ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40' : 'bg-gray-50 dark:bg-[#0F172A] hover:bg-gray-100 dark:hover:bg-[#334155]'}`}
+                  title={activeProfile.investimentos_ativo ? "Desativar Sistema de Investimentos" : "Ativar Sistema de Investimentos"}
+                >
+                  <TrendingUp size={20} strokeWidth={2} className={activeProfile.investimentos_ativo ? 'text-[#16A34A] dark:text-[#22C55E]' : 'text-[#94A3B8] dark:text-[#64748B]'} />
+                </button>
+
+                <button
+                  onClick={async () => {
+                    const newValue = !activeProfile.game_ativo;
+                    await updateProfileModules(activeProfile.id, { game_ativo: newValue });
+                  }}
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${activeProfile.game_ativo ? 'bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40' : 'bg-gray-50 dark:bg-[#0F172A] hover:bg-gray-100 dark:hover:bg-[#334155]'}`}
+                  title={activeProfile.game_ativo ? "Desativar Sistema Game" : "Ativar Sistema Game"}
+                >
+                  <Gamepad2 size={20} strokeWidth={2} className={activeProfile.game_ativo ? 'text-[#8B5CF6] dark:text-[#A855F7]' : 'text-[#94A3B8] dark:text-[#64748B]'} />
+                </button>
+              </div>
+            )}
+
+            {menuGroups.map(group => (
+              <div key={group.id} className="mb-6 w-full px-4">
+                <h3 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3 text-center">
+                  {group.title}
+                </h3>
+                <div className="grid grid-cols-2 gap-2">
+                  {group.items.map(item => {
+                    const isActive = activePage === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => {
+                          onPageChange(item.id);
+                          setIsMobileMenuOpen(false); // Close sidebar when a page is selected
+                        }}
+                        title={item.title || item.id}
+                        className="relative mx-auto flex flex-col items-center justify-start w-full group py-1"
+                      >
+                        <div className={`w-[48px] h-[48px] mb-1.5 rounded-full flex items-center justify-center transition-all duration-200 ease-in-out ${
+                          isActive 
+                            ? 'bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] dark:text-[#60A5FA] shadow-sm ring-1 ring-[#BFDBFE] dark:ring-[#2563EB]' 
+                            : 'bg-transparent text-[#64748B] dark:text-[#94A3B8] group-hover:bg-[#F8FAFC] dark:group-hover:bg-[#334155] group-hover:text-[#0F172A] dark:group-hover:text-white'
+                        }`}>
+                          <item.icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
+                        </div>
+                        <span className={`text-[10px] font-medium leading-tight text-center px-1 transition-colors ${
+                          isActive ? 'text-[#2563EB] dark:text-[#60A5FA] font-bold' : 'text-[#64748B] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:group-hover:text-white'
+                        }`}>
+                          {item.title}
+                        </span>
+                        {item.badge !== undefined && item.badge > 0 && (
+                          <span className="absolute top-0 right-3 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white z-10">
+                            {item.badge}
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
         </aside>
 
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6 bg-[#F8FAFC]">
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 lg:p-6 bg-[#F8FAFC] dark:bg-[#0F172A]">
           <div className="max-w-7xl mx-auto">
             {children}
           </div>

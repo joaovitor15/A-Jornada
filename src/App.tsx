@@ -14,7 +14,7 @@ import { Page } from './types';
 import { AnimatePresence, motion } from 'motion/react';
 import { useProfiles } from './hooks/useProfiles';
 import { useAuth } from './hooks/useAuth';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ShieldAlert, EyeOff, Wrench } from 'lucide-react';
 
 import { RecorrentesPage } from './components/RecorrentesPage';
 import { RelatoriosPage } from './components/RelatoriosPage';
@@ -107,17 +107,23 @@ export default function App() {
   ) => {
     if (!isModuleActive) {
       return (
-        <div className="bg-white p-12 rounded-2xl border border-[#E2E8F0] shadow-sm text-center">
-          <h3 className="text-lg font-bold text-[#1E293B]">Módulo Desativado</h3>
-          <p className="text-[#64748B] mt-2">O {moduleName} está desativado para este perfil.</p>
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white p-8 rounded-3xl border border-[#E2E8F0] shadow-sm text-center">
+          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+            <ShieldAlert size={32} className="text-gray-400" />
+          </div>
+          <h3 className="text-xl font-bold text-[#1E293B] mb-2">Módulo Desativado</h3>
+          <p className="text-[#64748B] max-w-sm">O {moduleName} está desativado para este perfil. Ative-o na barra lateral para acessar.</p>
         </div>
       );
     }
     if (!isFeatureActive) {
       return (
-        <div className="bg-white p-12 rounded-2xl border border-[#E2E8F0] shadow-sm text-center">
-          <h3 className="text-lg font-bold text-[#1E293B]">Recurso Desativado</h3>
-          <p className="text-[#64748B] mt-2">A tela de {featureName} está desativada nas configurações do seu perfil.</p>
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white p-8 rounded-3xl border border-[#E2E8F0] shadow-sm text-center">
+          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+            <EyeOff size={32} className="text-gray-400" />
+          </div>
+          <h3 className="text-xl font-bold text-[#1E293B] mb-2">Página Oculta</h3>
+          <p className="text-[#64748B] max-w-sm">A tela de <strong>{featureName}</strong> foi ocultada nas configurações do seu perfil.</p>
         </div>
       );
     }
@@ -210,6 +216,7 @@ export default function App() {
           'Módulo Game',
           <GamePage 
             activeProfileId={activeProfile?.id} 
+            activeProfile={activeProfile}
             onPageChange={setActivePage}
             onSelectGame={setSelectedGame}
           />
@@ -256,9 +263,12 @@ export default function App() {
         );
       default:
         return (
-          <div className="bg-white p-12 rounded-2xl border border-[#E2E8F0] shadow-sm text-center">
-            <h3 className="text-xl font-bold text-[#1E293B]">Página em construção</h3>
-            <p className="text-[#64748B] mt-2">Esta funcionalidade será integrada ao Supabase em breve.</p>
+          <div className="flex flex-col items-center justify-center min-h-[400px] bg-white p-8 rounded-3xl border border-[#E2E8F0] shadow-sm text-center">
+            <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center mb-4">
+              <Wrench size={32} className="text-blue-500" />
+            </div>
+            <h3 className="text-xl font-bold text-[#1E293B] mb-2">Página em Construção</h3>
+            <p className="text-[#64748B] max-w-sm">Esta funcionalidade está sendo desenvolvida e logo estará disponível para você.</p>
           </div>
         );
     }
@@ -278,9 +288,17 @@ export default function App() {
         <motion.div
           key={activePage + (activeProfile?.id || 'none')}
           initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
+          animate={{ 
+            opacity: 1, 
+            y: 0,
+            transitionEnd: {
+              transform: 'none',
+              filter: 'none'
+            }
+          }}
           exit={{ opacity: 0, y: -10 }}
-          transition={{ duration: 0.2 }}
+          transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+          className="w-full"
         >
           {renderPage()}
         </motion.div>

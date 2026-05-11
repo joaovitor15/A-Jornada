@@ -112,7 +112,7 @@ export default function CRBadgesPage({ activeProfileId }: CRBadgesPageProps) {
     <div className="p-8 max-w-7xl mx-auto min-h-[calc(100vh-80px)]">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-3xl font-black text-slate-800 tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-black text-slate-800 dark:text-slate-200 tracking-tight flex items-center gap-3">
             <Award className="w-8 h-8 text-blue-500" />
             Emblemas da Conta
           </h1>
@@ -135,7 +135,7 @@ export default function CRBadgesPage({ activeProfileId }: CRBadgesPageProps) {
         <div className="flex flex-col gap-12">
           {legendaryBadges.length > 0 && (
             <div>
-              <h2 className="text-sm font-black text-slate-800 tracking-widest uppercase mb-8 flex items-center gap-2 border-b border-slate-200 pb-3">
+              <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 tracking-widest uppercase mb-8 flex items-center gap-2 border-b border-slate-200 dark:border-[#334155] pb-3">
                 <Award className="w-5 h-5 text-amber-500" /> Emblemas Lendários
               </h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-x-8 gap-y-12">
@@ -146,7 +146,7 @@ export default function CRBadgesPage({ activeProfileId }: CRBadgesPageProps) {
 
           {normalBadges.length > 0 && (
             <div>
-              <h2 className="text-sm font-black text-slate-800 tracking-widest uppercase mb-8 flex items-center gap-2 border-b border-slate-200 pb-3">
+              <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 tracking-widest uppercase mb-8 flex items-center gap-2 border-b border-slate-200 dark:border-[#334155] pb-3">
                 <Award className="w-5 h-5 text-blue-500" /> Emblemas
               </h2>
               <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-x-8 gap-y-12">

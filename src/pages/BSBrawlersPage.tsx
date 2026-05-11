@@ -40,8 +40,8 @@ export default function BSBrawlersPage({ activeProfileId }: GamePageProps) {
   }, [brawlers, sortBy]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-8 text-[#0F172A] font-sans">
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-4 border-b border-slate-200">
+    <div className="space-y-6 max-w-7xl mx-auto pb-8 text-[#0F172A] dark:text-white font-sans">
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between pb-4 border-b border-slate-200 dark:border-[#334155]">
          <h1 className="text-2xl font-black uppercase tracking-tight flex items-center gap-3">
            <Users className="text-[#F59E0B]" size={28} />
            Coleção de Brawlers
@@ -49,24 +49,24 @@ export default function BSBrawlersPage({ activeProfileId }: GamePageProps) {
          {brawlers.length > 0 && (
              <div className="flex items-center gap-3">
                {/* Controls Bar */}
-               <div className="flex items-center bg-white rounded-xl shadow-sm border border-slate-200 p-1">
+               <div className="flex items-center bg-white dark:bg-[#1E293B] rounded-xl shadow-sm border border-slate-200 dark:border-[#334155] p-1">
                  <button
                    onClick={() => setSortBy('trophies_desc')}
-                   className={`p-2 rounded-lg flex items-center justify-center transition-colors ${sortBy === 'trophies_desc' ? 'bg-[#F59E0B] text-white' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                   className={`p-2 rounded-lg flex items-center justify-center transition-colors ${sortBy === 'trophies_desc' ? 'bg-[#F59E0B] text-white' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#334155]'}`}
                    title="Mais Troféus"
                  >
                    <ArrowDown01 size={18} />
                  </button>
                  <button
                    onClick={() => setSortBy('trophies_asc')}
-                   className={`p-2 rounded-lg flex items-center justify-center transition-colors ${sortBy === 'trophies_asc' ? 'bg-[#F59E0B] text-white' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                   className={`p-2 rounded-lg flex items-center justify-center transition-colors ${sortBy === 'trophies_asc' ? 'bg-[#F59E0B] text-white' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#334155]'}`}
                    title="Menos Troféus"
                  >
                    <ArrowUp10 size={18} />
                  </button>
                  <button
                    onClick={() => setSortBy('name_asc')}
-                   className={`p-2 rounded-lg flex items-center justify-center transition-colors ${sortBy === 'name_asc' ? 'bg-[#F59E0B] text-white' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100'}`}
+                   className={`p-2 rounded-lg flex items-center justify-center transition-colors ${sortBy === 'name_asc' ? 'bg-[#F59E0B] text-white' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-[#334155]'}`}
                    title="Ordem Alfabética"
                  >
                    <ArrowDownAZ size={18} />
@@ -74,41 +74,41 @@ export default function BSBrawlersPage({ activeProfileId }: GamePageProps) {
                </div>
 
                {/* Legend / Tooltip */}
-               <div className="relative group flex items-center cursor-help bg-slate-100 p-2 rounded-full border border-slate-200 text-slate-500 hover:text-slate-700 hover:bg-slate-200 transition-colors">
+               <div className="relative group flex items-center cursor-help bg-slate-100 dark:bg-[#334155] p-2 rounded-full border border-slate-200 dark:border-[#334155] text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-[#475569] transition-colors">
                  <Info size={20} />
                  
-                 <div className="absolute right-0 top-full mt-2 w-64 bg-white rounded-xl shadow-xl border border-slate-200 p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                    <h4 className="font-black text-sm uppercase text-slate-800 mb-3 border-b border-slate-100 pb-2">Legenda Visual</h4>
+                 <div className="absolute left-1/2 -translate-x-1/2 sm:translate-x-0 sm:left-auto sm:right-0 top-full mt-2 w-64 bg-white dark:bg-[#1E293B] rounded-xl shadow-xl border border-slate-200 dark:border-[#334155] p-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <h4 className="font-black text-sm uppercase text-slate-800 dark:text-slate-200 mb-3 border-b border-slate-100 dark:border-[#334155] pb-2">Legenda Visual</h4>
                     <div className="space-y-3">
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center bg-yellow-400/20 px-1.5 py-0.5 rounded text-yellow-500 text-[10px] font-black border border-yellow-400/30 w-8 h-5"><Star size={10} className="fill-yellow-400 mr-0.5"/> 2</div>
-                        <span className="text-xs font-medium text-slate-600">Poder de Estrela</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-500">Poder de Estrela</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center bg-green-500/20 px-1.5 py-0.5 rounded text-green-500 text-[10px] font-black border border-green-500/30 w-8 h-5"><Puzzle size={10} className="mr-0.5"/> 1</div>
-                        <span className="text-xs font-medium text-slate-600">Acessórios</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-500">Acessórios</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center bg-blue-500/20 px-1.5 py-0.5 rounded text-blue-500 text-[10px] font-black border border-blue-500/30 w-8 h-5"><Settings size={10} className="mr-0.5"/> 2</div>
-                        <span className="text-xs font-medium text-slate-600">Engrenagens</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-500">Engrenagens</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center bg-fuchsia-500/20 px-1.5 py-0.5 rounded text-fuchsia-500 text-[10px] font-black border border-fuchsia-500/30 w-8 h-5"><Zap size={10} className="fill-fuchsia-400 mr-0.5"/> 1</div>
-                        <span className="text-xs font-medium text-slate-600">Hipercarga</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-500">Hipercarga</span>
                       </div>
-                      <div className="flex items-center gap-3 pt-1 border-t border-slate-100">
+                      <div className="flex items-center gap-3 pt-1 border-t border-slate-100 dark:border-[#334155]">
                         <div className="flex items-center justify-center bg-gradient-to-b from-orange-400 to-red-600 rounded text-white text-[10px] font-black border border-orange-300 w-8 h-5 shadow-sm"><Flame size={10} className="fill-yellow-300 text-yellow-300 mr-0.5"/> 5</div>
-                        <span className="text-xs font-medium text-slate-600">Vitórias (Máx)</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-500">Vitórias (Máx)</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="flex items-center justify-center bg-gradient-to-b from-green-400 to-emerald-600 rounded text-white text-[10px] font-black border border-green-300 w-8 h-5 shadow-sm">W 3</div>
-                        <span className="text-xs font-medium text-slate-600">Vitórias (Atual)</span>
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-400 dark:text-slate-500">Vitórias (Atual)</span>
                       </div>
                     </div>
                  </div>
                </div>
 
-               <div className="text-sm font-bold text-slate-500 bg-slate-100 px-3 py-2 rounded-full border border-slate-200">
+               <div className="text-sm font-bold text-slate-500 dark:text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-[#334155] px-3 py-2 rounded-full border border-slate-200 dark:border-[#334155]">
                    {brawlers.length} Brawlers
                </div>
              </div>
@@ -116,15 +116,15 @@ export default function BSBrawlersPage({ activeProfileId }: GamePageProps) {
       </div>
 
       {loading ? (
-        <div className="flex flex-col items-center justify-center py-20 text-slate-400">
+        <div className="flex flex-col items-center justify-center py-20 text-slate-400 dark:text-slate-500">
            <Loader2 size={40} className="animate-spin text-[#F59E0B] mb-4" />
            <p className="font-bold tracking-widest uppercase text-sm">Carregando brawlers...</p>
         </div>
       ) : !playerTag ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-white rounded-3xl border-2 border-dashed border-slate-200 text-center max-w-2xl mx-auto mt-20">
+        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#1E293B] rounded-3xl border-2 border-dashed border-slate-200 dark:border-[#334155] text-center max-w-2xl mx-auto mt-20">
           <Users className="w-16 h-16 text-[#FBBF24] mb-4 opacity-50" />
-          <h2 className="text-xl font-black text-slate-800 mb-2 uppercase tracking-tight">Buscar Perfil Primeiro</h2>
-          <p className="text-slate-500 mb-6 font-medium">Vá na página de Perfil e busque uma conta para carregar os Brawlers.</p>
+          <h2 className="text-xl font-black text-slate-800 dark:text-slate-200 mb-2 uppercase tracking-tight">Buscar Perfil Primeiro</h2>
+          <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-6 font-medium">Vá na página de Perfil e busque uma conta para carregar os Brawlers.</p>
         </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 z-0">
@@ -137,9 +137,9 @@ export default function BSBrawlersPage({ activeProfileId }: GamePageProps) {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.2, delay: Math.min(i * 0.02, 0.5) }}
               key={brawler.id} 
-              className="relative bg-gradient-to-b from-blue-500 to-blue-700 border-blue-600 shadow-blue-500/20 p-1 rounded-2xl shadow-lg"
+              className="relative bg-gradient-to-b from-blue-500 to-blue-700 dark:from-slate-800 dark:to-slate-900 border border-blue-600 shadow-blue-500/20 p-1 rounded-2xl shadow-lg"
             >
-              <div className="bg-white/10 w-full h-full rounded-xl p-4 flex flex-col items-center relative backdrop-blur-sm border border-white/20">
+              <div className="bg-white/10 dark:bg-[#0F172A]/40 w-full h-full rounded-xl p-4 flex flex-col items-center relative backdrop-blur-sm border border-white/20 dark:border-slate-700/50">
                 {brawler.maxWinStreak > 0 && (
                   <div className="absolute top-2 left-2 bg-gradient-to-b from-orange-400 to-red-600 border border-orange-300 text-white text-[10px] font-black px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-md z-10" title="Max Win Streak">
                     <Flame size={10} className="fill-yellow-300 text-yellow-300" />

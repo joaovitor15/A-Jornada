@@ -129,7 +129,7 @@ export const MasteryBadge = ({ level, iconUrl, masteryIconUrl, name, isActive, o
       </AnimatePresence>
       
       {/* Level text indicator */}
-      {/* <div className="absolute top-1 left-1 z-20 bg-black/40 backdrop-blur-sm rounded px-1.5 py-0.5 border border-white/10">
+      {/* <div className="absolute top-1 left-1 z-20 bg-black/40 backdrop-blur-sm rounded px-1.5 py-0.5 border border-white dark:border-slate-700/10">
         <span className="text-[9px] font-black text-white leading-none">
           L{level}
         </span>

@@ -284,29 +284,29 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
   };
 
   const renderForm = () => (
-    <div className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-sm mb-6">
-      <h3 className="text-lg font-bold text-[#0F172A] mb-4">
+    <div className="bg-white dark:bg-[#1E293B] p-6 rounded-xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm mb-6">
+      <h3 className="text-lg font-bold text-[#0F172A] dark:text-white mb-4">
         {editingId ? "Editar Cartão" : "Novo Cartão"}
       </h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div>
-          <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+          <label className="block text-[13px] font-semibold text-[#374151] dark:text-[#E2E8F0] mb-1">
             Nome do Cartão
           </label>
           <input
             type="text"
             value={formData.nome}
             onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
+            className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
             placeholder="Ex: Nubank, Itaú..."
           />
         </div>
         <div>
-          <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+          <label className="block text-[13px] font-semibold text-[#374151] dark:text-[#E2E8F0] mb-1">
             Limite (R$)
           </label>
           <div className="relative">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-black font-medium">
+            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm text-black dark:text-white font-medium">
               R$
             </span>
             <input
@@ -328,23 +328,23 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
                   return novo;
                 });
               }}
-              className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg pl-10 pr-4 py-2.5 text-sm text-black focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium"
+              className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-lg pl-10 pr-4 py-2.5 text-sm text-black dark:text-white focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all font-medium"
             />
           </div>
         </div>
         <div>
-          <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+          <label className="block text-[13px] font-semibold text-[#374151] dark:text-[#E2E8F0] mb-1">
             Cor
           </label>
           <input
             type="color"
             value={formData.cor}
             onChange={(e) => setFormData({ ...formData, cor: e.target.value })}
-            className="w-full h-10 p-1 bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg cursor-pointer"
+            className="w-full h-10 p-1 bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-lg cursor-pointer"
           />
         </div>
         <div>
-          <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+          <label className="block text-[13px] font-semibold text-[#374151] dark:text-[#E2E8F0] mb-1">
             Vencimento Fatura
           </label>
           <input
@@ -360,12 +360,12 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
                 dia_vencimento_fatura: val,
               });
             }}
-            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
+            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
             placeholder="1-31"
           />
         </div>
         <div>
-          <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+          <label className="block text-[13px] font-semibold text-[#374151] dark:text-[#E2E8F0] mb-1">
             Fechamento Fatura
           </label>
           <input
@@ -381,12 +381,12 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
                 dia_fechamento_fatura: val,
               });
             }}
-            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
+            className="[appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
             placeholder="1-31"
           />
         </div>
         <div>
-          <label className="block text-[13px] font-semibold text-[#374151] mb-1">
+          <label className="block text-[13px] font-semibold text-[#374151] dark:text-[#E2E8F0] mb-1">
             Tipo
           </label>
           <select
@@ -394,7 +394,7 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
             onChange={(e) =>
               setFormData({ ...formData, tipo: e.target.value as any })
             }
-            className="w-full bg-[#F8FAFC] border border-[#E2E8F0] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
+            className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#2563EB]/20 focus:border-[#2563EB] transition-all"
           >
             <option value="credito">Crédito</option>
             <option value="debito">Débito</option>
@@ -402,10 +402,10 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
           </select>
         </div>
       </div>
-      <div className="flex gap-2 mt-6 justify-end border-t border-[#E2E8F0] pt-4">
+      <div className="flex gap-2 mt-6 justify-end border-t border-[#E2E8F0] dark:border-[#334155] pt-4">
         <button
           onClick={resetForm}
-          className="px-4 py-2 text-[#64748B] hover:bg-[#F1F5F9] rounded-lg transition-colors font-medium text-sm"
+          className="px-4 py-2 text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155] rounded-lg transition-colors font-medium text-sm"
         >
           Cancelar
         </button>
@@ -423,19 +423,20 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#0F172A] tracking-tight">
+          <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">
             Meus Cartões
           </h2>
-          <p className="text-[#64748B] mt-1">
-            Gerencie seus cartões e controle suas faturas.
+          <p className="text-[#64748B] dark:text-[#94A3B8] mt-1">
+            Gerencie seus cartões.
           </p>
         </div>
         {!isAdding && !editingId && (
           <button
             onClick={() => setIsAdding(true)}
-            className="bg-[#2563EB] text-white px-4 py-2.5 rounded-xl font-semibold hover:bg-[#1D4ED8] transition-all flex items-center gap-2 shadow-[0_4px_12px_rgba(37,99,235,0.2)] cursor-pointer"
+            className="flex items-center justify-center gap-0 lg:gap-2 bg-[#2563EB] text-white rounded-full lg:rounded-xl w-11 h-11 lg:w-auto lg:h-auto lg:px-4 lg:py-2.5 font-semibold hover:bg-[#1D4ED8] transition-all shadow-[0_4px_12px_rgba(37,99,235,0.2)] cursor-pointer"
           >
-            <Plus size={18} /> Novo Cartão
+            <Plus size={20} className="lg:w-[18px] lg:h-[18px]" />
+            <span className="hidden lg:inline">Novo Cartão</span>
           </button>
         )}
       </div>
@@ -443,7 +444,7 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
       {(isAdding || editingId) && renderForm()}
 
       {loading && !cards.length && (
-        <div className="text-center py-10 text-[#64748B]">
+        <div className="text-center py-10 text-[#64748B] dark:text-[#94A3B8]">
           Carregando cartões...
         </div>
       )}
@@ -490,7 +491,7 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
           return (
             <div
               key={card.id}
-              className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md group"
+              className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col transition-all hover:shadow-md group"
             >
               {/* Header do Card (Visual do Cartão) */}
               <div 
@@ -498,14 +499,14 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
                 style={{ backgroundColor: card.cor || "#2563EB" }}
               >
                 {/* Decorative Pattern */}
-                <div className="absolute top-0 right-0 w-32 h-32 bg-white opacity-10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
+                <div className="absolute top-0 right-0 w-32 h-32 bg-white dark:bg-[#1E293B] opacity-10 rounded-full -mr-10 -mt-10 blur-2xl group-hover:scale-125 transition-transform duration-500"></div>
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-black opacity-5 rounded-full -ml-8 -mb-8 blur-xl"></div>
                 
 
 
                 <div className="flex justify-between items-start relative z-10">
                   <div className="flex items-center gap-3">
-                    <div className="bg-white/20 p-2.5 rounded-xl backdrop-blur-md">
+                    <div className="bg-white dark:bg-[#1E293B]/20 p-2.5 rounded-xl backdrop-blur-md">
                       <CardIcon size={22} strokeWidth={2.5} />
                     </div>
                     <div>
@@ -516,7 +517,7 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
                         <span className="text-[10px] uppercase font-bold tracking-widest opacity-80">
                           {card.tipo}
                         </span>
-                        <div className="w-1 h-1 rounded-full bg-white/40"></div>
+                        <div className="w-1 h-1 rounded-full bg-white dark:bg-[#1E293B]/40"></div>
                         <span className="text-[10px] font-bold opacity-80">
                           venc. dia {card.dia_vencimento_fatura}
                         </span>
@@ -527,7 +528,7 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
                   <div className="flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => startEdit(card)}
-                      className="p-2 bg-white/15 hover:bg-white/30 rounded-lg backdrop-blur-md transition-colors cursor-pointer"
+                      className="p-2 bg-white dark:bg-[#1E293B]/15 hover:bg-white dark:bg-[#1E293B]/30 rounded-lg backdrop-blur-md transition-colors cursor-pointer"
                     >
                       <Pencil size={14} />
                     </button>
@@ -563,14 +564,14 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
       </div>
 
       {!loading && cards.length === 0 && !isAdding && (
-        <div className="text-center py-20 bg-white rounded-2xl border border-dashed border-[#CBD5E1]">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#F1F5F9] text-[#64748B] mb-4">
+        <div className="text-center py-20 bg-white dark:bg-[#1E293B] rounded-2xl border border-dashed border-[#CBD5E1] dark:border-[#475569]">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] mb-4">
             <CreditCard size={32} />
           </div>
-          <h3 className="text-lg font-bold text-[#0F172A]">
+          <h3 className="text-lg font-bold text-[#0F172A] dark:text-white">
             Nenhum cartão cadastrado
           </h3>
-          <p className="text-[#64748B] max-w-sm mx-auto mt-2">
+          <p className="text-[#64748B] dark:text-[#94A3B8] max-w-sm mx-auto mt-2">
             Você ainda não adicionou nenhum cartão. Clique em "Novo Cartão" para
             começar.
           </p>

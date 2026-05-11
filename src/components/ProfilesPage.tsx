@@ -118,6 +118,8 @@ export default function ProfilesPage({
         investimentos_show_ativos: managedProfile.investimentos_show_ativos ?? true,
         investimentos_show_operacoes: managedProfile.investimentos_show_operacoes ?? true,
         game_ativo: managedProfile.game_ativo ?? false,
+        game_show_clash_royale: managedProfile.game_show_clash_royale ?? true,
+        game_show_brawl_stars: managedProfile.game_show_brawl_stars ?? true,
       });
     }
   }, [managedProfile]);
@@ -260,8 +262,8 @@ export default function ProfilesPage({
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-bold text-[#0F172A]">Meus Perfis</h2>
-          <p className="text-[#64748B]">Gerencie seus perfis financeiros</p>
+          <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white">Meus Perfis</h2>
+          <p className="text-[#64748B] dark:text-[#94A3B8]">Gerencie seus perfis financeiros</p>
         </div>
         {!isFormOpen && (
           <button 
@@ -303,13 +305,13 @@ export default function ProfilesPage({
           >
             <form 
               onSubmit={handleSubmit}
-              className="bg-white p-6 rounded-xl border border-[#E2E8F0] shadow-sm space-y-6 mb-8"
+              className="bg-white dark:bg-[#1E293B] p-6 rounded-xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm space-y-6 mb-8"
             >
               <div className="flex items-center justify-between">
-                <h3 className="font-bold text-[#0F172A]">
+                <h3 className="font-bold text-[#0F172A] dark:text-white">
                   {editingProfile ? 'Editar Perfil' : 'Novo Perfil'}
                 </h3>
-                <button type="button" onClick={handleCloseForm} className="text-[#64748B] hover:text-red-500">
+                <button type="button" onClick={handleCloseForm} className="text-[#64748B] dark:text-[#94A3B8] hover:text-red-500">
                   <X size={20} />
                 </button>
               </div>
@@ -323,32 +325,32 @@ export default function ProfilesPage({
 
               <div className="max-w-md space-y-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-semibold text-[#64748B]">Nome do Perfil</label>
+                  <label className="text-sm font-semibold text-[#64748B] dark:text-[#94A3B8]">Nome do Perfil</label>
                   <input 
                     type="text"
                     required
                     value={formData.name}
                     onChange={e => setFormData({ ...formData, name: e.target.value })}
                     placeholder="Ex: João Silva"
-                    className="w-full px-4 py-2 rounded-lg border border-[#E2E8F0] focus:ring-2 focus:ring-[#2563EB] focus:border-transparent outline-none transition-all"
+                    className="w-full px-4 py-2 rounded-lg border border-[#E2E8F0] dark:border-[#334155] focus:ring-2 focus:ring-[#2563EB] focus:border-transparent outline-none transition-all"
                   />
                 </div>
 
                 <div className="space-y-4">
                   <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-[#374151] block mb-2">Tipo de Perfil</label>
+                    <label className="text-[13px] font-semibold text-[#374151] dark:text-[#94A3B8] block mb-2">Tipo de Perfil</label>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-[10px]">
                       <div
                         onClick={() => setFormData({ ...formData, tipo: 'pessoal' })}
                         className={`flex items-center gap-[10px] p-[12px_14px] rounded-[12px] border-[1.5px] cursor-pointer transition-all ${
                           formData.tipo === 'pessoal'
-                            ? 'border-[#2563EB] bg-[#EFF6FF] text-[#2563EB] shadow-[0_0_0_3px_rgba(37,99,235,0.1)]'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC]'
+                            ? 'border-[#2563EB] bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] shadow-[0_0_0_3px_rgba(37,99,235,0.1)]'
+                            : 'border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A]'
                         }`}
                       >
-                        <User size={18} className={formData.tipo === 'pessoal' ? 'text-[#2563EB]' : 'text-[#64748B]'} />
+                        <User size={18} className={formData.tipo === 'pessoal' ? 'text-[#2563EB]' : 'text-[#64748B] dark:text-[#94A3B8]'} />
                         <div>
-                          <div className={`text-[14px] font-semibold ${formData.tipo === 'pessoal' ? 'text-[#2563EB]' : 'text-[#0F172A]'}`}>Pessoal</div>
+                          <div className={`text-[14px] font-semibold ${formData.tipo === 'pessoal' ? 'text-[#2563EB]' : 'text-[#0F172A] dark:text-white'}`}>Pessoal</div>
                           <div className="text-[11px] text-[#94A3B8]">Finanças pessoais</div>
                         </div>
                       </div>
@@ -357,12 +359,12 @@ export default function ProfilesPage({
                         className={`flex items-center gap-[10px] p-[12px_14px] rounded-[12px] border-[1.5px] cursor-pointer transition-all ${
                           formData.tipo === 'empresa'
                             ? 'border-[#D97706] bg-[#FFFBEB] text-[#D97706] shadow-[0_0_0_3px_rgba(217,119,6,0.1)]'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC]'
+                            : 'border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A]'
                         }`}
                       >
-                        <Building2 size={18} className={formData.tipo === 'empresa' ? 'text-[#D97706]' : 'text-[#64748B]'} />
+                        <Building2 size={18} className={formData.tipo === 'empresa' ? 'text-[#D97706]' : 'text-[#64748B] dark:text-[#94A3B8]'} />
                         <div>
-                          <div className={`text-[14px] font-semibold ${formData.tipo === 'empresa' ? 'text-[#D97706]' : 'text-[#0F172A]'}`}>Empresa</div>
+                          <div className={`text-[14px] font-semibold ${formData.tipo === 'empresa' ? 'text-[#D97706]' : 'text-[#0F172A] dark:text-white'}`}>Empresa</div>
                           <div className="text-[11px] text-[#94A3B8]">Gestão empresarial</div>
                         </div>
                       </div>
@@ -371,12 +373,12 @@ export default function ProfilesPage({
                         className={`flex items-center gap-[10px] p-[12px_14px] rounded-[12px] border-[1.5px] cursor-pointer transition-all ${
                           formData.tipo === 'jogos'
                             ? 'border-[#DC2626] bg-[#FEF2F2] text-[#DC2626] shadow-[0_0_0_3px_rgba(220,38,38,0.1)]'
-                            : 'border-[#E2E8F0] bg-[#F8FAFC]'
+                            : 'border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A]'
                         }`}
                       >
-                        <Gamepad2 size={18} className={formData.tipo === 'jogos' ? 'text-[#DC2626]' : 'text-[#64748B]'} />
+                        <Gamepad2 size={18} className={formData.tipo === 'jogos' ? 'text-[#DC2626]' : 'text-[#64748B] dark:text-[#94A3B8]'} />
                         <div>
-                          <div className={`text-[14px] font-semibold ${formData.tipo === 'jogos' ? 'text-[#DC2626]' : 'text-[#0F172A]'}`}>Jogos</div>
+                          <div className={`text-[14px] font-semibold ${formData.tipo === 'jogos' ? 'text-[#DC2626]' : 'text-[#0F172A] dark:text-white'}`}>Jogos</div>
                           <div className="text-[11px] text-[#94A3B8]">Gestão de jogos</div>
                         </div>
                       </div>
@@ -384,7 +386,7 @@ export default function ProfilesPage({
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-[13px] font-semibold text-[#374151] block mb-2">Cor do Perfil</label>
+                    <label className="text-[13px] font-semibold text-[#374151] dark:text-[#94A3B8] block mb-2">Cor do Perfil</label>
                     <div className="flex gap-[10px] flex-wrap items-center">
                       {PROFILE_COLORS.map(c => (
                         <button
@@ -424,7 +426,7 @@ export default function ProfilesPage({
                         <button
                           type="button"
                           onClick={() => colorInputRef.current?.click()}
-                          className="flex items-center gap-1 bg-[#F8FAFC] border-[1.5px] border-dashed border-[#CBD5E1] rounded-full px-[12px] py-[5px] text-[12px] text-[#64748B] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
+                          className="flex items-center gap-1 bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-dashed border-[#CBD5E1] dark:border-[#475569] rounded-full px-[12px] py-[5px] text-[12px] text-[#64748B] dark:text-[#94A3B8] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors"
                         >
                           <Pipette size={13} />
                           Personalizada
@@ -434,7 +436,7 @@ export default function ProfilesPage({
                   </div>
 
                   <div className="space-y-2" ref={iconSelectorRef}>
-                    <label className="text-[13px] font-semibold text-[#374151] block mb-2">Ícone do Perfil</label>
+                    <label className="text-[13px] font-semibold text-[#374151] dark:text-[#94A3B8] block mb-2">Ícone do Perfil</label>
                     
                     <button 
                       onClick={(e) => {
@@ -442,7 +444,7 @@ export default function ProfilesPage({
                         e.stopPropagation();
                         setIsIconDropdownOpen(prev => !prev);
                       }}
-                      className="flex items-center justify-between w-full bg-[#F8FAFC] border-[1px] border-[#E2E8F0] rounded-[10px] px-[14px] py-[10px] min-h-[44px] cursor-pointer hover:border-[#2563EB] transition-colors"
+                      className="flex items-center justify-between w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] px-[14px] py-[10px] min-h-[44px] cursor-pointer hover:border-[#2563EB] transition-colors"
                     >
                       <div className="flex items-center gap-[10px]">
                         <div 
@@ -454,7 +456,7 @@ export default function ProfilesPage({
                             return <SelectedIcon size={18} />;
                           })()}
                         </div>
-                        <span className="text-[14px] text-[#374151] font-medium capitalize">
+                        <span className="text-[14px] text-[#374151] dark:text-[#94A3B8] font-medium capitalize">
                           {formData.icone}
                         </span>
                       </div>
@@ -467,7 +469,7 @@ export default function ProfilesPage({
                           initial={{ opacity: 0, height: 0 }}
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
-                          className="w-full bg-[#FFFFFF] border-[1px] border-[#E2E8F0] rounded-[10px] flex flex-col gap-[10px] overflow-hidden p-[12px] shadow-sm transform-origin-top"
+                          className="w-full bg-[#FFFFFF] dark:bg-[#1E293B] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex flex-col gap-[10px] overflow-hidden p-[12px] shadow-sm transform-origin-top"
                         >
                           <div className="relative w-full">
                             <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
@@ -477,7 +479,7 @@ export default function ProfilesPage({
                               value={iconSearchTerm}
                               onClick={(e) => e.stopPropagation()}
                               onChange={(e) => setIconSearchTerm(e.target.value)}
-                              className="w-full bg-[#F8FAFC] border-[1px] border-[#E2E8F0] rounded-[8px] py-[8px] pr-[12px] pl-[34px] text-[16px] sm:text-[13px] text-[#0F172A] focus:outline-none focus:border-[#2563EB] transition-all"
+                              className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[8px] py-[8px] pr-[12px] pl-[34px] text-[16px] sm:text-[13px] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#2563EB] transition-all"
                             />
                           </div>
 
@@ -539,7 +541,7 @@ export default function ProfilesPage({
                   <button 
                     type="button"
                     onClick={handleCloseForm}
-                    className="bg-[#F1F5F9] text-[#64748B] px-6 py-2 rounded-lg font-semibold hover:bg-[#E2E8F0] transition-all"
+                    className="bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] px-6 py-2 rounded-lg font-semibold hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-all"
                   >
                     Cancelar
                   </button>
@@ -558,19 +560,19 @@ export default function ProfilesPage({
               initial={{ opacity: 0, scale: 0.9 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-[#E2E8F0] space-y-4"
+              className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 max-w-sm w-full shadow-2xl border border-[#E2E8F0] dark:border-[#334155] space-y-4"
             >
               <div className="w-12 h-12 bg-red-50 text-red-500 rounded-full flex items-center justify-center mx-auto">
                 <Trash2 size={24} />
               </div>
               <div className="text-center">
-                <h3 className="font-bold text-[#0F172A] text-lg">Excluir Perfil?</h3>
-                <p className="text-[#64748B]">Isso apagará permanentemente este perfil e todos os dados vinculados a ele.</p>
+                <h3 className="font-bold text-[#0F172A] dark:text-white text-lg">Excluir Perfil?</h3>
+                <p className="text-[#64748B] dark:text-[#94A3B8]">Isso apagará permanentemente este perfil e todos os dados vinculados a ele.</p>
               </div>
               <div className="flex gap-3">
                 <button 
                   onClick={() => setDeletingId(null)}
-                  className="flex-1 px-4 py-2 bg-[#F1F5F9] text-[#64748B] rounded-lg font-semibold hover:bg-[#E2E8F0] transition-all"
+                  className="flex-1 px-4 py-2 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] rounded-lg font-semibold hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-all"
                 >
                   Cancelar
                 </button>
@@ -588,7 +590,7 @@ export default function ProfilesPage({
 
       {/* LISTAGEM DE PERFIS */}
       {loading && !isFormOpen ? (
-        <div className="flex flex-col items-center justify-center py-20 text-[#64748B] gap-3">
+        <div className="flex flex-col items-center justify-center py-20 text-[#64748B] dark:text-[#94A3B8] gap-3">
           <Loader2 size={40} className="animate-spin text-[#2563EB]" />
           <p>Carregando seus perfis...</p>
         </div>
@@ -598,10 +600,10 @@ export default function ProfilesPage({
             <motion.div 
               layout
               key={profile.id}
-              className={`bg-white p-6 rounded-xl border transition-all group ${
+              className={`bg-white dark:bg-[#1E293B] p-6 rounded-xl border transition-all group ${
                 profile.is_active 
                   ? 'border-[#2563EB] border-2 shadow-[0_0_0_3px_rgba(37,99,235,0.10)]' 
-                  : 'border-[#E2E8F0] shadow-sm hover:shadow-md'
+                  : 'border-[#E2E8F0] dark:border-[#334155] shadow-sm hover:shadow-md'
               }`}
             >
               <div className="flex items-start justify-between">
@@ -616,7 +618,7 @@ export default function ProfilesPage({
                     })()}
                   </div>
                   <div className="min-w-0 flex flex-col items-start gap-1">
-                    <h4 className="font-bold text-[#0F172A] text-[16px] truncate">{profile.name}</h4>
+                    <h4 className="font-bold text-[#0F172A] dark:text-white text-[16px] truncate">{profile.name}</h4>
                     
                     {profile.tipo === 'empresa' ? (
                       <span className="inline-flex items-center gap-1 px-2 py-[3px] rounded-full bg-[#FEF9C3] text-[#854D0E] text-[11px] font-semibold">
@@ -640,7 +642,7 @@ export default function ProfilesPage({
                         Ativo
                       </span>
                     ) : (
-                      <span className="inline-flex items-center px-2 py-[3px] rounded-full bg-[#F1F5F9] text-[#94A3B8] text-[11px] font-semibold">
+                      <span className="inline-flex items-center px-2 py-[3px] rounded-full bg-[#F1F5F9] dark:bg-[#334155] text-[#94A3B8] text-[11px] font-semibold">
                         Inativo
                       </span>
                     )}
@@ -652,7 +654,7 @@ export default function ProfilesPage({
                     <button 
                       onClick={() => setProfileActive(profile.id)}
                       title="Ativar Perfil"
-                      className="p-2 text-[#2563EB] hover:bg-[#EFF6FF] rounded-lg transition-colors"
+                      className="p-2 text-[#2563EB] hover:bg-[#EFF6FF] dark:bg-[#1E3A8A] rounded-lg transition-colors"
                     >
                       <CheckCircle size={16} />
                     </button>
@@ -660,21 +662,21 @@ export default function ProfilesPage({
                   <button 
                     onClick={() => handleManageModules(profile.id)}
                     title="Gerenciar Módulos"
-                    className="p-2 text-[#6B7280] hover:bg-[#F1F5F9] rounded-lg transition-colors"
+                    className="p-2 text-[#6B7280] dark:text-[#9CA3AF] hover:bg-[#F1F5F9] dark:bg-[#334155] rounded-lg transition-colors"
                   >
                     <Settings size={16} />
                   </button>
                   <button 
                     onClick={() => handleOpenForm(profile)}
                     title="Editar"
-                    className="p-2 text-[#6B7280] hover:bg-[#F1F5F9] rounded-lg transition-colors"
+                    className="p-2 text-[#6B7280] dark:text-[#9CA3AF] hover:bg-[#F1F5F9] dark:bg-[#334155] rounded-lg transition-colors"
                   >
                     <Pencil size={16} />
                   </button>
                   <button 
                     onClick={() => setDeletingId(profile.id)}
                     title="Deletar"
-                    className="p-2 text-[#6B7280] hover:text-[#EF4444] hover:bg-red-50 rounded-lg transition-colors"
+                    className="p-2 text-[#6B7280] dark:text-[#9CA3AF] hover:text-[#EF4444] hover:bg-red-50 rounded-lg transition-colors"
                   >
                     <Trash2 size={16} />
                   </button>
@@ -684,13 +686,13 @@ export default function ProfilesPage({
           ))}
 
           {profiles.length === 0 && !loading && (
-            <div className="col-span-full bg-white p-12 rounded-2xl border-2 border-dashed border-[#E2E8F0] text-center space-y-4">
-              <div className="w-16 h-16 bg-[#F8FAFC] rounded-full flex items-center justify-center mx-auto text-[#CBD5E1]">
+            <div className="col-span-full bg-white dark:bg-[#1E293B] p-12 rounded-2xl border-2 border-dashed border-[#E2E8F0] dark:border-[#334155] text-center space-y-4">
+              <div className="w-16 h-16 bg-[#F8FAFC] dark:bg-[#0F172A] rounded-full flex items-center justify-center mx-auto text-[#CBD5E1] dark:text-[#64748B]">
                 <User size={32} />
               </div>
               <div>
-                <p className="font-bold text-[#1E293B]">Nenhum perfil encontrado</p>
-                <p className="text-[#64748B] text-sm">Comece criando seu primeiro perfil financeiro.</p>
+                <p className="font-bold text-[#1E293B] dark:text-white">Nenhum perfil encontrado</p>
+                <p className="text-[#64748B] dark:text-[#94A3B8] text-sm">Comece criando seu primeiro perfil financeiro.</p>
               </div>
               <button 
                 onClick={() => handleOpenForm()}
@@ -710,34 +712,34 @@ export default function ProfilesPage({
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="bg-white rounded-xl shadow-sm border border-[#E2E8F0] overflow-hidden mt-8"
+            className="bg-white dark:bg-[#1E293B] rounded-xl shadow-sm border border-[#E2E8F0] dark:border-[#334155] overflow-hidden mt-8"
           >
-            <div className="flex items-center justify-between p-6 bg-[#F8FAFC] border-b border-[#E2E8F0]">
+            <div className="flex items-center justify-between p-6 bg-[#F8FAFC] dark:bg-[#0F172A] border-b border-[#E2E8F0] dark:border-[#334155]">
               <div className="flex items-center gap-3 text-left">
-                <div className="text-[#2563EB] bg-blue-100 p-2 rounded-lg">
+                <div className="text-[#2563EB] bg-blue-100 dark:bg-blue-900/30 p-2 rounded-lg">
                   <Zap size={20} />
                 </div>
                 <div>
-                  <h3 className="font-bold text-[#0F172A] text-lg">Gerenciar Módulos do Sistema</h3>
-                  <p className="text-sm text-[#64748B]">Ative ou desative funcionalidades para o perfil: <span className="font-semibold">{managedProfile.name}</span></p>
+                  <h3 className="font-bold text-[#0F172A] dark:text-white text-lg">Gerenciar Módulos do Sistema</h3>
+                  <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">Ative ou desative funcionalidades para o perfil: <span className="font-semibold">{managedProfile.name}</span></p>
                 </div>
               </div>
               <button 
                 onClick={() => setIsModulesOpen(false)}
-                className="p-2 text-[#64748B] hover:bg-[#E2E8F0] rounded-lg transition-colors cursor-pointer"
+                className="p-2 text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] rounded-lg transition-colors cursor-pointer"
               >
                 <X size={20} />
               </button>
             </div>
             <div className="p-6 space-y-6">
                   {/* SISTEMA FINANCEIRO */}
-                  <div className={`border rounded-xl p-5 transition-colors ${modulesFormState.enable_sistema_financeiro ? 'border-[#2563EB]/40 bg-[#EFF6FF]/30' : 'border-[#E2E8F0] bg-[#F8FAFC]'}`}>
+                  <div className={`border rounded-xl p-5 transition-colors ${modulesFormState.enable_sistema_financeiro ? 'border-[#2563EB]/40 bg-[#EFF6FF] dark:bg-[#1E3A8A]/30' : 'border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A]'}`}>
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-3">
                         <Wallet size={20} className={modulesFormState.enable_sistema_financeiro ? 'text-[#2563EB]' : 'text-[#94A3B8]'} />
                         <div>
-                          <h4 className={`font-bold ${modulesFormState.enable_sistema_financeiro ? 'text-[#0F172A]' : 'text-[#64748B]'}`}>Sistema Financeiro</h4>
-                          <p className="text-xs text-[#64748B]">Gestão de transações, categorias e relatórios financeiros.</p>
+                          <h4 className={`font-bold ${modulesFormState.enable_sistema_financeiro ? 'text-[#0F172A] dark:text-white' : 'text-[#64748B] dark:text-[#94A3B8]'}`}>Sistema Financeiro</h4>
+                          <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Gestão de transações, categorias e relatórios financeiros.</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
@@ -747,7 +749,7 @@ export default function ProfilesPage({
                           checked={modulesFormState.enable_sistema_financeiro ?? true}
                           onChange={(e) => setModulesFormState(prev => ({ ...prev, enable_sistema_financeiro: e.target.checked }))}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                       </label>
                     </div>
 
@@ -767,9 +769,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.financeiro_show_dashboard ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, financeiro_show_dashboard: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Dashboard</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Dashboard</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group mt-4">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -779,9 +781,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.financeiro_show_transacoes ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, financeiro_show_transacoes: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Transações</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Transações</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group mt-4">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -791,9 +793,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.financeiro_show_transacoes_recorrentes ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, financeiro_show_transacoes_recorrentes: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Transações Recorrentes</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Transações Recorrentes</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -803,9 +805,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.financeiro_show_relatorios ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, financeiro_show_relatorios: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Relatórios</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Relatórios</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -815,9 +817,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.financeiro_show_categorias ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, financeiro_show_categorias: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Categorias</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Categorias</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -827,9 +829,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.financeiro_show_cartoes ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, financeiro_show_cartoes: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#2563EB]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Meus Cartões</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Meus Cartões</span>
                           </label>
                         </motion.div>
                       )}
@@ -837,13 +839,13 @@ export default function ProfilesPage({
                   </div>
                   
                   {/* SISTEMA DE INVESTIMENTOS */}
-                  <div className={`border rounded-xl p-5 transition-colors ${modulesFormState.investimentos_ativo ? 'border-[#16A34A]/40 bg-[#DCFCE7]/30' : 'border-[#E2E8F0] bg-[#F8FAFC]'}`}>
+                  <div className={`border rounded-xl p-5 transition-colors ${modulesFormState.investimentos_ativo ? 'border-[#16A34A]/40 bg-[#DCFCE7]/30' : 'border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A]'}`}>
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center gap-3">
                         <TrendingUp size={20} className={modulesFormState.investimentos_ativo ? 'text-[#16A34A]' : 'text-[#94A3B8]'} />
                         <div>
-                          <h4 className={`font-bold ${modulesFormState.investimentos_ativo ? 'text-[#0F172A]' : 'text-[#64748B]'}`}>Sistema de Investimentos</h4>
-                          <p className="text-xs text-[#64748B]">Gestão e acompanhamento de seus investimentos.</p>
+                          <h4 className={`font-bold ${modulesFormState.investimentos_ativo ? 'text-[#0F172A] dark:text-white' : 'text-[#64748B] dark:text-[#94A3B8]'}`}>Sistema de Investimentos</h4>
+                          <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Gestão e acompanhamento de seus investimentos.</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer" title="Ativar Sistema de Investimentos">
@@ -853,7 +855,7 @@ export default function ProfilesPage({
                           checked={modulesFormState.investimentos_ativo ?? false}
                           onChange={(e) => setModulesFormState(prev => ({ ...prev, investimentos_ativo: e.target.checked }))}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
                       </label>
                     </div>
 
@@ -873,9 +875,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.investimentos_show_dashboard ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, investimentos_show_dashboard: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Visão Geral</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Visão Geral</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group mt-4">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -885,9 +887,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.investimentos_show_ativos ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, investimentos_show_ativos: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Meus Ativos</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Meus Ativos</span>
                           </label>
                           <label className="flex items-center gap-3 cursor-pointer group mt-4">
                             <div className="relative inline-flex items-center cursor-pointer">
@@ -897,9 +899,9 @@ export default function ProfilesPage({
                                 checked={modulesFormState.investimentos_show_operacoes ?? true}
                                 onChange={(e) => setModulesFormState(prev => ({ ...prev, investimentos_show_operacoes: e.target.checked }))}
                               />
-                              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] group-hover:text-[#0F172A]">Cofres & Provisões</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Cofres & Provisões</span>
                           </label>
                         </motion.div>
                       )}
@@ -907,13 +909,13 @@ export default function ProfilesPage({
                   </div>
 
                   {/* SISTEMA DE GAME */}
-                  <div className={`border rounded-xl p-5 transition-colors ${modulesFormState.game_ativo ? 'border-[#8B5CF6]/40 bg-[#F5F3FF]/30' : 'border-[#E2E8F0] bg-[#F8FAFC]'}`}>
+                  <div className={`border rounded-xl p-5 transition-colors ${modulesFormState.game_ativo ? 'border-[#8B5CF6]/40 bg-[#F5F3FF]/30' : 'border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A]'}`}>
                     <div className="flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <Gamepad2 size={20} className={modulesFormState.game_ativo ? 'text-[#8B5CF6]' : 'text-[#94A3B8]'} />
                         <div>
-                          <h4 className={`font-bold ${modulesFormState.game_ativo ? 'text-[#0F172A]' : 'text-[#64748B]'}`}>Sistema Game</h4>
-                          <p className="text-xs text-[#64748B]">Módulo de jogos e entretenimento financeiro.</p>
+                          <h4 className={`font-bold ${modulesFormState.game_ativo ? 'text-[#0F172A] dark:text-white' : 'text-[#64748B] dark:text-[#94A3B8]'}`}>Sistema Game</h4>
+                          <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">Módulo de jogos e entretenimento financeiro.</p>
                         </div>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer" title="Ativar Sistema Game">
@@ -923,12 +925,41 @@ export default function ProfilesPage({
                           checked={modulesFormState.game_ativo ?? false}
                           onChange={(e) => setModulesFormState(prev => ({ ...prev, game_ativo: e.target.checked }))}
                         />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
+                        <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#8B5CF6]"></div>
                       </label>
                     </div>
+
+                    {modulesFormState.game_ativo && (
+                      <div className="mt-4 pl-4 border-l-2 border-[#E2E8F0] dark:border-[#334155] space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-[#0F172A] dark:text-white">Clash Royale</span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={modulesFormState.game_show_clash_royale ?? true}
+                              onChange={(e) => setModulesFormState(prev => ({ ...prev, game_show_clash_royale: e.target.checked }))}
+                            />
+                            <div className="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#22C55E]"></div>
+                          </label>
+                        </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium text-[#0F172A] dark:text-white">Brawl Stars</span>
+                          <label className="relative inline-flex items-center cursor-pointer">
+                            <input
+                              type="checkbox"
+                              className="sr-only peer"
+                              checked={modulesFormState.game_show_brawl_stars ?? true}
+                              onChange={(e) => setModulesFormState(prev => ({ ...prev, game_show_brawl_stars: e.target.checked }))}
+                            />
+                            <div className="w-9 h-5 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#22C55E]"></div>
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  <div className="pt-4 border-t border-[#E2E8F0] flex justify-end">
+                  <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#334155] flex justify-end">
                     <button
                       onClick={handleSaveModules}
                       disabled={modulesFormLoading}

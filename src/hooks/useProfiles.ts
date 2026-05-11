@@ -25,6 +25,8 @@ export interface SupabaseProfile {
   investimentos_show_operacoes?: boolean;
   investimentos_show_proventos?: boolean;
   game_ativo?: boolean;
+  game_show_clash_royale?: boolean;
+  game_show_brawl_stars?: boolean;
 }
 
 export function useProfiles() {

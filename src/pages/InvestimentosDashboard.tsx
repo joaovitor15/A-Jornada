@@ -167,7 +167,7 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
 
     const tableData = distribuicao.map(item => {
       let status = 'MANTER';
-      let statusColor = 'bg-slate-100 text-slate-500';
+      let statusColor = 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
 
       if (classesParaComprar.includes(item.id)) {
         status = 'COMPRA';
@@ -177,7 +177,7 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
         statusColor = 'bg-amber-100 text-amber-700';
       } else {
         status = 'MANTER';
-        statusColor = 'bg-slate-100 text-slate-500';
+        statusColor = 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400';
       }
 
       return {
@@ -212,19 +212,19 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <h2 className="text-2xl font-bold text-[#0F172A] flex items-center gap-2">
-              <PieChart className="text-[#0F172A]" size={24} />
+            <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white flex items-center gap-2">
+              <PieChart className="text-[#0F172A] dark:text-white" size={24} />
               Visão Geral da Carteira
             </h2>
             <button 
               onClick={refetch} 
               disabled={cotacoesLoading}
-              className={`p-1.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center border border-[#E2E8F0] bg-white text-[#64748B] hover:bg-[#F8FAFC] shadow-sm ${cotacoesLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              className={`p-1.5 rounded-lg text-sm font-bold transition-colors flex items-center justify-center border border-[#E2E8F0] dark:border-[#334155] bg-white dark:bg-[#1E293B] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] shadow-sm ${cotacoesLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               <RefreshCw size={16} className={cotacoesLoading ? "animate-spin" : ""} />
             </button>
           </div>
-          <p className="text-[#64748B] text-sm mt-1">Análise de Alocação e Rebalanceamento Consolidado</p>
+          <p className="text-[#64748B] dark:text-[#94A3B8] text-sm mt-1">Análise de Alocação e Rebalanceamento Consolidado</p>
         </div>
         
         <div className="flex gap-[10px]">
@@ -232,8 +232,8 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
             onClick={() => setMoeda('BRL')}
             className={`flex items-center justify-center gap-2 rounded-[100px] py-[6px] px-[16px] text-[14px] font-[700] transition-all duration-200 ${
               moeda === 'BRL'
-                ? "bg-[#DCFCE7] text-[#16A34A] border-[1.5px] border-[#16A34A] shadow-[0_2px_8px_rgba(22,163,74,0.2)]"
-                : "bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]"
+                ? "bg-[#DCFCE7] dark:bg-green-900/20 text-[#16A34A] dark:text-green-400 border-[1.5px] border-[#16A34A] dark:border-green-500/50 shadow-[0_2px_8px_rgba(22,163,74,0.2)]"
+                : "bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]"
             }`}
           >
             R$ BRL
@@ -242,8 +242,8 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
             onClick={() => setMoeda('USD')}
             className={`flex items-center justify-center gap-2 rounded-[100px] py-[6px] px-[16px] text-[14px] font-[700] transition-all duration-200 ${
               moeda === 'USD'
-                ? "bg-[#FEE2E2] text-[#EF4444] border-[1.5px] border-[#EF4444] shadow-[0_2px_8px_rgba(239,68,68,0.2)]"
-                : "bg-[#F8FAFC] text-[#64748B] border-[1.5px] border-[#E2E8F0] hover:bg-[#F1F5F9]"
+                ? "bg-[#FEE2E2] dark:bg-red-900/20 text-[#EF4444] dark:text-red-400 border-[1.5px] border-[#EF4444] dark:border-red-500/50 shadow-[0_2px_8px_rgba(239,68,68,0.2)]"
+                : "bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]"
             }`}
           >
             $ USD
@@ -254,61 +254,61 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Card 1 - Patrimônio Total */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-sm flex flex-col justify-between overflow-hidden relative">
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 border border-[#E2E8F0] dark:border-[#334155] shadow-sm flex flex-col justify-between overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-[#3B82F6]"></div>
-          <div className="flex items-center gap-2 text-[#64748B] font-[800] text-[11px] uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-2 text-[#64748B] dark:text-[#94A3B8] font-[800] text-[11px] uppercase tracking-wider mb-2">
             <Building2 size={14} />
             Patrimônio Total
           </div>
-          <div className="text-2xl font-bold text-[#0F172A]">
+          <div className="text-2xl font-bold text-[#0F172A] dark:text-white">
             {formatCurrency(summaryData.patrimonioTotal, moeda)}
           </div>
         </div>
 
         {/* Card 2 - Renda Fixa */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-sm flex flex-col justify-between overflow-hidden relative">
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 border border-[#E2E8F0] dark:border-[#334155] shadow-sm flex flex-col justify-between overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-[#14B8A6]"></div>
-          <div className="flex items-center gap-2 text-[#64748B] font-[800] text-[11px] uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-2 text-[#64748B] dark:text-[#94A3B8] font-[800] text-[11px] uppercase tracking-wider mb-2">
             <Wallet size={14} />
             Renda Fixa
           </div>
-          <div className="text-2xl font-bold text-[#0F172A]">
+          <div className="text-2xl font-bold text-[#0F172A] dark:text-white">
             {formatCurrency(summaryData.rendaFixa, moeda)}
           </div>
         </div>
 
         {/* Card 3 - Variável (BR) */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-sm flex flex-col justify-between overflow-hidden relative">
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 border border-[#E2E8F0] dark:border-[#334155] shadow-sm flex flex-col justify-between overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-[#8B5CF6]"></div>
-          <div className="flex items-center gap-2 text-[#64748B] font-[800] text-[11px] uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-2 text-[#64748B] dark:text-[#94A3B8] font-[800] text-[11px] uppercase tracking-wider mb-2">
             <TrendingUp size={14} />
             Variável (BR)
           </div>
-          <div className="text-2xl font-bold text-[#0F172A]">
+          <div className="text-2xl font-bold text-[#0F172A] dark:text-white">
             {formatCurrency(summaryData.variavelBR, moeda)}
           </div>
         </div>
 
         {/* Card 4 - Exterior */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-sm flex flex-col justify-between overflow-hidden relative">
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 border border-[#E2E8F0] dark:border-[#334155] shadow-sm flex flex-col justify-between overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-[#F59E0B]"></div>
-          <div className="flex items-center gap-2 text-[#64748B] font-[800] text-[11px] uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-2 text-[#64748B] dark:text-[#94A3B8] font-[800] text-[11px] uppercase tracking-wider mb-2">
             <Globe size={14} />
             Exterior
           </div>
-          <div className="text-2xl font-bold text-[#0F172A]">
+          <div className="text-2xl font-bold text-[#0F172A] dark:text-white">
             {formatCurrency(summaryData.exterior, moeda)}
           </div>
         </div>
 
         {/* Card 5 - Criptomoedas */}
-        <div className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-sm flex flex-col justify-between overflow-hidden relative">
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl p-5 border border-[#E2E8F0] dark:border-[#334155] shadow-sm flex flex-col justify-between overflow-hidden relative">
           <div className="absolute top-0 left-0 w-1.5 h-full bg-[#EF4444]"></div>
-          <div className="flex items-center gap-2 text-[#64748B] font-[800] text-[11px] uppercase tracking-wider mb-2">
+          <div className="flex items-center gap-2 text-[#64748B] dark:text-[#94A3B8] font-[800] text-[11px] uppercase tracking-wider mb-2">
             <Bitcoin size={14} />
             Criptomoedas
           </div>
-          <div className="text-2xl font-bold text-[#0F172A]">
+          <div className="text-2xl font-bold text-[#0F172A] dark:text-white">
             {formatCurrency(summaryData.criptomoedas, moeda)}
           </div>
         </div>
@@ -316,9 +316,9 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Distribuição Atual */}
-        <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 lg:col-span-1 flex flex-col">
-          <h3 className="font-bold text-[#0F172A] flex items-center gap-2 mb-6">
-            <PieChart size={18} className="text-[#64748B]" />
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm p-6 lg:col-span-1 flex flex-col">
+          <h3 className="font-bold text-[#0F172A] dark:text-white flex items-center gap-2 mb-6">
+            <PieChart size={18} className="text-[#64748B] dark:text-[#94A3B8]" />
             Distribuição Atual
           </h3>
           
@@ -350,7 +350,7 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
                   </RechartsPieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center text-[#94A3B8]">
+                <div className="w-full h-full flex flex-col items-center justify-center text-[#94A3B8] dark:text-[#94A3B8]">
                    <PieChart size={32} className="mb-2 opacity-50" />
                    <p className="font-medium text-sm">Sem ativos com saldo</p>
                 </div>
@@ -363,9 +363,9 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
                 <div key={index} className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-2">
                     <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.cor }}></div>
-                    <span className="font-medium text-[#475569]">{item.nome}</span>
+                    <span className="font-medium text-[#475569] dark:text-[#CBD5E1]">{item.nome}</span>
                   </div>
-                  <span className="font-bold text-[#0F172A]">{item.percentualAtual.toFixed(2)}%</span>
+                  <span className="font-bold text-[#0F172A] dark:text-white">{item.percentualAtual.toFixed(2)}%</span>
                 </div>
               ))}
             </div>
@@ -373,93 +373,159 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
         </div>
 
         {/* Tabela de Rebalanceamento */}
-        <div className="bg-white rounded-3xl border border-[#E2E8F0] shadow-sm p-6 lg:col-span-2 overflow-x-auto">
-          <div className="flex items-center justify-between mb-6 min-w-[600px]">
-             <h3 className="font-bold text-[#0F172A] flex items-center gap-2">
-               <SlidersHorizontal size={18} className="text-[#64748B]" />
+        <div className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm p-[20px] md:p-6 lg:col-span-2 overflow-hidden flex flex-col">
+          <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+             <h3 className="font-bold text-[#0F172A] dark:text-white flex items-center gap-2">
+               <SlidersHorizontal size={18} className="text-[#64748B] dark:text-[#94A3B8]" />
                Rebalanceamento
              </h3>
-             <div className="flex items-center gap-3">
-               <div className="bg-[#F8FAFC] border border-[#E2E8F0] px-3 py-1.5 rounded-lg text-sm font-bold text-[#475569] flex items-center gap-2">
+             <div className="flex flex-wrap items-center gap-3">
+               <div className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] px-3 py-1.5 rounded-lg text-sm font-bold text-[#475569] dark:text-[#CBD5E1] flex items-center gap-2 w-full sm:w-auto justify-between">
                  <span>COMPRAS MÊS:</span>
                  <input
                    type="text"
                    value={comprasMes}
                    onChange={handleComprasMesChange}
-                   className="w-10 bg-transparent border-b border-[#CBD5E1] text-[#2563EB] font-black outline-none text-center focus:border-[#2563EB]"
+                   className="w-10 bg-transparent border-b border-[#CBD5E1] dark:border-[#475569] text-[#2563EB] dark:text-blue-400 font-black outline-none text-center focus:border-[#2563EB] dark:focus:border-blue-500"
                  />
                </div>
-               <div className={`px-3 py-1.5 rounded-lg text-sm font-bold ${totalObjective === 100 ? 'bg-green-50 border border-green-100 text-green-700' : 'bg-red-50 border border-red-100 text-red-700'}`}>
+               <div className={`px-3 py-1.5 rounded-lg text-[13px] sm:text-sm font-bold flex-1 sm:flex-none text-center ${totalObjective === 100 ? 'bg-green-50 dark:bg-green-900/10 border border-green-100 dark:border-green-800 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/10 border border-red-100 dark:border-red-800 text-red-700 dark:text-red-400'}`}>
                  Total: {totalObjective}% {totalObjective === 100 ? '✓' : '⚠️'}
                </div>
              </div>
           </div>
 
-          <div className="min-w-[600px]">
-            {/* Header da Tabela */}
-            <div className="grid grid-cols-12 gap-4 pb-3 border-b border-[#E2E8F0] mb-4 text-[10px] font-[800] text-[#94A3B8] uppercase tracking-wider">
-              <div className="col-span-3">Classe de Ativo</div>
-              <div className="col-span-3">Valor Atual</div>
-              <div className="col-span-2 text-center">Objetivo %</div>
-              <div className="col-span-2 text-center">Status</div>
-              <div className="col-span-2 text-right">Falta Aportar</div>
-            </div>
+          {/* Desktop/Tablet View (Hidden on very small screens, visible on md and up) */}
+          <div className="hidden md:block overflow-x-auto">
+            <div className="min-w-[600px]">
+              {/* Header da Tabela */}
+              <div className="grid grid-cols-12 gap-4 pb-3 border-b border-[#E2E8F0] dark:border-[#334155] mb-4 text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider">
+                <div className="col-span-3">Classe de Ativo</div>
+                <div className="col-span-3">Valor Atual</div>
+                <div className="col-span-2 text-center">Objetivo %</div>
+                <div className="col-span-2 text-center">Status</div>
+                <div className="col-span-2 text-right">Falta Aportar</div>
+              </div>
 
-            {/* Linhas da Tabela */}
-            <div className="space-y-4">
-              {tableData.map((row, index) => (
-                <div key={index} className="grid grid-cols-12 gap-4 items-center">
-                  <div className="col-span-3 flex items-start gap-2">
-                    <div className="w-2.5 h-2.5 rounded-full mt-1.5 shrink-0" style={{ backgroundColor: row.cor }}></div>
-                    <div>
-                      <p className="font-bold text-[#0F172A] text-sm">{row.nome}</p>
-                      <p className="text-xs text-[#64748B]">Atual: {row.percentualAtual.toFixed(2)}%</p>
+              {/* Linhas da Tabela */}
+              <div className="space-y-4">
+                {tableData.map((row, index) => (
+                  <div key={`desktop-${index}`} className="grid grid-cols-12 gap-4 items-center group hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] p-2 -mx-2 rounded-xl transition-colors">
+                    <div className="col-span-3 flex items-center gap-3">
+                      <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.cor }}></div>
+                      <div>
+                        <p className="font-bold text-[#0F172A] dark:text-white text-sm truncate">{row.nome}</p>
+                        <p className="text-[11px] text-[#64748B] dark:text-[#94A3B8] font-medium">Atual: {row.percentualAtual.toFixed(2)}%</p>
+                      </div>
+                    </div>
+                    
+                    <div className="col-span-3">
+                      <p className="font-bold text-[#0F172A] dark:text-white text-[15px]">{formatCurrency(row.valorAtual, moeda)}</p>
+                    </div>
+                    
+                    <div className="col-span-2 flex flex-col justify-center px-2">
+                      <div className="flex items-center justify-center gap-1 mb-1">
+                        <input
+                          type="text"
+                          defaultValue={row.objetivo}
+                          onBlur={(e) => handleObjectiveBlur(row.id, e.target.value)}
+                          className="bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] group-hover:border-[#CBD5E1] dark:group-hover:border-[#64748B] rounded-md px-1 py-0.5 text-xs font-bold text-[#0F172A] dark:text-white text-center w-12 outline-none focus:border-[#2563EB] dark:focus:border-blue-500 transition-colors"
+                        />
+                        <span className="text-[#94A3B8] dark:text-[#94A3B8] text-xs font-bold">%</span>
+                      </div>
+                      <div className="h-1.5 w-full bg-[#F1F5F9] dark:bg-[#334155] rounded-full overflow-hidden">
+                         <div 
+                           className="h-full rounded-full transition-all duration-500 max-w-full" 
+                           style={{ 
+                             width: `${Math.min(row.objetivo, 100)}%`, 
+                             backgroundColor: row.cor 
+                           }}
+                         />
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 flex justify-center">
+                      <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${row.statusColor}`}>
+                        {row.status}
+                      </div>
+                    </div>
+
+                    <div className="col-span-2 text-right">
+                      {row.status === 'COMPRA' && row.diferenca > 0 ? (
+                        <span className="font-bold text-[#16A34A] dark:text-green-400 text-[13px] bg-[#DCFCE7] dark:bg-green-900/20 px-2 py-1 rounded-md mt-0.5 inline-block">+ {formatCurrency(row.diferenca, moeda)}</span>
+                      ) : (
+                        <span className="text-[#94A3B8] dark:text-[#94A3B8] font-bold">-</span>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="col-span-3">
-                    <p className="font-bold text-[#0F172A] text-sm">{formatCurrency(row.valorAtual, moeda)}</p>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Mobile View (Visible only on small screens) */}
+          <div className="md:hidden flex flex-col gap-3">
+            {tableData.map((row, index) => (
+              <div key={`mobile-${index}`} className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-2xl p-4 flex flex-col gap-4">
+                {/* Header Card */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: row.cor }}></div>
+                    <div>
+                      <p className="font-bold text-[#0F172A] dark:text-white text-base leading-tight">{row.nome}</p>
+                      <p className="text-xs text-[#64748B] dark:text-[#94A3B8] font-medium mt-0.5">Atual: {row.percentualAtual.toFixed(2)}%</p>
+                    </div>
                   </div>
-                  
-                  <div className="col-span-2 pl-2 flex flex-col justify-center">
-                    <div className="flex items-center justify-center gap-1 mb-1">
+                  <div className={`px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider shrink-0 mt-0.5 ${row.statusColor}`}>
+                    {row.status}
+                  </div>
+                </div>
+
+                {/* Values Grid */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Valor Atual</span>
+                    <span className="font-bold text-[#0F172A] dark:text-white text-[15px]">{formatCurrency(row.valorAtual, moeda)}</span>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className="text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Falta Aportar</span>
+                    {row.status === 'COMPRA' && row.diferenca > 0 ? (
+                      <span className="font-bold text-[#16A34A] dark:text-green-400 text-[13px] bg-[#DCFCE7] dark:bg-green-900/20 px-2 py-0.5 rounded-md inline-block whitespace-nowrap">+ {formatCurrency(row.diferenca, moeda)}</span>
+                    ) : (
+                      <span className="text-[#94A3B8] dark:text-[#94A3B8] font-bold">-</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Objective */}
+                <div className="flex flex-col gap-2 pt-3 border-t border-[#E2E8F0] dark:border-[#334155] mt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider">Objetivo</span>
+                    <div className="flex items-center gap-1">
                       <input
                         type="text"
                         defaultValue={row.objetivo}
                         onBlur={(e) => handleObjectiveBlur(row.id, e.target.value)}
-                        className="bg-[#F8FAFC] border border-[#E2E8F0] rounded-md px-1 py-0.5 text-xs font-bold text-[#0F172A] text-center w-12 outline-none focus:border-[#2563EB]"
+                        className="bg-white dark:bg-[#1E293B] border border-[#CBD5E1] dark:border-[#475569] rounded-md px-1.5 py-1 text-[13px] font-bold text-[#0F172A] dark:text-white text-center w-12 outline-none focus:border-[#2563EB] dark:focus:border-blue-500"
                       />
-                      <span className="text-[#94A3B8] text-xs font-bold">%</span>
-                    </div>
-                    {/* Progress Bar Container */}
-                    <div className="h-1.5 w-full bg-[#F1F5F9] rounded-full overflow-hidden">
-                       <div 
-                         className="h-full rounded-full" 
-                         style={{ 
-                           width: `${Math.min(row.objetivo, 100)}%`, 
-                           backgroundColor: row.cor 
-                         }}
-                       ></div>
+                      <span className="text-[#94A3B8] dark:text-[#94A3B8] text-xs font-bold">%</span>
                     </div>
                   </div>
-
-                  <div className="col-span-2 flex justify-center">
-                    <div className={`px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider ${row.statusColor}`}>
-                      {row.status}
-                    </div>
-                  </div>
-
-                  <div className="col-span-2 text-right">
-                    {row.status === 'COMPRA' && row.diferenca > 0 ? (
-                      <span className="font-bold text-[#16A34A] text-sm">+ {formatCurrency(row.diferenca, moeda)}</span>
-                    ) : (
-                      <span className="text-[#94A3B8] font-bold">-</span>
-                    )}
+                  <div className="h-2 w-full bg-[#E2E8F0] dark:bg-[#475569] rounded-full overflow-hidden">
+                     <div 
+                       className="h-full rounded-full transition-all duration-500 max-w-full" 
+                       style={{ 
+                         width: `${Math.min(row.objetivo, 100)}%`, 
+                         backgroundColor: row.cor 
+                       }}
+                     />
                   </div>
                 </div>
-              ))}
-            </div>
+
+              </div>
+            ))}
           </div>
+
         </div>
       </div>
       

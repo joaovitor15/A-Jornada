@@ -332,15 +332,15 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
   const clanName = playerData && playerData.clan ? playerData.clan.name : "Nenhum clã";
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto pb-8 text-[#0F172A] font-sans">
+    <div className="space-y-6 max-w-7xl mx-auto pb-8 text-[#0F172A] dark:text-white font-sans">
       
       {/* TOP ACTIONS BAR ALWAYS RENDERED */}
-      <div className="flex justify-between items-center px-2 h-12 relative z-30" ref={dropdownRef}>
-        <div className="flex items-center">
-          <span className="font-extrabold text-[#3B82F6] tracking-tight uppercase">Bem Vindo ao Clash Royale</span>
+      <div className="flex justify-between items-center px-2 h-12 relative z-30 gap-2" ref={dropdownRef}>
+        <div className={`items-center min-w-0 flex-shrink ${isActionsMenuOpen ? 'hidden sm:flex' : 'flex'}`}>
+          <span className="font-extrabold text-[#3B82F6] tracking-tight uppercase truncate">Bem Vindo ao Clash Royale</span>
         </div>
         
-        <div className="flex items-center gap-2 relative">
+        <div className="flex items-center gap-2 relative flex-shrink-0">
           
           <AnimatePresence mode="popLayout">
             {isActionsMenuOpen ? (
@@ -349,19 +349,19 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 initial={{ opacity: 0, x: 20 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
-                className="flex items-center gap-2 bg-white/80 backdrop-blur-md p-1 rounded-full border border-slate-200 shadow-lg pr-2"
+                className="flex items-center gap-2 bg-white dark:bg-[#1E293B]/80 backdrop-blur-md p-1 rounded-full border border-slate-200 dark:border-[#334155] shadow-lg pr-2"
               >
                 {/* 1. SEARCH */}
                 {isSearchOpen ? (
-                  <form onSubmit={handleSearchSubmit} className="flex bg-white rounded-full border border-slate-200 shadow-sm overflow-hidden h-9 transition-all">
+                  <form onSubmit={handleSearchSubmit} className="flex bg-white dark:bg-[#1E293B] rounded-full border border-slate-200 dark:border-[#334155] shadow-sm overflow-hidden h-9 transition-all">
                     <input 
                       autoFocus
                       value={searchInput} 
                       onChange={e => setSearchInput(e.target.value)} 
                       placeholder="Tag..."
-                      className="px-3 py-1 text-xs font-black uppercase text-slate-700 focus:outline-none w-24 sm:w-32 placeholder-slate-400"
+                      className="px-3 py-1 text-xs font-black uppercase text-slate-700 dark:text-slate-300 focus:outline-none w-24 sm:w-32 placeholder-slate-400"
                     />
-                    <button type="button" onClick={() => setIsSearchOpen(false)} className="px-2 hover:bg-slate-100 text-slate-400 transition-colors">
+                    <button type="button" onClick={() => setIsSearchOpen(false)} className="px-2 hover:bg-slate-100 dark:bg-[#334155] text-slate-400 transition-colors">
                       <X size={12} />
                     </button>
                     <button type="submit" className="bg-[#3B82F6] text-white px-3 hover:bg-[#2563EB] transition-colors border-l border-[#2563EB]">
@@ -371,7 +371,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 ) : (
                   <button 
                     onClick={() => setIsSearchOpen(true)}
-                    className="bg-white hover:bg-slate-50 border border-slate-100 text-slate-600 rounded-full h-9 w-9 flex items-center justify-center transition-colors"
+                    className="bg-white dark:bg-[#1E293B] hover:bg-slate-50 dark:bg-[#0F172A]/50 border border-slate-100 dark:border-[#334155] text-slate-600 dark:text-slate-400 rounded-full h-9 w-9 flex items-center justify-center transition-colors"
                     title="Buscar outra Tag"
                   >
                     <Search size={16} />
@@ -380,13 +380,13 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
 
                 {/* 2. SAVE TAG */}
                 {saveStatus !== 'idle' ? (
-                  <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white px-3 h-9 rounded-full shadow-sm border border-slate-100 transition-all">
+                  <div className="flex items-center justify-center text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white dark:bg-[#1E293B] px-3 h-9 rounded-full shadow-sm border border-slate-100 dark:border-[#334155] transition-all">
                     {saveStatus === 'saving' ? <Loader2 size={12} className="animate-spin text-[#3B82F6]"/> : <Check size={12} className="text-green-500"/>}
                   </div>
                 ) : (
                   <button 
                     onClick={() => playerTag ? saveTagToSupabase(playerTag, playerData?.name) : null}
-                    className={`bg-white border border-slate-100 text-slate-600 rounded-full h-9 w-9 flex items-center justify-center transition-colors ${playerTag ? 'hover:bg-slate-50 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
+                    className={`bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-[#334155] text-slate-600 dark:text-slate-400 rounded-full h-9 w-9 flex items-center justify-center transition-colors ${playerTag ? 'hover:bg-slate-50 dark:bg-[#0F172A]/50 cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
                     title="Salvar na Nuvem"
                     disabled={!playerTag}
                   >
@@ -398,8 +398,8 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 <div className="relative">
                   <button 
                     onClick={() => setIsSavedTagsOpen(!isSavedTagsOpen)}
-                    className={`bg-white border rounded-full h-9 w-9 flex items-center justify-center transition-colors ${
-                      isSavedTagsOpen ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-slate-100 text-slate-600 hover:bg-slate-50'
+                    className={`bg-white dark:bg-[#1E293B] border rounded-full h-9 w-9 flex items-center justify-center transition-colors ${
+                      isSavedTagsOpen ? 'border-[#3B82F6] text-[#3B82F6]' : 'border-slate-100 dark:border-[#334155] text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:bg-[#0F172A]/50'
                     }`}
                     title="Minhas Contas"
                   >
@@ -407,8 +407,8 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                   </button>
                   
                   {isSavedTagsOpen && (
-                    <div className="absolute right-0 top-11 w-64 bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden z-40 py-2">
-                       <div className="px-4 py-2 bg-slate-50 border-b border-slate-100 mb-2">
+                    <div className="absolute right-0 top-11 w-64 bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-slate-200 dark:border-[#334155] overflow-hidden z-40 py-2">
+                       <div className="px-4 py-2 bg-slate-50 dark:bg-[#0F172A]/50 border-b border-slate-100 dark:border-[#334155] mb-2">
                         <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">Contas ({savedTags.length})</span>
                       </div>
                       <div className="max-h-60 overflow-y-auto">
@@ -416,9 +416,9 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                           <div className="px-4 py-4 text-[10px] text-slate-400 font-bold uppercase text-center tracking-widest opacity-60">Vazio</div>
                         ) : (
                           savedTags.map(tagObj => (
-                            <div key={tagObj.id} onClick={() => handleSelectSavedTag(tagObj.tag)} className="group flex gap-2 w-full justify-between items-center px-4 py-2.5 hover:bg-slate-50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors">
+                            <div key={tagObj.id} onClick={() => handleSelectSavedTag(tagObj.tag)} className="group flex gap-2 w-full justify-between items-center px-4 py-2.5 hover:bg-slate-50 dark:bg-slate-800/50 cursor-pointer border-b border-slate-50 last:border-0 transition-colors">
                               <div className="flex flex-col gap-0.5">
-                                <span className={`text-sm font-black uppercase tracking-tight ${playerTag === tagObj.tag ? 'text-[#3B82F6]' : 'text-slate-800'}`}>{tagObj.name || 'Desconhecido'}</span>
+                                <span className={`text-sm font-black uppercase tracking-tight ${playerTag === tagObj.tag ? 'text-[#3B82F6]' : 'text-slate-800 dark:text-slate-200'}`}>{tagObj.name || 'Desconhecido'}</span>
                                 <div className="flex items-center gap-1.5">
                                   <span className={`text-[10px] font-bold uppercase tracking-widest ${playerTag === tagObj.tag ? 'text-[#3B82F6]/70' : 'text-slate-400'}`}>#{tagObj.tag}</span>
                                   {tagObj.game === 'clash_royale' && (
@@ -438,7 +438,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 {/* 4. SWITCH ACCOUNT */}
                 <button 
                   onClick={handleClearTag}
-                  className="bg-white border border-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-500 rounded-full h-9 w-9 flex items-center justify-center transition-colors"
+                  className="bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-[#334155] text-slate-600 dark:text-slate-400 hover:bg-red-50 hover:text-red-500 rounded-full h-9 w-9 flex items-center justify-center transition-colors"
                   title="Sair / Trocar Conta"
                 >
                   <UserRound size={16} />
@@ -447,7 +447,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 {/* 5. REFRESH */}
                 <button 
                   onClick={() => playerTag ? fetchPlayerData(playerTag) : null} 
-                  className={`bg-white border border-slate-100 rounded-full h-9 w-9 flex items-center justify-center transition-colors ${playerTag ? 'hover:bg-slate-50 text-slate-600 cursor-pointer' : 'opacity-50 text-slate-400 cursor-not-allowed'}`}
+                  className={`bg-white dark:bg-[#1E293B] border border-slate-100 dark:border-[#334155] rounded-full h-9 w-9 flex items-center justify-center transition-colors ${playerTag ? 'hover:bg-slate-50 dark:bg-[#0F172A]/50 text-slate-600 dark:text-slate-400 cursor-pointer' : 'opacity-50 text-slate-400 cursor-not-allowed'}`}
                   title="Atualizar"
                   disabled={!playerTag}
                 >
@@ -459,7 +459,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 {/* CLOSE TOGGLE */}
                 <button 
                   onClick={() => setIsActionsMenuOpen(false)}
-                  className="bg-slate-100 text-slate-400 hover:bg-slate-200 rounded-full h-8 w-8 flex items-center justify-center transition-colors"
+                  className="bg-slate-100 dark:bg-[#334155] text-slate-400 hover:bg-slate-200 rounded-full h-8 w-8 flex items-center justify-center transition-colors"
                 >
                   <X size={14} />
                 </button>
@@ -473,7 +473,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setIsActionsMenuOpen(true)}
-                className="bg-white border border-slate-200 text-slate-600 rounded-full h-10 w-10 flex items-center justify-center shadow-sm hover:bg-slate-50 transition-colors"
+                className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-[#334155] text-slate-600 dark:text-slate-400 rounded-full h-10 w-10 flex items-center justify-center shadow-sm hover:bg-slate-50 dark:bg-[#0F172A]/50 transition-colors"
                 title="Configurações e Ações"
               >
                 <Settings size={20} className="hover:rotate-45 transition-transform duration-300" />
@@ -496,7 +496,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
           <h3 className="text-2xl font-black mb-3 uppercase tracking-tighter italic">Falha na Conexão</h3>
           <p className="font-bold mb-8 opacity-70 text-sm max-w-md mx-auto leading-relaxed">{error}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button onClick={() => fetchPlayerData(playerTag)} className="px-8 py-3 bg-white border-2 border-red-200 text-red-600 font-black rounded-2xl hover:bg-red-100 transition-all uppercase tracking-widest text-xs shadow-sm">
+            <button onClick={() => fetchPlayerData(playerTag)} className="px-8 py-3 bg-white dark:bg-[#1E293B] border-2 border-red-200 text-red-600 font-black rounded-2xl hover:bg-red-100 transition-all uppercase tracking-widest text-xs shadow-sm">
               Tentar Novamente
             </button>
             <button onClick={handleClearTag} className="px-8 py-3 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 transition-all uppercase tracking-widest text-xs shadow-md">
@@ -514,31 +514,31 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
           </div>
 
           <div className="relative z-10 w-full max-w-2xl">
-            <div className="bg-white rounded-[40px] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 overflow-hidden group">
+            <div className="bg-white dark:bg-[#1E293B] rounded-[40px] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 dark:border-[#334155] overflow-hidden group">
               <div className="bg-gradient-to-br from-white to-slate-50/50 p-10 flex flex-col items-center text-center rounded-[36px]">
                 
                 <div className="relative mb-8">
                   <div className="absolute inset-0 bg-[#3B82F6]/20 blur-2xl rounded-full scale-150 animate-pulse"></div>
-                  <div className="relative bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] p-6 rounded-[28px] shadow-xl border-4 border-white transform hover:scale-105 transition-transform duration-500 group-hover:rotate-3">
+                  <div className="relative bg-gradient-to-b from-[#3B82F6] to-[#1D4ED8] dark:from-slate-700 dark:to-slate-800 p-6 rounded-[28px] shadow-xl border-4 border-white dark:border-slate-600 transform hover:scale-105 transition-transform duration-500 group-hover:rotate-3">
                     <Shield size={64} className="text-[#FBBF24] fill-[#FBBF24] drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] animate-bounce-slow" />
                   </div>
                 </div>
 
-                <h2 className="text-4xl font-black text-[#0F172A] tracking-tighter uppercase mb-4 italic leading-none drop-shadow-sm">
+                <h2 className="text-4xl font-black text-[#0F172A] dark:text-white tracking-tighter uppercase mb-4 italic leading-none drop-shadow-sm">
                   Vincular<br/>
                   <span className="text-[#3B82F6]">Clash Royale</span>
                 </h2>
                 
-                <p className="text-sm text-[#64748B] mb-8 leading-relaxed font-bold uppercase tracking-wider opacity-80 max-w-sm">
+                <p className="text-sm text-[#64748B] dark:text-[#94A3B8] mb-8 leading-relaxed font-bold uppercase tracking-wider opacity-80 max-w-sm">
                   Acesse suas conquistas, baús e estatísticas em tempo real informando sua ID de jogador.
                 </p>
 
                 <div className="w-full space-y-4">
                    <div 
                     onClick={() => setIsSearchOpen(true)}
-                    className="w-full bg-[#f8fafc] border-2 border-dashed border-slate-200 hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl p-6 transition-all cursor-pointer flex flex-col items-center gap-2 group/search"
+                    className="w-full bg-[#f8fafc] border-2 border-dashed border-slate-200 dark:border-[#334155] hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl p-6 transition-all cursor-pointer flex flex-col items-center gap-2 group/search"
                    >
-                     <div className="bg-white rounded-full p-3 shadow-sm border border-slate-100 group-hover/search:scale-110 transition-transform">
+                     <div className="bg-white dark:bg-[#1E293B] rounded-full p-3 shadow-sm border border-slate-100 dark:border-[#334155] group-hover/search:scale-110 transition-transform">
                         <Search size={24} className="text-[#3B82F6]" />
                      </div>
                      <span className="text-xs font-black uppercase tracking-widest text-slate-400 group-hover/search:text-[#3B82F6]">Clique na lupa acima para buscar sua tag</span>
@@ -557,13 +557,13 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                            <button 
                              key={tagObj.id}
                              onClick={() => handleSelectSavedTag(tagObj.tag)}
-                             className="bg-white border-2 border-slate-100 hover:border-[#FBBF24] hover:bg-amber-50/30 rounded-2xl p-4 flex items-center justify-between group/tag transition-all shadow-sm active:scale-95"
+                             className="bg-white dark:bg-[#1E293B] border-2 border-slate-100 dark:border-[#334155] hover:border-[#FBBF24] hover:bg-amber-50/30 rounded-2xl p-4 flex items-center justify-between group/tag transition-all shadow-sm active:scale-95"
                            >
                              <div className="flex items-center gap-3">
                                <div className="bg-amber-100 p-2 rounded-lg group-hover/tag:bg-amber-500 transition-colors">
                                  <Bookmark size={14} className="text-amber-600 group-hover/tag:text-white" />
                                </div>
-                               <span className="font-black text-[#0F172A] tracking-wider uppercase text-sm">#{tagObj.tag}</span>
+                               <span className="font-black text-[#0F172A] dark:text-white tracking-wider uppercase text-sm">#{tagObj.tag}</span>
                              </div>
                              <div className="h-2 w-2 rounded-full bg-[#10B981] opacity-0 group-hover/tag:opacity-100 transition-opacity"></div>
                            </button>
@@ -582,7 +582,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                    )}
                 </div>
 
-                <div className="mt-12 w-full pt-8 border-t border-slate-100">
+                <div className="mt-12 w-full pt-8 border-t border-slate-100 dark:border-[#334155]">
                   <div className="bg-slate-900 rounded-3xl p-6 text-left relative overflow-hidden shadow-xl border border-slate-800">
                     <div className="absolute top-0 right-0 p-8 opacity-10 scale-150 rotate-12">
                        <Gamepad2 size={120} className="text-white" />
@@ -605,13 +605,13 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
 
 
       {/* HEADER / PLAYER PROFILE */}
-      <div className="relative bg-gradient-to-b from-[#2563EB] to-[#1D4ED8] p-6 rounded-[24px] shadow-xl border-4 border-[#1E3A8A] text-white overflow-hidden">
+      <div className="relative bg-gradient-to-b from-[#2563EB] to-[#1D4ED8] dark:from-slate-800 dark:to-slate-900 p-6 rounded-[24px] shadow-xl border-4 border-[#1E3A8A] dark:border-slate-700 text-white overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-white via-transparent to-transparent bg-[length:20px_20px]"></div>
         
-        <div className="relative z-10 flex flex-col md:flex-row justify-between items-center gap-6">
+        <div className="relative z-10 flex flex-col xl:flex-row justify-between items-center gap-6">
           
-          <div className="flex items-center gap-5">
+          <div className="flex flex-col xl:flex-row items-center gap-5 text-center xl:text-left w-full xl:w-auto">
             {/* KING LEVEL SHIELD */}
             <div className="relative flex-shrink-0">
               <div 
@@ -638,64 +638,63 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 </div>
               </div>
               {/* Brilho externo no topo do hexágono */}
-              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-10 h-1 bg-white/20 blur-[2px] rounded-full"></div>
+              <div className="absolute -top-1 left-1/2 -translate-x-1/2 w-10 h-1 bg-white dark:bg-[#1E293B]/20 blur-[2px] rounded-full"></div>
             </div>
             
-            <div className="flex flex-col">
+            <div className="flex flex-col items-center xl:items-start text-center xl:text-left">
               <h2 className="text-4xl font-black uppercase tracking-tighter italic drop-shadow-md text-white leading-none mb-1">{playerName}</h2>
-              <div className="flex items-center gap-2 bg-black/20 rounded-md px-2 py-0.5 w-fit border border-white/5">
+              <div className="flex items-center justify-center xl:justify-start gap-2 w-fit mt-1">
                 <Shield size={12} className="text-[#94A3B8] fill-[#94A3B8]" />
                 <span className="text-[11px] font-bold text-white/80 uppercase tracking-widest">{clanName}</span>
               </div>
               
               {/* ARENA INFO */}
-              <div className="flex items-center mt-3 bg-black/20 border border-white/10 rounded-full px-3 py-1.5 shadow-inner w-fit">
-                 <span className="text-[10px] font-black text-[#FBBF24] uppercase tracking-widest leading-none mt-0.5">Arena {formattedArenaNumber}</span>
-                 <div className="w-[1px] h-3 bg-white/20 mx-2"></div>
-                 <span className="text-xs font-black text-white italic tracking-wide truncate max-w-[150px] leading-none mt-0.5">{arenaName}</span>
+              <div className="flex flex-col items-center xl:items-start mt-2 w-fit gap-0.5">
+                 <span className="text-[11px] font-black text-[#FBBF24] uppercase tracking-widest leading-none">Arena {formattedArenaNumber}</span>
+                 <span className="text-xs font-black text-white italic tracking-wide truncate max-w-[200px] leading-none">{arenaName}</span>
               </div>
             </div>
           </div>
           
           {/* TROPHIES CARDS */}
-          <div className="flex items-center gap-3 w-full md:w-auto overflow-x-auto pb-2 md:pb-0 snap-x no-scrollbar">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-start xl:justify-end gap-3 w-full xl:w-auto">
             {/* CARD 1 */}
-            <div className="flex flex-col items-center bg-black/30 rounded-2xl p-4 pt-3 border border-white/10 shadow-inner w-full md:w-auto min-w-[180px] snap-center">
+            <div className="flex flex-col items-center bg-black/30 rounded-2xl p-4 pt-3 border border-white dark:border-slate-600/10 shadow-inner w-full sm:flex-1 xl:flex-none xl:w-auto min-w-[180px] flex-shrink-0">
               <span className="text-[10px] font-black uppercase tracking-widest text-[#93C5FD] mb-2 drop-shadow-sm">Caminho de Troféus</span>
               <div className="flex items-center gap-2 mb-1">
                 <Trophy size={28} className="text-[#F59E0B] fill-[#F59E0B] drop-shadow-lg" />
                 <span className="text-3xl font-black text-white drop-shadow-md">{trophies}</span>
               </div>
               <div className="text-sm font-bold text-[#FBBF24] uppercase tracking-wider mb-2">Troféus</div>
-              <div className="w-full flex flex-col items-center border-t border-white/10 pt-2 pb-1">
+              <div className="w-full flex flex-col items-center border-t border-white dark:border-slate-600/10 pt-2 pb-1">
                 <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Máximo de Troféus</span>
                 <span className="text-sm font-black text-[#FBBF24] mt-0.5">{maxTrophies}</span>
               </div>
             </div>
             
             {/* CARD 2 - Rota das Lendas */}
-            <div className="flex flex-col items-center bg-black/30 rounded-2xl p-4 pt-3 border border-white/10 shadow-inner w-full md:w-auto min-w-[180px] snap-center">
+            <div className="flex flex-col items-center bg-black/30 rounded-2xl p-4 pt-3 border border-white dark:border-slate-600/10 shadow-inner w-full sm:flex-1 xl:flex-none xl:w-auto min-w-[180px] flex-shrink-0">
               <span className="text-[10px] font-black uppercase tracking-widest text-[#C084FC] mb-2 drop-shadow-sm">Rota das Lendas</span>
               <div className="flex items-center gap-2 mb-1">
                 <Shield size={24} className="text-[#A855F7] fill-[#A855F7] drop-shadow-lg" />
                 <span className="text-xl font-black text-white drop-shadow-md truncate max-w-[140px] text-center" title={currentLeagueName}>{currentLeagueName}</span>
               </div>
               <div className="text-sm font-bold text-[#D8B4FE] uppercase tracking-wider mb-2">Liga Atual</div>
-              <div className="w-full flex flex-col items-center border-t border-white/10 pt-2 pb-1">
+              <div className="w-full flex flex-col items-center border-t border-white dark:border-slate-600/10 pt-2 pb-1">
                 <span className="text-[10px] font-black text-white/60 uppercase tracking-widest">Maior Liga</span>
                 <span className="text-sm font-black text-[#D8B4FE] mt-0.5 truncate max-w-[150px]">{bestLeagueName}</span>
               </div>
             </div>
             
             {/* CARD 3 - Combinações Táticas */}
-            <div className="flex flex-col items-center bg-black/30 rounded-2xl p-4 pt-3 border border-white/10 shadow-inner w-full md:w-auto min-w-[180px] snap-center opacity-90">
+            <div className="flex flex-col items-center bg-black/30 rounded-2xl p-4 pt-3 border border-white dark:border-slate-600/10 shadow-inner w-full sm:flex-1 xl:flex-none xl:w-auto min-w-[180px] flex-shrink-0 opacity-90">
               <span className="text-[10px] font-black uppercase tracking-widest text-[#6EE7B7] mb-2 drop-shadow-sm text-center">Combinações Táticas</span>
               <div className="flex items-center gap-2 mb-1">
                 <Swords size={26} className="text-[#10B981] drop-shadow-lg" />
                 <span className="text-2xl font-black text-white drop-shadow-md">{autoChessTrophies}</span>
               </div>
               <div className="text-[11px] font-bold text-[#6EE7B7] uppercase tracking-wider mb-2">Pontos</div>
-              <div className="w-full flex flex-col items-center border-t border-white/10 pt-2 pb-1">
+              <div className="w-full flex flex-col items-center border-t border-white dark:border-slate-600/10 pt-2 pb-1">
                 <span className="text-[10px] font-black text-white/60 uppercase tracking-widest text-center">Ranque Atual</span>
                 <span className="text-sm font-black text-[#6EE7B7] mt-0.5 max-w-[150px] truncate text-center" title={autoChessArena}>{autoChessArena}</span>
               </div>
@@ -710,51 +709,52 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
         <div className="lg:col-span-2 space-y-6">
           
           {/* PLAYER STATS BLOCK */}
-          <div className="bg-white rounded-[24px] border-4 border-slate-200 p-8 shadow-sm relative overflow-hidden flex flex-col items-start justify-center gap-6">
+          <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border-4 border-slate-200 dark:border-[#334155] p-8 shadow-sm relative overflow-hidden flex flex-col items-start justify-center gap-6">
             <div className="absolute inset-0 opacity-5 bg-[#3B82F6]" style={{ backgroundImage: 'radial-gradient(#CBD5E1 2px, transparent 2px)', backgroundSize: '30px 30px' }}></div>
             
-            <h3 className="text-xl font-black text-slate-800 uppercase tracking-wide relative z-10 flex items-center gap-2">
+            <h3 className="text-xl font-black text-slate-800 dark:text-slate-200 uppercase tracking-wide relative z-10 flex items-center gap-2">
               <TrendingUp size={20} className="text-[#3B82F6]" />
               Estatísticas Royale
             </h3>
 
             <div className="relative z-10 flex flex-col sm:flex-row w-full gap-8 justify-between">
               
-              <div className="flex flex-col gap-6 w-full sm:w-2/3">
-                <div className="flex gap-8 justify-between sm:justify-start">
-                  <div className="flex flex-col items-start w-1/3">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Vitórias</span>
-                    <span className="text-3xl font-black text-[#10B981] drop-shadow-sm">{playerData ? playerData.wins : 0}</span>
+              <div className="flex flex-col gap-6 w-full xl:w-2/3">
+                <div className="flex gap-2 sm:gap-8 justify-between sm:justify-start">
+                  <div className="flex flex-col items-start flex-1 sm:w-1/3 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate w-full text-left">Vitórias</span>
+                    <span className="text-2xl sm:text-3xl font-black text-[#10B981] drop-shadow-sm truncate w-full text-left">{playerData ? playerData.wins : 0}</span>
                   </div>
-                  <div className="flex flex-col items-start w-1/3">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Derrotas</span>
-                    <span className="text-3xl font-black text-[#EF4444] drop-shadow-sm">{playerData ? playerData.losses : 0}</span>
+                  <div className="flex flex-col items-start flex-1 sm:w-1/3 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate w-full text-left">Derrotas</span>
+                    <span className="text-2xl sm:text-3xl font-black text-[#EF4444] drop-shadow-sm truncate w-full text-left">{playerData ? playerData.losses : 0}</span>
                   </div>
-                  <div className="flex flex-col items-start w-1/3">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">3 Coroas</span>
-                    <span className="text-3xl font-black text-[#F59E0B] drop-shadow-sm">{playerData ? playerData.threeCrownWins : 0}</span>
+                  <div className="flex flex-col items-start flex-1 sm:w-1/3 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 whitespace-nowrap overflow-hidden text-ellipsis w-full text-left">3 Coroas</span>
+                    <span className="text-2xl sm:text-3xl font-black text-[#F59E0B] drop-shadow-sm truncate w-full text-left">{playerData ? playerData.threeCrownWins : 0}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-8 justify-between sm:justify-start">
-                   <div className="flex flex-col items-start w-1/3">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Taxa de Vitórias</span>
-                    <span className="text-2xl font-black text-slate-700 drop-shadow-sm">
+                <div className="flex gap-2 sm:gap-8 justify-between sm:justify-start">
+                   <div className="flex flex-col items-start flex-1 sm:w-1/3 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate w-full text-left">Taxa de Vitórias</span>
+                    <span className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300 drop-shadow-sm truncate w-full text-left">
                       {playerData && (playerData.wins + playerData.losses > 0) ? ((playerData.wins / (playerData.wins + playerData.losses)) * 100).toFixed(1) : 0}%
                     </span>
                   </div>
-                  <div className="flex flex-col items-start w-1/3">
-                    <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Doações</span>
-                    <span className="text-2xl font-black text-slate-700 drop-shadow-sm">{playerData ? playerData.totalDonations : 0}</span>
+                  <div className="flex flex-col items-start flex-1 sm:w-1/3 min-w-0">
+                    <span className="text-[10px] sm:text-[11px] font-black text-slate-400 uppercase tracking-widest mb-1 truncate w-full text-left">Total Doações</span>
+                    <span className="text-xl sm:text-2xl font-black text-slate-700 dark:text-slate-300 drop-shadow-sm truncate w-full text-left">{playerData ? playerData.totalDonations : 0}</span>
                   </div>
+                  <div className="hidden sm:block sm:w-1/3"></div>
                 </div>
               </div>
 
-              <div className="flex flex-col items-center justify-center w-full sm:w-1/3 border-t sm:border-t-0 sm:border-l border-slate-200 pt-6 sm:pt-0 sm:pl-6">
+              <div className="flex flex-col items-center justify-center w-full sm:w-1/3 border-t sm:border-t-0 sm:border-l border-slate-200 dark:border-[#334155] pt-6 sm:pt-0 sm:pl-6">
                 {playerData ? (
                   <div className="flex flex-col items-center w-full">
                     <span className="text-[11px] font-black text-slate-400 uppercase tracking-widest mb-3">Carta Favorita</span>
-                    <div className="bg-slate-50 border-2 border-slate-200 rounded-xl p-4 w-full flex justify-center shadow-inner">
+                    <div className="bg-slate-50 dark:bg-[#0F172A]/50 border-2 border-slate-200 dark:border-[#334155] rounded-xl p-4 w-full flex justify-center shadow-inner">
                       <img src={playerData.currentFavouriteCard?.iconUrls?.medium || "https://api-assets.clashroyale.com/cards/300/Tex1C48UTq9FKtAX-3tzG0FJmc9jzncUZG3bb5Vf-Ds.png"} alt={playerData.currentFavouriteCard?.name || "Desconhecido"} className="h-24 w-auto object-contain drop-shadow-md hover:scale-110 transition-transform" title={playerData.currentFavouriteCard?.name || "Desconhecido"} />
                     </div>
                   </div>
@@ -827,8 +827,8 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                       
                       {/* ELIXIR COST DROP */}
                       {card.elixirCost !== undefined && (
-                        <div className="absolute top-1 left-1 z-20 flex items-center justify-center">
-                          <div className="relative w-6 h-7 flex items-center justify-center">
+                        <div className="absolute top-0.5 sm:top-1 left-0.5 sm:left-1 z-20 flex items-center justify-center">
+                          <div className="relative w-4 h-[1.125rem] sm:w-6 sm:h-7 flex items-center justify-center">
                             <svg
                               viewBox="0 0 100 130"
                               className="absolute inset-0 w-full h-full drop-shadow-[0_1px_2px_rgba(0,0,0,0.3)]"
@@ -852,7 +852,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                                 </linearGradient>
                               </defs>
                             </svg>
-                            <span className="relative z-10 text-[11px] font-black text-white drop-shadow-md leading-none pt-1">
+                            <span className="relative z-10 text-[9px] sm:text-[11px] font-black text-white drop-shadow-md leading-none pt-[1px] sm:pt-1">
                               {card.elixirCost}
                             </span>
                           </div>
@@ -860,16 +860,16 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                       )}
 
                       {/* LEVEL BADGE */}
-                      <div className="absolute -bottom-2 z-20 flex flex-col items-center">
-                        <div className={`w-5 h-5 rounded-full border border-white shadow-md flex items-center justify-center ${
+                      <div className="absolute -bottom-1 sm:-bottom-2 z-20 flex flex-col items-center">
+                        <div className={`w-4 h-4 sm:w-5 sm:h-5 rounded-full border border-white dark:border-slate-600 shadow-md flex items-center justify-center ${
                           card.rarity === 'common' ? 'bg-slate-400' :
                           card.rarity === 'rare' ? 'bg-amber-500' :
                           card.rarity === 'epic' ? 'bg-purple-500' :
                           card.rarity === 'legendary' ? 'bg-gradient-to-br from-cyan-300 via-blue-500 to-purple-600' :
                           card.rarity === 'champion' ? 'bg-gradient-to-br from-yellow-300 via-amber-500 to-red-500' :
-                          'bg-slate-500'
+                          'bg-slate-50 dark:bg-slate-800/500'
                         }`}>
-                          <span className="text-[10px] font-black text-white drop-shadow-sm leading-none">
+                          <span className="text-[8px] sm:text-[10px] font-black text-white drop-shadow-sm leading-none">
                             {card.level && card.maxLevel ? 16 - card.maxLevel + card.level : card.level}
                           </span>
                         </div>

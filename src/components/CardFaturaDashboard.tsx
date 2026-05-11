@@ -110,7 +110,44 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
     fetchTodosGastos();
   }, [activeProfileId, cards, refreshTrigger]);
 
-  if (loading || cards.length === 0) return null;
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.04)] overflow-hidden flex flex-col h-full min-h-[300px] animate-pulse">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+           <div className="h-6 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+        </div>
+        <div className="p-6 flex flex-col flex-1">
+          <div className="flex items-center justify-between mb-4">
+             <div className="h-5 w-32 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+             <div className="h-6 w-16 bg-slate-200 dark:bg-slate-700 rounded-full"></div>
+          </div>
+          <div className="space-y-4 mb-6">
+            <div className="flex justify-between items-end">
+              <div>
+                <div className="h-3 w-16 bg-slate-200 dark:bg-slate-700 rounded-md mb-2"></div>
+                <div className="h-8 w-28 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+              </div>
+              <div className="flex flex-col items-end">
+                <div className="h-3 w-16 mb-2 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                <div className="h-5 w-24 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+              </div>
+            </div>
+            <div className="w-full h-2.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-6"></div>
+            <div className="flex justify-between mt-2">
+                <div className="h-3 w-24 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+                <div className="h-3 w-20 bg-slate-200 dark:bg-slate-700 rounded-md"></div>
+            </div>
+          </div>
+          <div className="flex gap-2 mt-auto flex-col sm:flex-row">
+             <div className="flex-1 py-5 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+             <div className="flex-1 py-5 bg-slate-200 dark:bg-slate-700 rounded-xl"></div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) return null;
 
   // Constantes de visualização e estados
   const card = cards[0];
@@ -184,11 +221,11 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
   }
 
   const statusColors = {
-    ABERTA: "bg-blue-50 text-blue-600 border-blue-200",
-    FECHADA: "bg-red-50 text-red-600 border-red-200",
-    VENCIDA: "bg-red-100 text-red-700 border-red-300",
-    PAGA: "bg-emerald-50 text-emerald-600 border-emerald-200",
-    FUTURA: "bg-amber-50 text-amber-600 border-amber-200"
+    ABERTA: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800",
+    FECHADA: "bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-200 dark:border-red-800",
+    VENCIDA: "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 border-red-300 dark:border-red-700",
+    PAGA: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800",
+    FUTURA: "bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800"
   };
 
   // Nomenclatura da fatura ajustada: exibir o mês ("Maio") ao invés do intervalo de dias
@@ -369,9 +406,9 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
 
   return (
     <>
-      <div className="bg-white rounded-[24px] border border-[#E2E8F0] shadow-sm overflow-hidden flex flex-col">
-        <div className="p-6 bg-slate-50 border-b border-slate-100 flex items-center justify-between">
-            <h3 className="font-bold text-slate-800 text-lg flex items-center gap-2">
+      <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col">
+        <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
                 <CreditCard size={20} style={{ color: card.cor }} />
                 {card.nome}
             </h3>
@@ -382,10 +419,10 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
               className="cursor-pointer group/label" 
               onClick={() => setFaturaVisualizar(card)}
             >
-              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-1 flex items-center gap-1 group-hover/label:text-blue-500 transition-colors">
+              <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1 group-hover/label:text-blue-500 transition-colors">
                 Fatura de {nomeMes} <ReceiptText size={12} />
               </span>
-              <div className="text-[13px] font-semibold text-slate-600 transition-colors">
+              <div className="text-[13px] font-semibold text-slate-600 dark:text-slate-300 dark:text-slate-400 dark:text-slate-500 transition-colors">
                 Vencimento: {new Date(periodoCard.vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
               </div>
             </div>
@@ -399,16 +436,16 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
           <div className="space-y-4 mb-6">
             <div className="flex justify-between items-end">
               <div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 block">Valor Total</span>
-                <div className={`text-xl font-black ${valorFaturaAtualView < 0 ? 'text-emerald-500' : (statusContextual === 'ABERTA' || statusContextual === 'FUTURA') ? 'text-blue-600' : 'text-red-500'}`}>
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5 block">Valor Total</span>
+                <div className={`text-xl font-black ${valorFaturaAtualView < 0 ? 'text-emerald-500' : (statusContextual === 'ABERTA' || statusContextual === 'FUTURA') ? 'text-blue-600 dark:text-blue-400' : 'text-red-500'}`}>
                   R$ {new Intl.NumberFormat("pt-BR", {
                     minimumFractionDigits: 2,
                   }).format(valorFaturaAtualView)}
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5 block">Limite Total</span>
-                <div className="text-sm font-bold text-slate-700">
+                <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 dark:text-slate-500 dark:text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5 block">Limite Total</span>
+                <div className="text-sm font-bold text-slate-700 dark:text-slate-200 dark:text-slate-300">
                   R$ {new Intl.NumberFormat("pt-BR", {
                     minimumFractionDigits: 2,
                   }).format(card.limite)}
@@ -417,7 +454,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
             </div>
 
             <div className="space-y-1.5">
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden flex">
+              <div className="w-full h-2.5 bg-slate-100 dark:bg-slate-700/50 rounded-full overflow-hidden flex">
                 {pctVerde > 0 && (
                   <div 
                     className="h-full bg-emerald-500 transition-all duration-1000 ease-out"
@@ -447,7 +484,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                   ></div>
                 )}
               </div>
-              <div className="flex justify-between text-[10px] font-bold text-slate-400 uppercase tracking-tight mt-1.5">
+              <div className="flex justify-between text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tight mt-1.5">
                 <div className="flex gap-2">
                   {pctVerde > 0 && (
                     <span className="flex items-center gap-1"><div className="w-1.5 h-1.5 rounded-full bg-emerald-500"></div> Crédito</span>
@@ -473,21 +510,21 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
             {statusContextual !== 'ABERTA' && statusContextual !== 'FUTURA' && valorFaturaAtualView > 0 && (
               <button 
                 onClick={() => setConfirmarPagamento({cardId: card.id, valor: valorFaturaAtualView, nome: card.nome})}
-                className="flex-1 py-3 bg-red-50 border border-red-100 rounded-xl text-red-600 font-bold text-[11px] tracking-wide hover:bg-red-100 hover:border-red-200 transition-all flex items-center justify-center gap-2 cursor-pointer group"
+                className="flex-1 py-3 bg-red-50 dark:bg-red-900/30 border border-red-100 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 font-bold text-[11px] tracking-wide hover:bg-red-100 dark:hover:bg-red-900/50 hover:border-red-200 dark:hover:border-red-800 transition-all flex items-center justify-center gap-2 cursor-pointer group"
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
                 PAGAR FATURA
               </button>
             )}
             {statusContextual !== 'ABERTA' && statusContextual !== 'FUTURA' && valorFaturaAtualView <= 0 && (
-              <div className="flex-1 py-3 bg-emerald-50 border border-emerald-100 rounded-xl text-emerald-600 font-bold text-[12px] text-center tracking-wide flex items-center justify-center">
+              <div className="flex-1 py-3 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-100 dark:border-emerald-800 rounded-xl text-emerald-600 dark:text-emerald-400 font-bold text-[12px] text-center tracking-wide flex items-center justify-center">
                 FATURA PAGA
               </div>
             )}
             {statusContextual === 'ABERTA' && (
               <button 
                 onClick={() => setAnteciparFaturaModal(card)}
-                className="flex-1 py-3 bg-blue-50 border border-blue-100 hover:bg-blue-100 text-blue-600 rounded-xl font-bold text-[11px] tracking-wide transition-colors cursor-pointer"
+                className="flex-1 py-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800 hover:bg-blue-100 dark:hover:bg-blue-900/50 text-blue-600 dark:text-blue-400 rounded-xl font-bold text-[11px] tracking-wide transition-colors cursor-pointer"
                 title="Antecipar Pagamento"
               >
                 ANTECIPAR PAGAMENTO PARCIAL
@@ -501,7 +538,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                     setAnteciparParcelasSelecionadas([]);
                     setAnteciparParcelasValor("0");
                 }}
-                className="px-3.5 py-3 bg-amber-50 border border-amber-100 hover:bg-amber-100 text-amber-600 rounded-xl font-bold transition-colors cursor-pointer flex items-center justify-center"
+                className="px-3.5 py-3 bg-amber-50 dark:bg-amber-900/30 border border-amber-100 dark:border-amber-800 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-600 dark:text-amber-400 rounded-xl font-bold transition-colors cursor-pointer flex items-center justify-center"
                 title="Antecipar Parcelas"
               >
                 <LucideIcons.FastForward size={16} />
@@ -515,7 +552,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                    e.stopPropagation();
                    setViewingOffset(-1);
                  }}
-                 className="flex-1 py-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[11px] tracking-wide transition-colors cursor-pointer flex justify-center items-center"
+                 className="flex-1 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[11px] tracking-wide transition-colors cursor-pointer flex justify-center items-center"
                  title="Ver Fatura Anterior"
                >
                  Ver Fatura Fechada de {mesFaturaAnterior}
@@ -528,7 +565,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                    e.stopPropagation();
                    setViewingOffset(0);
                  }}
-                 className="flex-1 py-3 bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-600 rounded-xl font-bold text-[11px] tracking-wide transition-colors cursor-pointer flex justify-center items-center"
+                 className="flex-1 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-xl font-bold text-[11px] tracking-wide transition-colors cursor-pointer flex justify-center items-center"
                  title="Ver Fatura Aberta"
                >
                  Voltar à Fatura Aberta
@@ -539,29 +576,29 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
       </div>
 
        {anteciparFaturaModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/40 dark:bg-[#0F172AB3] backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-[32px] w-full max-w-md shadow-2xl overflow-hidden">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 Antecipar Fatura
               </h3>
               <button 
                 onClick={() => setAnteciparFaturaModal(null)} 
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors"
+                className="p-2 hover:bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 transition-colors"
               >
                 ✕
               </button>
             </div>
             <div className="p-6 space-y-6">
-               <p className="text-sm text-slate-500">
-                 Insira o valor que deseja antecipar para o cartão <span className="font-bold text-slate-700">{anteciparFaturaModal.nome}</span>.
+               <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500">
+                 Insira o valor que deseja antecipar para o cartão <span className="font-bold text-slate-700 dark:text-slate-200">{anteciparFaturaModal.nome}</span>.
                </p>
                <div>
                   <label className="block text-[11px] font-[800] text-[#64748B] uppercase tracking-wider mb-2">
                     Valor a Antecipar
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">R$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 dark:text-slate-500">R$</span>
                     <input 
                       type="text"
                       inputMode="numeric"
@@ -570,7 +607,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                         const val = e.target.value.replace(/\D/g, "");
                         setAnteciparValor(val || "0");
                       }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-lg"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all text-lg"
                     />
                   </div>
                </div>
@@ -586,22 +623,22 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
       )}
 
       {anteciparParcelasModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
-            <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white sticky top-0 z-10">
-              <h3 className="font-bold text-slate-800 flex items-center gap-2">
+        <div className="fixed inset-0 bg-black/40 dark:bg-[#0F172AB3] backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-[32px] w-full max-w-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-white dark:bg-[#1E293B] sticky top-0 z-10">
+              <h3 className="font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                 Antecipar Parcelas
               </h3>
               <button 
                 onClick={() => setAnteciparParcelasModal(null)} 
-                className="p-2 hover:bg-slate-100 rounded-full text-slate-400 transition-colors cursor-pointer"
+                className="p-2 hover:bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 transition-colors cursor-pointer"
               >
                 ✕
               </button>
             </div>
             
             <div className="flex-1 overflow-y-auto p-6">
-               <p className="text-sm text-slate-500 mb-4">
+               <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-4">
                  Selecione as despesas futuras que deseja antecipar neste cartão. 
                  <strong> Atenção: O valor de antecipação não é calculado automaticamente. Você deve inserir o valor abaixo.</strong>
                </p>
@@ -611,7 +648,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                     .filter(t => t.card_id === anteciparParcelasModal.id && t.data > (calcularPeriodoFatura(anteciparParcelasModal.dia_fechamento_fatura, anteciparParcelasModal.dia_vencimento_fatura) as any).fimStr && t.tipo === 'despesa')
                     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
                     .map(t => (
-                        <label key={t.id} className="flex items-center gap-3 p-3 border border-slate-100 rounded-xl hover:bg-slate-50 cursor-pointer transition-colors">
+                        <label key={t.id} className="flex items-center gap-3 p-3 border border-slate-100 dark:border-slate-700/50 rounded-xl hover:bg-slate-50 dark:bg-slate-800/50 cursor-pointer transition-colors">
                           <input 
                             type="checkbox" 
                             checked={anteciparParcelasSelecionadas.includes(t.id)}
@@ -619,28 +656,28 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                                if (e.target.checked) setAnteciparParcelasSelecionadas([...anteciparParcelasSelecionadas, t.id]);
                                else setAnteciparParcelasSelecionadas(anteciparParcelasSelecionadas.filter(id => id !== t.id));
                             }}
-                            className="w-4 h-4 text-amber-500 rounded border-slate-300 focus:ring-amber-500"
+                            className="w-4 h-4 text-amber-500 rounded border-slate-300 dark:border-slate-600 focus:ring-amber-500"
                           />
                           <div className="flex-1">
-                            <p className="text-sm font-bold text-slate-800">{t.descricao || 'Parcela'}</p>
-                            <p className="text-xs text-slate-500">{new Date(t.data).toLocaleDateString('pt-BR')} • R$ {Number(t.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
+                            <p className="text-sm font-bold text-slate-800 dark:text-slate-100">{t.descricao || 'Parcela'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500">{new Date(t.data).toLocaleDateString('pt-BR')} • R$ {Number(t.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</p>
                           </div>
                         </label>
                     ))
                  }
                  {transacoesCard.filter(t => t.card_id === anteciparParcelasModal.id && t.data > (calcularPeriodoFatura(anteciparParcelasModal.dia_fechamento_fatura, anteciparParcelasModal.dia_vencimento_fatura) as any).fimStr && t.tipo === 'despesa').length === 0 && (
-                    <div className="text-center py-6 text-slate-400 text-sm">Nenhuma parcela futura encontrada.</div>
+                    <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">Nenhuma parcela futura encontrada.</div>
                  )}
                </div>
             </div>
 
-            <div className="p-6 bg-slate-50 border-t border-slate-100 sticky bottom-0">
+            <div className="p-6 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-700/50 sticky bottom-0">
                <div>
                   <label className="block text-[11px] font-[800] text-[#64748B] uppercase tracking-wider mb-2">
                     Valor Total da Antecipação
                   </label>
                   <div className="relative">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400">R$</span>
+                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold text-slate-400 dark:text-slate-500">R$</span>
                     <input 
                       type="text"
                       inputMode="numeric"
@@ -649,7 +686,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                         const val = e.target.value.replace(/\D/g, "");
                         setAnteciparParcelasValor(val || "0");
                       }}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-lg"
+                      className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 transition-all text-lg"
                     />
                   </div>
                </div>
@@ -665,19 +702,19 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
       )}
 
       {confirmarPagamento && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
-          <div className="bg-white rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
+        <div className="fixed inset-0 bg-black/60 dark:bg-[#0F172AB3] backdrop-blur-sm z-[60] flex items-center justify-center p-4 animate-in fade-in duration-200">
+          <div className="bg-white dark:bg-[#1E293B] rounded-[24px] w-full max-w-sm shadow-2xl overflow-hidden p-6 text-center">
             <div className="w-16 h-16 bg-red-100 text-red-500 rounded-full flex items-center justify-center mx-auto mb-4">
               <ReceiptText size={28} />
             </div>
-            <h3 className="text-xl font-bold text-slate-800 mb-2">Pagar Fatura</h3>
-            <p className="text-sm text-slate-500 mb-6">
-              Deseja marcar a fatura do cartão <strong className="text-slate-700">{confirmarPagamento.nome}</strong> no valor de <strong className="text-slate-700">R$ {confirmarPagamento.valor.toFixed(2)}</strong> como paga?
+            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Pagar Fatura</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-6">
+              Deseja marcar a fatura do cartão <strong className="text-slate-700 dark:text-slate-200">{confirmarPagamento.nome}</strong> no valor de <strong className="text-slate-700 dark:text-slate-200">R$ {confirmarPagamento.valor.toFixed(2)}</strong> como paga?
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setConfirmarPagamento(null)}
-                className="flex-1 py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-colors"
+                className="flex-1 py-3 px-4 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-bold text-sm transition-colors"
               >
                 Cancelar
               </button>
@@ -693,8 +730,8 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
       )}
 
       {faturaVisualizar && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-[32px] w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="fixed inset-0 bg-black/40 dark:bg-[#0F172AB3] backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-[32px] w-full max-w-lg shadow-2xl flex flex-col max-h-[90vh]">
             
             {faturaOffsetVisualizar !== null ? (
               /* ESTADO 2: DETALHE DA FATURA */
@@ -713,27 +750,27 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                   return (
                     <>
                       {/* Cabecalho do Detalhe */}
-                      <div className="p-6 border-b border-slate-100 flex items-center justify-between bg-white shrink-0 rounded-t-[32px]">
+                      <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex items-center justify-between bg-white dark:bg-[#1E293B] shrink-0 rounded-t-[32px]">
                         <div className="flex items-center gap-4">
                           <button 
                             onClick={() => setFaturaOffsetVisualizar(null)}
-                            className="w-10 h-10 bg-slate-50 hover:bg-slate-100 rounded-full flex items-center justify-center text-slate-500 transition-colors"
+                            className="w-10 h-10 bg-slate-50 dark:bg-slate-800/50 hover:bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-500 dark:text-slate-400 dark:text-slate-500 transition-colors"
                           >
                             <LucideIcons.ArrowLeft size={20} />
                           </button>
                           <div>
-                            <h3 className="font-bold text-slate-900 text-lg">Fatura de {nomeMes}</h3>
-                            <p className="text-xs text-slate-500 font-medium">{periodo.label}</p>
+                            <h3 className="font-bold text-slate-900 dark:text-white text-lg">Fatura de {nomeMes}</h3>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">{periodo.label}</p>
                           </div>
                         </div>
                       </div>
 
                       {/* Resumo */}
                       <div className="px-6 pt-6 shrink-0">
-                         <div className="bg-slate-50 border border-slate-100 rounded-2xl p-4 flex justify-between items-center">
+                         <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700/50 rounded-2xl p-4 flex justify-between items-center">
                             <div>
-                               <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest block mb-1">Valor da Fatura</span>
-                               <span className="text-2xl font-black text-slate-800">R$ {valorFaturaItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+                               <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest block mb-1">Valor da Fatura</span>
+                               <span className="text-2xl font-black text-slate-800 dark:text-slate-100">R$ {valorFaturaItem.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
                             </div>
                             <div className="text-right">
                                {creditosFatura > 0 && <span className="text-xs font-bold text-emerald-500 block mb-0.5">Pagamentos: -R$ {creditosFatura.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>}
@@ -747,7 +784,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                                   setFaturaOffsetVisualizar(null);
                                   setConfirmarPagamento({cardId: faturaVisualizar.id, valor: valorFaturaItem, nome: faturaVisualizar.nome});
                               }}
-                              className="w-full mt-3 py-3 bg-red-50 hover:bg-red-100 border border-red-100 text-red-600 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2"
+                              className="w-full mt-3 py-3 bg-red-50 dark:bg-red-900/30 hover:bg-red-100 dark:hover:bg-red-900/50 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl font-bold transition-all shadow-sm flex items-center justify-center gap-2"
                             >
                               <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
                               PAGAR FATURA
@@ -757,19 +794,19 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
 
                       {/* Lista de Transações */}
                       <div className="flex-1 overflow-y-auto p-6 space-y-3">
-                         <h4 className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest mb-2">Transações</h4>
+                         <h4 className="text-[11px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Transações</h4>
                          {transacoesFatura.length === 0 ? (
-                           <div className="text-center py-8 text-slate-400 text-sm font-medium">Nenhuma transação nesta fatura.</div>
+                           <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-sm font-medium">Nenhuma transação nesta fatura.</div>
                          ) : (
                            transacoesFatura.map(t => (
-                             <div key={t.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 transition-colors">
+                             <div key={t.id} className="flex justify-between items-center p-3 rounded-xl hover:bg-slate-50 dark:bg-slate-800/50 transition-colors">
                                <div className="flex items-center gap-3">
-                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${t.tipo === 'despesa' ? 'bg-red-50 text-red-500' : 'bg-emerald-50 text-emerald-500'}`}>
+                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center ${t.tipo === 'despesa' ? 'bg-red-50 dark:bg-red-900/30 text-red-500 dark:text-red-400' : 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-500 dark:text-emerald-400'}`}>
                                     {t.tipo === 'despesa' ? <LucideIcons.ArrowDownRight size={14} /> : <LucideIcons.ArrowUpRight size={14} />}
                                  </div>
                                  <div className="flex flex-col">
-                                   <span className="font-bold text-sm text-slate-700 truncate max-w-[180px]">{t.descricao}</span>
-                                   <span className="text-[10px] text-slate-400 font-medium">{new Date(t.data).toLocaleDateString('pt-BR')}</span>
+                                   <span className="font-bold text-sm text-slate-700 dark:text-slate-200 truncate max-w-[180px]">{t.descricao}</span>
+                                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">{new Date(t.data).toLocaleDateString('pt-BR')}</span>
                                  </div>
                                </div>
                                <span className={`font-bold text-sm ${t.tipo === 'despesa' ? 'text-red-500' : 'text-emerald-500'}`}>
@@ -787,20 +824,20 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
             ) : (
               /* ESTADO 1: PÍLULAS (PRÓXIMAS / HISTÓRICO) */
               <div className="flex flex-col h-full w-full min-h-0 overflow-hidden">
-                <div className="p-6 border-b border-slate-100 bg-white shrink-0 rounded-t-[32px]">
+                <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 bg-white dark:bg-[#1E293B] shrink-0 rounded-t-[32px]">
                   <div className="flex items-center justify-between mb-6">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl flex items-center justify-center text-white" style={{backgroundColor: faturaVisualizar.cor}}>
                         <CreditCard size={20} />
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-lg">Detalhes - {faturaVisualizar.nome}</h3>
-                        <p className="text-xs text-slate-500 font-medium">Vencimento dia {faturaVisualizar.dia_vencimento_fatura}</p>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-lg">Detalhes - {faturaVisualizar.nome}</h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 dark:text-slate-500 font-medium">Vencimento dia {faturaVisualizar.dia_vencimento_fatura}</p>
                       </div>
                     </div>
                     <button 
                       onClick={() => setFaturaVisualizar(null)} 
-                      className="p-2 hover:bg-slate-100 rounded-full text-slate-400 hover:text-slate-600 transition-colors"
+                      className="p-2 hover:bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-300 transition-colors"
                       title="Fechar"
                     >
                       <LucideIcons.X size={20} />
@@ -808,16 +845,16 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                   </div>
 
                   {/* Tabs Nav */}
-                  <div className="flex bg-slate-100 p-1 rounded-xl">
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
                     <button
                       onClick={() => setFaturaVisualizarTab('PROXIMAS')}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${faturaVisualizarTab === 'PROXIMAS' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${faturaVisualizarTab === 'PROXIMAS' ? 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-300'}`}
                     >
                       Próximas Faturas
                     </button>
                     <button
                       onClick={() => setFaturaVisualizarTab('HISTORICO')}
-                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${faturaVisualizarTab === 'HISTORICO' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                      className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${faturaVisualizarTab === 'HISTORICO' ? 'bg-white dark:bg-[#1E293B] text-slate-800 dark:text-slate-100 shadow-sm' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:text-slate-300'}`}
                     >
                       Histórico
                     </button>
@@ -850,38 +887,38 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                       if (offset < 0) {
                         if (valorFaturaItem <= 0) {
                           statusLabel = 'PAGA';
-                          statusColor = 'bg-emerald-50 text-emerald-600 border-emerald-100';
+                          statusColor = 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 border-emerald-100 dark:border-emerald-800';
                         } else if (hoje > periodo.vencimento) {
                           statusLabel = 'VENCIDA';
-                          statusColor = 'bg-red-50 text-red-600 border-red-100';
+                          statusColor = 'bg-red-50 dark:bg-red-900/40 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800';
                         } else {
                           statusLabel = 'FECHADA';
-                          statusColor = 'bg-red-50 text-red-600 border-red-100'; // Vermelha
+                          statusColor = 'bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 border-red-100 dark:border-red-800'; // Vermelha
                         }
                       } else if (offset === 0) {
                         statusLabel = 'Fatura Atual';
-                        statusColor = 'bg-blue-50 text-blue-600 border-blue-200'; // Azul
+                        statusColor = 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800'; // Azul
                       } else {
                         statusLabel = 'Fatura Futura';
-                        statusColor = 'bg-amber-50 text-amber-600 border-amber-200'; // Amarelo
+                        statusColor = 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800'; // Amarelo
                       }
 
                       return (
                         <div 
                           key={offset} 
                           onClick={() => setFaturaOffsetVisualizar(offset)}
-                          className={`p-5 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${offset === 0 ? 'border-blue-200 bg-blue-50/20 shadow-sm ring-1 ring-blue-100' : 'border-slate-100 bg-white hover:border-slate-300'} group`}
+                          className={`p-5 rounded-2xl border transition-all cursor-pointer hover:shadow-md ${offset === 0 ? 'border-blue-200 dark:border-blue-800 bg-blue-50/20 dark:bg-blue-900/10 shadow-sm ring-1 ring-blue-100 dark:ring-blue-900/50' : 'border-slate-100 dark:border-slate-700/50 bg-white dark:bg-[#1E293B] hover:border-slate-300 dark:border-slate-600'} group`}
                         >
                           <div className="flex justify-between items-start mb-2">
                              <div>
-                                <h4 className="text-lg font-black text-slate-800 group-hover:text-amber-500 transition-colors">{nomeMes}</h4>
+                                <h4 className="text-lg font-black text-slate-800 dark:text-slate-100 group-hover:text-amber-500 transition-colors">{nomeMes}</h4>
                                 <span className={`text-[10px] font-extrabold uppercase tracking-widest mt-1 inline-block px-2 py-0.5 rounded-md border ${statusColor}`}>
                                   {statusLabel}
                                 </span>
                              </div>
                              <div className="text-right flex items-center gap-3">
                                 <div className="flex flex-col items-end">
-                                   <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest mb-0.5 block">Total Previsto</span>
+                                   <span className="text-[10px] font-extrabold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-0.5 block">Total Previsto</span>
                                    <span className={`text-xl font-black ${valorFaturaItem < 0 ? 'text-emerald-500' : statusLabel === 'Fatura Atual' ? 'text-blue-600' : statusLabel === 'FECHADA' || statusLabel === 'VENCIDA' ? 'text-red-500' : statusLabel === 'PAGA' ? 'text-emerald-600' : 'text-amber-600'}`}>
                                      R$ {Math.max(0, valorFaturaItem).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                                    </span>
@@ -896,7 +933,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                     const filteredItems = items.filter(Boolean);
                     if (filteredItems.length === 0) {
                       return (
-                        <div className="text-center py-10 text-slate-400">
+                        <div className="text-center py-10 text-slate-400 dark:text-slate-500">
                            <ReceiptText size={32} className="mx-auto mb-3 opacity-30" />
                            <p className="font-medium text-sm">Nenhuma fatura encontrada aqui.</p>
                         </div>

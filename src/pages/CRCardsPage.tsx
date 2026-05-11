@@ -6,7 +6,6 @@ import {
   Loader2,
   Shield,
   Swords,
-  Search,
   X,
   TrendingUp,
   Star,
@@ -30,9 +29,13 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
   const [playerProfile, setPlayerProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<'progresso' | 'cartas' | 'road_to_max' | 'maestria'>('progresso');
   const [activeMasteryCard, setActiveMasteryCard] = useState<string | null>(null);
+
+  const [rarityFilter, setRarityFilter] = useState<'all' | 'common' | 'rare' | 'epic' | 'legendary' | 'champion' | 'tower'>('all');
+  const [sortBy, setSortBy] = useState<'default' | 'alphabetical' | 'elixir-asc' | 'elixir-desc'>('alphabetical');
+  const [evolutionFilter, setEvolutionFilter] = useState(false);
+  const [heroFilter, setHeroFilter] = useState(false);
 
   useEffect(() => {
     fetchCards();
@@ -197,16 +200,43 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
 
   const filteredCards = cards
     .filter((c) => {
-      const matchesSearch = c.name.toLowerCase().includes(search.toLowerCase());
-      if (!matchesSearch) return false;
-
-      if (activeTab === "all") return !c.isTowerTroop;
-      if (viewMode === "road_to_max") return true;
+      if (viewMode === 'cartas') {
+        if (rarityFilter !== "all") {
+          if (rarityFilter === "tower") {
+            if (!c.isTowerTroop) return false;
+          } else {
+            if (c.rarity?.toLowerCase() !== rarityFilter) return false;
+            if (c.isTowerTroop) return false;
+          }
+        }
+        if (evolutionFilter && !c.iconUrls?.evolutionMedium) return false;
+        if (heroFilter && !c.iconUrls?.heroMedium) return false;
+      }
+      
+      if (viewMode !== "road_to_max" && rarityFilter === "all" && !evolutionFilter && !heroFilter) {
+          if (c.isTowerTroop) return false;
+      }
 
       return true;
     })
     .sort((a, b) => {
-      // Keep standard sorting for agora
+      if (viewMode === 'cartas') {
+        if (sortBy === 'alphabetical') {
+          return a.name.localeCompare(b.name);
+        }
+        if (sortBy === 'elixir-asc') {
+          const costA = a.elixirCost ?? 0;
+          const costB = b.elixirCost ?? 0;
+          if (costA !== costB) return costA - costB;
+          return a.name.localeCompare(b.name);
+        }
+        if (sortBy === 'elixir-desc') {
+          const costA = a.elixirCost ?? 0;
+          const costB = b.elixirCost ?? 0;
+          if (costA !== costB) return costB - costA;
+          return a.name.localeCompare(b.name);
+        }
+      }
       return 0;
     });
 
@@ -227,7 +257,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
       case "tower":
         return "text-rose-500";
       default:
-        return "text-slate-500";
+        return "text-slate-500 dark:text-slate-400";
     }
   };
 
@@ -246,7 +276,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
       case "tower":
         return "bg-rose-200";
       default:
-        return "bg-slate-200";
+        return "bg-slate-200 dark:bg-[#475569]";
     }
   };
 
@@ -269,56 +299,53 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
     }
   };
 
-  const groupedCards =
-    activeTab === "all" || viewMode === "road_to_max"
-      ? (() => {
-          const groups = rarityOrder
-            .map((rarity) => {
-              const isRoadToMax = viewMode === "road_to_max";
-              return {
-                rarity,
-                cards: filteredCards.filter(
-                  (c) =>
-                    c.rarity?.toLowerCase() === rarity &&
-                    (!isRoadToMax || !c.isTowerTroop),
-                ),
-              };
-            })
-            .filter((g) => g.cards.length > 0);
+  const groupedCards = (() => {
+    const groups = rarityOrder
+      .map((rarity) => {
+        const excludeTowersFromRarity = viewMode === "road_to_max" || rarityFilter === 'tower';
+        return {
+          rarity,
+          cards: filteredCards.filter(
+            (c) =>
+              c.rarity?.toLowerCase() === rarity &&
+              (!excludeTowersFromRarity || !c.isTowerTroop),
+          ),
+        };
+      })
+      .filter((g) => g.cards.length > 0);
 
-          const otherRarities = Array.from(
-            new Set(filteredCards.map((c) => c.rarity?.toLowerCase())),
-          ).filter(
-            (r): r is string =>
-              typeof r === "string" && !rarityOrder.includes(r),
-          );
-          otherRarities.forEach((rarity) => {
-            if (rarity) {
-              const isRoadToMax = viewMode === "road_to_max";
-              groups.push({
-                rarity,
-                cards: filteredCards.filter(
-                  (c) =>
-                    c.rarity?.toLowerCase() === rarity &&
-                    (!isRoadToMax || !c.isTowerTroop),
-                ),
-              });
-            }
-          });
+    const otherRarities = Array.from(
+      new Set(filteredCards.map((c) => c.rarity?.toLowerCase())),
+    ).filter(
+      (r): r is string =>
+        typeof r === "string" && !rarityOrder.includes(r),
+    );
+    otherRarities.forEach((rarity) => {
+      if (rarity) {
+        const excludeTowersFromRarity = viewMode === "road_to_max" || rarityFilter === 'tower';
+        groups.push({
+          rarity,
+          cards: filteredCards.filter(
+            (c) =>
+              c.rarity?.toLowerCase() === rarity &&
+              (!excludeTowersFromRarity || !c.isTowerTroop),
+          ),
+        });
+      }
+    });
 
-          if (viewMode === "road_to_max") {
-            const towerTroops = filteredCards.filter((c) => c.isTowerTroop);
-            if (towerTroops.length > 0) {
-              groups.push({
-                rarity: "tower",
-                cards: towerTroops,
-              });
-            }
-          }
+    if (viewMode === "road_to_max" || rarityFilter === 'tower') {
+      const towerTroops = filteredCards.filter((c) => c.isTowerTroop);
+      if (towerTroops.length > 0) {
+        groups.push({
+          rarity: "tower",
+          cards: towerTroops,
+        });
+      }
+    }
 
-          return groups;
-        })()
-      : [{ rarity: "none", cards: filteredCards }];
+    return groups;
+  })();
 
   const getRarityStyles = (rarity: string) => {
     const r = rarity?.toLowerCase() || "";
@@ -334,7 +361,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
       case "champion":
         return "border-amber-400 bg-amber-400/20 shadow-[0_0_20px_-3px_rgba(251,191,36,0.5)] ring-2 ring-amber-300/50";
       default:
-        return "border-slate-300 bg-slate-100";
+        return "border-slate-300 dark:border-[#475569] bg-slate-100 dark:bg-[#334155]";
     }
   };
 
@@ -426,53 +453,53 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
     <div className="p-6 max-w-7xl mx-auto min-h-full">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 tracking-tight uppercase flex items-center gap-2">
+          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-200 tracking-tight uppercase flex items-center gap-2">
             <Swords className="text-blue-500" />
-            Coleção Real
+            Cartas Clash Royale
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             Todas as cartas e itens de suporte
           </p>
         </div>
       </div>
 
-      <div className="flex gap-4 mb-8 border-b border-slate-200">
+      <div className="flex justify-between mb-8 border-b border-slate-200 dark:border-[#334155] w-full">
         <button
           onClick={() => setViewMode('progresso')}
-          className={`px-4 py-2 font-bold text-sm uppercase tracking-wider border-b-2 transition-colors ${
+          className={`flex-1 sm:flex-none px-0.5 sm:px-4 py-2 font-bold text-[10px] sm:text-sm uppercase tracking-tighter sm:tracking-wider border-b-2 transition-colors flex items-center justify-center text-center leading-tight ${
             viewMode === 'progresso'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
           }`}
         >
           Progresso
         </button>
         <button
           onClick={() => setViewMode('cartas')}
-          className={`px-4 py-2 font-bold text-sm uppercase tracking-wider border-b-2 transition-colors ${
+          className={`flex-1 sm:flex-none px-0.5 sm:px-4 py-2 font-bold text-[10px] sm:text-sm uppercase tracking-tighter sm:tracking-wider border-b-2 transition-colors flex items-center justify-center text-center leading-tight ${
             viewMode === 'cartas'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
           }`}
         >
           Cartas
         </button>
         <button
           onClick={() => setViewMode('road_to_max')}
-          className={`px-4 py-2 font-bold text-sm uppercase tracking-wider border-b-2 transition-colors ${
+          className={`flex-1 sm:flex-none px-0.5 sm:px-4 py-2 font-bold text-[10px] sm:text-sm uppercase tracking-tighter sm:tracking-wider border-b-2 transition-colors flex items-center justify-center text-center leading-tight ${
             viewMode === 'road_to_max'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
           }`}
         >
           Road to Max
         </button>
         <button
           onClick={() => setViewMode('maestria')}
-          className={`px-4 py-2 font-bold text-sm uppercase tracking-wider border-b-2 transition-colors ${
+          className={`flex-1 sm:flex-none px-0.5 sm:px-4 py-2 font-bold text-[10px] sm:text-sm uppercase tracking-tighter sm:tracking-wider border-b-2 transition-colors flex items-center justify-center text-center leading-tight ${
             viewMode === 'maestria'
-              ? 'border-blue-500 text-blue-600'
-              : 'border-transparent text-slate-500 hover:text-slate-700'
+              ? 'border-blue-500 text-blue-600 dark:text-blue-400'
+              : 'border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:text-slate-300'
           }`}
         >
           Maestria
@@ -481,13 +508,13 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
 
       {viewMode === 'maestria' && (
         <div className="flex flex-col gap-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-            <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest mb-4">
+          <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-slate-100 dark:border-[#334155] p-6">
+            <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 uppercase tracking-widest mb-4">
               Progresso de Maestria
             </h2>
             
             <div className="flex flex-col gap-2">
-              <div className="h-6 w-full rounded-full bg-slate-100 overflow-hidden flex shadow-inner">
+              <div className="h-6 w-full rounded-full bg-slate-100 dark:bg-[#334155] overflow-hidden flex shadow-inner">
                 {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1].map(lvl => {
                   const count = cards.filter(c => c.masteryLevel === lvl).length;
                   const width = (count / cards.length) * 100;
@@ -507,24 +534,24 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                 })}
               </div>
               
-              <div className="grid grid-cols-12 gap-1 mt-2">
+              <div className="flex overflow-x-auto no-scrollbar sm:grid sm:grid-cols-12 gap-2 mt-2 pb-2">
                 {[10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0].map(lvl => (
-                  <div key={lvl} className="flex flex-col items-center relative after:content-[''] after:absolute after:right-[-2px] after:top-[4px] after:bottom-[8px] after:w-[1px] after:bg-slate-200">
+                  <div key={lvl} className="flex-none w-10 sm:w-auto flex flex-col items-center relative after:hidden sm:after:block after:content-[''] after:absolute after:right-[-4px] after:top-[4px] after:bottom-[8px] after:w-[1px] after:bg-slate-200 dark:bg-[#475569]">
                     <span className="text-[10px] font-bold text-slate-400 uppercase">L{lvl}</span>
-                    <span className="text-xs font-black text-slate-800">
+                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
                       {cards.filter(c => !c.isTowerTroop && (c.masteryLevel || 0) === lvl).length}
                     </span>
                     <div className={`w-11/12 h-[3px] mt-1 rounded-full ${
                       lvl === 10 ? "bg-indigo-600" :
                       lvl >= 7 ? "bg-amber-500" :
                       lvl >= 4 ? "bg-slate-400" :
-                      lvl >= 1 ? "bg-orange-500" : "bg-slate-200"
+                      lvl >= 1 ? "bg-orange-500" : "bg-slate-200 dark:bg-[#475569]"
                     }`} />
                   </div>
                 ))}
-                  <div className="flex flex-col items-center">
+                  <div className="flex-none w-12 sm:w-auto flex flex-col items-center">
                     <span className="text-[10px] font-bold text-blue-500 uppercase">Sum</span>
-                    <span className="text-xs font-black text-blue-600">
+                    <span className="text-xs font-black text-blue-600 dark:text-blue-400">
                       {cards.filter(c => !c.isTowerTroop).reduce((acc, c) => acc + (c.masteryLevel || 0), 0)}
                     </span>
                     <div className="w-11/12 h-[3px] mt-1 rounded-full bg-blue-500" />
@@ -571,7 +598,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
       {viewMode === 'progresso' && (
         <>
           <div className="flex flex-col md:flex-row gap-6 mb-8">
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 w-full md:w-64 h-[13rem] p-5 flex flex-col justify-between relative group overflow-hidden">
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-slate-200 dark:border-[#334155] w-full md:w-64 h-[13rem] p-5 flex flex-col justify-between relative group overflow-hidden">
           {/* Shine effect */}
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-cyan-400 to-transparent opacity-50" />
           
@@ -582,10 +609,10 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
               </div>
             </div>
             <div className="text-center">
-              <h3 className="text-slate-500 font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
+              <h3 className="text-slate-500 dark:text-slate-400 font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
                 Ponto Estelar
               </h3>
-              <p className="text-2xl font-black text-slate-800">
+              <p className="text-2xl font-black text-slate-800 dark:text-slate-200">
                 {playerProfile?.starPoints
                   ? playerProfile.starPoints.toLocaleString("pt-BR")
                   : "0"}
@@ -600,7 +627,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                 {Math.round((currentStarPointsInvested / totalStarPointsNeeded) * 100)}%
               </span>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full border border-slate-200 overflow-hidden p-[1px] shadow-inner">
+            <div className="w-full h-3 bg-slate-100 dark:bg-[#334155] rounded-full border border-slate-200 dark:border-[#334155] overflow-hidden p-[1px] shadow-inner">
               <div 
                 className="h-full rounded-full bg-gradient-to-r from-cyan-300 via-cyan-400 to-cyan-500"
                 style={{ width: `${(currentStarPointsInvested / totalStarPointsNeeded) * 100}%` }}
@@ -612,7 +639,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                   Concluído
                 </span>
               ) : (
-                <span className="text-[12px] font-black text-slate-500 uppercase tracking-tight">
+                <span className="text-[12px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight">
                   Faltam {Math.max(0, (totalStarPointsNeeded - currentStarPointsInvested) - (playerProfile?.starPoints || 0)).toLocaleString("pt-BR")}
                 </span>
               )}
@@ -621,7 +648,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
         </div>
 
         {/* GOLD PROGRESS CARD */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 w-full md:w-64 h-[13rem] p-5 flex flex-col justify-between relative group overflow-hidden">
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-slate-200 dark:border-[#334155] w-full md:w-64 h-[13rem] p-5 flex flex-col justify-between relative group overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-amber-400 to-transparent opacity-50" />
           
           <div className="flex flex-col items-center gap-2 mt-2">
@@ -631,10 +658,10 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
               </div>
             </div>
             <div className="text-center">
-              <h3 className="text-slate-500 font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
+              <h3 className="text-slate-500 dark:text-slate-400 font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
                 Falta p/ Maximizar
               </h3>
-              <p className="text-2xl font-black text-slate-800">
+              <p className="text-2xl font-black text-slate-800 dark:text-slate-200">
                 {totalGoldRequiredTilMax.toLocaleString("pt-BR")}
               </p>
             </div>
@@ -646,7 +673,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                 {Math.round((totalGoldSpent / totalGoldMax) * 100)}%
               </span>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full border border-slate-200 overflow-hidden p-[1px] shadow-inner">
+            <div className="w-full h-3 bg-slate-100 dark:bg-[#334155] rounded-full border border-slate-200 dark:border-[#334155] overflow-hidden p-[1px] shadow-inner">
               <div 
                 className="h-full rounded-full bg-gradient-to-r from-amber-300 via-amber-500 to-amber-700"
                 style={{ width: `${(totalGoldSpent / totalGoldMax) * 100}%` }}
@@ -658,7 +685,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                   Concluído
                 </span>
               ) : (
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-tight whitespace-nowrap">
+                <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight whitespace-nowrap">
                   Custo Bruto: {totalGoldMax.toLocaleString("pt-BR")}
                 </span>
               )}
@@ -666,7 +693,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
           </div>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 w-full md:w-64 h-[13rem] p-5 flex flex-col justify-between relative group overflow-hidden">
+        <div className="bg-white dark:bg-[#1E293B] rounded-2xl shadow-sm border border-slate-200 dark:border-[#334155] w-full md:w-64 h-[13rem] p-5 flex flex-col justify-between relative group overflow-hidden">
           <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-emerald-400 to-transparent opacity-50" />
           
           <div className="flex flex-col items-center gap-2 mt-2">
@@ -676,10 +703,10 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
               </div>
             </div>
             <div className="text-center">
-              <h3 className="text-slate-500 font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
+              <h3 className="text-slate-500 dark:text-slate-400 font-bold text-[11px] tracking-widest uppercase whitespace-nowrap">
                 Cartas Maximizadas
               </h3>
-              <p className="text-2xl font-black text-slate-800">
+              <p className="text-2xl font-black text-slate-800 dark:text-slate-200">
                 {cards.filter(c => c.hasCardOnAccount && (c.playerLevel || 1) >= MAX_LEVEL).length.toLocaleString("pt-BR")}
               </p>
             </div>
@@ -691,7 +718,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                 {cards.length > 0 ? Math.round((cards.filter(c => c.hasCardOnAccount && (c.playerLevel || 1) >= MAX_LEVEL).length / cards.length) * 100) : 0}%
               </span>
             </div>
-            <div className="w-full h-3 bg-slate-100 rounded-full border border-slate-200 overflow-hidden p-[1px] shadow-inner">
+            <div className="w-full h-3 bg-slate-100 dark:bg-[#334155] rounded-full border border-slate-200 dark:border-[#334155] overflow-hidden p-[1px] shadow-inner">
               <div 
                 className="h-full rounded-full bg-gradient-to-r from-emerald-300 via-emerald-500 to-emerald-700"
                 style={{ width: `${cards.length > 0 ? (cards.filter(c => c.hasCardOnAccount && (c.playerLevel || 1) >= MAX_LEVEL).length / cards.length) * 100 : 0}%` }}
@@ -703,7 +730,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                   Concluído
                 </span>
               ) : (
-                <span className="text-[11px] font-black text-slate-500 uppercase tracking-tight whitespace-nowrap">
+                <span className="text-[11px] font-black text-slate-500 dark:text-slate-400 uppercase tracking-tight whitespace-nowrap">
                   Total Cartas + Tropas: {cards.length}
                 </span>
               )}
@@ -771,19 +798,55 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
       </>)}
 
       {viewMode === 'cartas' && (<>
-      <div className="flex justify-end mb-8">
-        <div className="relative w-full md:w-auto">
-          <Search
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"
-            size={18}
-          />
-          <input
-            type="text"
-            placeholder="Buscar por nome..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 w-full md:w-64 shadow-sm"
-          />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div className="flex flex-wrap items-center gap-2">
+          <select 
+            value={rarityFilter}
+            onChange={(e) => setRarityFilter(e.target.value as any)}
+            className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-[#334155] text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          >
+            <option value="all">Todas as Raridades</option>
+            <option value="common">Comum</option>
+            <option value="rare">Rara</option>
+            <option value="epic">Épica</option>
+            <option value="legendary">Lendária</option>
+            <option value="champion">Campeões</option>
+            <option value="tower">Tropas de Torre</option>
+          </select>
+
+          <select 
+            value={sortBy}
+            onChange={(e) => setSortBy(e.target.value as any)}
+            className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-[#334155] text-slate-700 dark:text-slate-300 text-xs font-bold uppercase tracking-wider rounded-lg px-3 py-2 outline-none focus:ring-2 focus:ring-blue-500 shadow-sm"
+          >
+            <option value="default">Padrão</option>
+            <option value="alphabetical">Alfabética</option>
+            <option value="elixir-asc">Elixir (Menor)</option>
+            <option value="elixir-desc">Elixir (Maior)</option>
+          </select>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={() => setEvolutionFilter(!evolutionFilter)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-black uppercase tracking-wider transition-all ${
+              evolutionFilter 
+                ? 'bg-purple-100 border-purple-300 text-purple-700 shadow-sm' 
+                : 'bg-white dark:bg-[#1E293B] border-slate-200 dark:border-[#334155] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-[#0F172A]/50'
+            }`}
+          >
+            Evo
+          </button>
+          <button
+            onClick={() => setHeroFilter(!heroFilter)}
+            className={`px-3 py-1.5 rounded-lg border text-xs font-black uppercase tracking-wider transition-all ${
+              heroFilter 
+                ? 'bg-blue-100 border-blue-300 text-blue-700 shadow-sm' 
+                : 'bg-white dark:bg-[#1E293B] border-slate-200 dark:border-[#334155] text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:bg-[#0F172A]/50'
+            }`}
+          >
+            Heróis
+          </button>
         </div>
       </div>
 
@@ -830,18 +893,18 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                 >
                   <img
                     src={
-                      activeTab === "evo" && card.iconUrls?.evolutionMedium
+                      evolutionFilter && card.iconUrls?.evolutionMedium
                         ? card.iconUrls.evolutionMedium
-                        : activeTab === "hero" && card.iconUrls?.heroMedium
+                        : heroFilter && card.iconUrls?.heroMedium
                           ? card.iconUrls.heroMedium
                           : card.iconUrls.medium
                     }
                     alt={card.name}
                     className={`w-full h-auto object-contain transition-all ${
                       (
-                        activeTab === "evo"
+                        evolutionFilter && card.iconUrls?.evolutionMedium
                           ? card.hasEvoOnAccount
-                          : activeTab === "hero"
+                          : heroFilter && card.iconUrls?.heroMedium
                             ? card.hasHeroOnAccount
                             : card.hasCardOnAccount
                       )
@@ -885,13 +948,13 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                     </div>
                   )}
 
-                  {/* SPECIAL BADGES (EVO / HERO) ONLY VISIBLE ON ALL TAB */}
+                  {/* SPECIAL BADGES (EVO / HERO) */}
                   <div className="absolute top-1 right-1 z-20 flex flex-row gap-0.5 items-start justify-end">
-                    {activeTab === "all" && !!card.iconUrls?.heroMedium && (
+                    {!!card.iconUrls?.heroMedium && (
                       <div
                         className={`text-[7px] font-black px-1.5 h-[14px] rounded-sm border shadow-sm uppercase tracking-tighter flex items-center gap-0.5 ${
                           card.hasHeroOnAccount !== false
-                            ? "bg-gradient-to-b from-cyan-300 to-blue-600 text-white border-white/50"
+                            ? "bg-gradient-to-b from-cyan-300 to-blue-600 text-white border-white dark:border-slate-700/50"
                             : "bg-slate-700 text-slate-400 border-slate-600/50"
                         }`}
                       >
@@ -899,12 +962,11 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                         HERÓI
                       </div>
                     )}
-                    {activeTab === "all" &&
-                      !!card.iconUrls?.evolutionMedium && (
+                    {!!card.iconUrls?.evolutionMedium && (
                         <div
                           className={`text-[7px] font-black px-1.5 h-[14px] rounded-sm border shadow-sm uppercase tracking-tighter flex items-center gap-0.5 ${
                             card.hasEvoOnAccount !== false
-                              ? "bg-gradient-to-b from-purple-400 to-purple-800 text-white border-white/50"
+                              ? "bg-gradient-to-b from-purple-400 to-purple-800 text-white border-white dark:border-slate-700/50"
                               : "bg-slate-700 text-slate-400 border-slate-600/50"
                           }`}
                         >
@@ -918,7 +980,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                   {card.playerLevelRaw > 0 &&
                     card.playerLevelRaw === card.playerMaxLevelRaw && (
                       <div className="absolute bottom-1 right-1 z-20">
-                        <div className="bg-gradient-to-b from-yellow-300 via-yellow-500 to-amber-600 px-1.5 h-[14px] rounded-sm border border-white/60 shadow-sm flex items-center justify-center">
+                        <div className="bg-gradient-to-b from-yellow-300 via-yellow-500 to-amber-600 px-1.5 h-[14px] rounded-sm border border-white dark:border-slate-700/60 shadow-sm flex items-center justify-center">
                           <span className="text-[7px] font-black text-black leading-none uppercase tracking-tighter">
                             MAX
                           </span>
@@ -947,7 +1009,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
                   {card.playerLevel !== undefined && (
                     <div className="absolute -bottom-2.5 left-1/2 -translate-x-1/2 z-20 flex flex-col items-center">
                       <div
-                        className={`w-5 h-5 rounded-full ${getRarityBadgeStyles(card.rarity)} border border-white shadow-md flex items-center justify-center`}
+                        className={`w-5 h-5 rounded-full ${getRarityBadgeStyles(card.rarity)} border border-white dark:border-slate-700 shadow-md flex items-center justify-center`}
                       >
                         <span className="text-[10px] font-black text-white drop-shadow-sm leading-none">
                           {card.playerLevel}
@@ -960,8 +1022,8 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
             ])}
           </AnimatePresence>
           {filteredCards.length === 0 && (
-            <div className="col-span-full py-20 text-center text-slate-500 font-bold italic">
-              Nenhuma carta encontrada com o termo "{search}".
+            <div className="col-span-full py-20 text-center text-slate-500 dark:text-slate-400 font-bold italic">
+              Nenhuma carta encontrada.
             </div>
           )}
         </div>
@@ -997,8 +1059,8 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
             ])}
           </AnimatePresence>
           {filteredCards.length === 0 && (
-            <div className="py-20 text-center text-slate-500 font-bold italic">
-              Nenhuma carta encontrada com o termo "{search}".
+            <div className="py-20 text-center text-slate-500 dark:text-slate-400 font-bold italic">
+              Nenhuma carta encontrada.
             </div>
           )}
         </div>
