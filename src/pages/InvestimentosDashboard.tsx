@@ -397,9 +397,9 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
 
           {/* Desktop/Tablet View (Hidden on very small screens, visible on md and up) */}
           <div className="hidden md:block overflow-x-auto">
-            <div className="min-w-[600px]">
+            <div className="min-w-[600px] pb-2">
               {/* Header da Tabela */}
-              <div className="grid grid-cols-12 gap-4 pb-3 border-b border-[#E2E8F0] dark:border-[#334155] mb-4 text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider">
+              <div className="grid grid-cols-12 gap-4 pb-3 border-b border-[#E2E8F0] dark:border-[#334155] mb-4 text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider px-2">
                 <div className="col-span-3">Classe de Ativo</div>
                 <div className="col-span-3">Valor Atual</div>
                 <div className="col-span-2 text-center">Objetivo %</div>
@@ -410,7 +410,7 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
               {/* Linhas da Tabela */}
               <div className="space-y-4">
                 {tableData.map((row, index) => (
-                  <div key={`desktop-${index}`} className="grid grid-cols-12 gap-4 items-center group hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] p-2 -mx-2 rounded-xl transition-colors">
+                  <div key={`desktop-${index}`} className="grid grid-cols-12 gap-4 items-center group hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] p-2 rounded-xl transition-colors">
                     <div className="col-span-3 flex items-center gap-3">
                       <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: row.cor }}></div>
                       <div>

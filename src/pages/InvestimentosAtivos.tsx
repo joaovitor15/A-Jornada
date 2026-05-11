@@ -609,7 +609,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                             {/* Linhas da Tabela */}
                             <div className="space-y-1">
                               {classe.ativos.map((ativo: any, index: number) => (
-                                <div key={index} className="grid grid-cols-[1fr_0.95fr_1fr_1.1fr_0.8fr_0.9fr_1.2fr_70px] gap-2 items-center py-2 hover:bg-white dark:bg-[#1E293B] rounded-xl transition-colors px-2 -mx-2">
+                                <div key={index} className="grid grid-cols-[1fr_0.95fr_1fr_1.1fr_0.8fr_0.9fr_1.2fr_70px] gap-2 items-center py-2 hover:bg-white dark:bg-[#1E293B] rounded-xl transition-colors px-2">
                                   
                                   <div className="text-left pl-2 truncate" title={ativo.ticker}>
                                     <span className="font-bold text-[#0F172A] dark:text-white text-[14px] leading-none">{ativo.ticker}</span>

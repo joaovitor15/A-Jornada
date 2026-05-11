@@ -31,8 +31,24 @@ import BSBrawlersPage from './pages/BSBrawlersPage';
 
 export default function App() {
   const { user, loading: authLoading, login, cadastrar, logout } = useAuth();
-  const [activePage, setActivePage] = useState<Page>('dashboard');
-  const [selectedGame, setSelectedGame] = useState<'cr' | 'bs' | null>(null);
+  const [activePage, setActivePage] = useState<Page>(() => {
+    return (localStorage.getItem('activePage') as Page) || 'dashboard';
+  });
+  const [selectedGame, setSelectedGame] = useState<'cr' | 'bs' | null>(() => {
+    return (localStorage.getItem('selected_game') as 'cr' | 'bs' | null) || null;
+  });
+
+  useEffect(() => {
+    localStorage.setItem('activePage', activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    if (selectedGame) {
+      localStorage.setItem('selected_game', selectedGame);
+    } else {
+      localStorage.removeItem('selected_game');
+    }
+  }, [selectedGame]);
   const profilesHook = useProfiles();
   const { profiles, setProfileActive } = profilesHook;
   

@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Landmark, Mail, Lock, Loader2, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Landmark, Mail, Lock, Loader2, AlertCircle, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
 
 interface LoginProps {
@@ -13,6 +13,31 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
+  useEffect(() => {
+    // Check initial dark mode state
+    const isDark = localStorage.getItem('darkMode') === 'true' || 
+                   (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    setIsDarkMode(isDark);
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDarkMode;
+    setIsDarkMode(newMode);
+    localStorage.setItem('darkMode', newMode.toString());
+    if (newMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,7 +60,17 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F0F7FF] dark:bg-[#0F172A] flex items-center justify-center p-4 font-sans">
+    <div className="min-h-screen w-full bg-[#F0F7FF] dark:bg-[#0F172A] flex items-center justify-center p-4 font-sans relative">
+      <div className="absolute top-4 right-4 z-10">
+        <button
+          onClick={toggleDarkMode}
+          className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-[#1E293B]/50 transition-colors text-[#64748B] dark:text-[#94A3B8]"
+          title="Alternar Modo Escuro"
+        >
+          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+        </button>
+      </div>
+
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

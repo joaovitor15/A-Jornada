@@ -169,7 +169,14 @@ export default function AppLayout({
     return () => document.removeEventListener("click", handleClickOutside);
   }, []);
   
-  const financeiroItems = activeProfile?.enable_sistema_financeiro !== false ? [
+  type MenuItem = {
+    id: Page;
+    icon: any;
+    title: string;
+    badge?: number;
+  };
+
+  const financeiroItems: MenuItem[] = activeProfile?.enable_sistema_financeiro !== false ? [
     ...(activeProfile?.financeiro_show_dashboard !== false ? [{ id: 'dashboard' as Page, icon: LayoutDashboard, title: 'Dashboard' }] : []),
     ...(activeProfile?.financeiro_show_transacoes !== false ? [{ id: 'transactions' as Page, icon: Wallet, title: 'Transações' }] : []),
     ...(activeProfile?.financeiro_show_cartoes !== false ? [{ id: 'cartoes' as Page, icon: CreditCard, title: 'Cartões' }] : []),
@@ -178,13 +185,13 @@ export default function AppLayout({
     ...(activeProfile?.financeiro_show_categorias !== false ? [{ id: 'categories' as Page, icon: Tag, title: 'Categorias' }] : []),
   ] : [];
 
-  const investimentosItems = activeProfile?.investimentos_ativo === true ? [
+  const investimentosItems: MenuItem[] = activeProfile?.investimentos_ativo === true ? [
     ...(activeProfile?.investimentos_show_dashboard !== false ? [{ id: 'investimentos' as Page, icon: PieChart, title: 'Painel' }] : []),
     ...(activeProfile?.investimentos_show_ativos !== false ? [{ id: 'investimentos_ativos' as Page, icon: Activity, title: 'Ativos' }] : []),
     ...(activeProfile?.investimentos_show_operacoes !== false ? [{ id: 'investimentos_cofres' as Page, icon: Shield, title: 'Reserva' }] : [])
   ] : [];
 
-  const gameItems = activeProfile?.game_ativo === true ? [
+  const gameItems: MenuItem[] = activeProfile?.game_ativo === true ? [
     { id: 'game' as Page, icon: Gamepad2, title: 'Jogos' },
     ...((selectedGame === 'cr' && activeProfile?.game_show_clash_royale !== false) ? [
       { id: 'cr_profile' as Page, icon: Crown, title: 'Dados' },
