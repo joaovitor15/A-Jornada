@@ -387,10 +387,100 @@ export default function BSProfilePage({ activeProfileId }: GamePageProps) {
           <p className="text-sm opacity-80">{error}</p>
         </div>
       ) : !playerTag ? (
-        <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-[#1E293B] rounded-3xl border-2 border-dashed border-slate-200 dark:border-[#334155] text-center max-w-2xl mx-auto mt-20">
-          <Star className="w-16 h-16 text-[#FBBF24] mb-4 opacity-50" />
-          <h2 className="text-xl font-black text-slate-800 dark:text-slate-200 mb-2 uppercase tracking-tight">Buscar Perfil</h2>
-          <p className="text-slate-500 mb-6 font-medium">Use do menu acima para procurar por uma Tag de Jogador (ex: #J2R...)</p>
+        <div className="flex flex-col items-center justify-center min-h-[70vh] px-4 font-sans relative">
+          
+          {/* BACKGROUND ELEMENTS */}
+          <div className="absolute inset-0 z-0 pointer-events-none overflow-hidden h-full w-full">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#F59E0B] opacity-[0.03] blur-[120px] rounded-full"></div>
+            <div className="absolute top-1/4 right-1/4 w-[300px] h-[300px] bg-[#EF4444] opacity-[0.02] blur-[100px] rounded-full"></div>
+          </div>
+
+          <div className="relative z-10 w-full max-w-2xl">
+            <div className="bg-white dark:bg-[#1E293B] rounded-[40px] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 dark:border-[#334155] overflow-hidden group">
+              <div className="bg-gradient-to-br from-white to-slate-50/50 dark:from-[#1E293B] dark:to-[#0F172A] p-10 flex flex-col items-center text-center rounded-[36px]">
+                
+                <div className="relative mb-8">
+                  <div className="absolute inset-0 bg-[#F59E0B]/20 blur-2xl rounded-full scale-150 animate-pulse"></div>
+                  <div className="relative bg-gradient-to-b from-[#F59E0B] to-[#D97706] dark:from-slate-700 dark:to-slate-800 p-6 rounded-[28px] shadow-xl border-4 border-white dark:border-slate-600 transform hover:scale-105 transition-transform duration-500 group-hover:rotate-3">
+                    <Star size={64} className="text-[#FEF3C7] fill-[#FEF3C7] drop-shadow-[0_4px_10px_rgba(0,0,0,0.3)] animate-bounce-slow" />
+                  </div>
+                </div>
+
+                <h2 className="text-4xl font-black text-[#0F172A] dark:text-white tracking-tighter uppercase mb-4 italic leading-none drop-shadow-sm">
+                  Vincular<br/>
+                  <span className="text-[#F59E0B]">Brawl Stars</span>
+                </h2>
+                
+                <p className="text-sm text-[#64748B] dark:text-[#94A3B8] mb-8 leading-relaxed font-bold uppercase tracking-wider opacity-80 max-w-sm">
+                  Acesse seus brawlers, recordes e estatísticas em tempo real informando sua tag de jogador.
+                </p>
+
+                <div className="w-full space-y-4">
+                   <div 
+                    onClick={() => setIsSearchOpen(true)}
+                    className="w-full bg-[#f8fafc] dark:bg-[#1E293B]/50 border-2 border-dashed border-slate-200 dark:border-[#334155] hover:border-[#F59E0B] dark:hover:border-[#F59E0B] hover:bg-amber-50/30 dark:hover:bg-amber-900/20 rounded-2xl p-6 transition-all cursor-pointer flex flex-col items-center gap-2 group/search"
+                   >
+                     <div className="bg-white dark:bg-[#0F172A] rounded-full p-3 shadow-sm border border-slate-100 dark:border-[#334155] group-hover/search:scale-110 transition-transform">
+                        <Search size={24} className="text-[#F59E0B] dark:text-[#FCD34D]" />
+                     </div>
+                     <span className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover/search:text-[#F59E0B] dark:group-hover/search:text-[#FCD34D]">Clique na lupa acima para buscar sua tag</span>
+                   </div>
+
+                   {savedTags.length > 0 && (
+                     <div className="pt-4 w-full">
+                       <div className="flex items-center gap-4 mb-6">
+                         <div className="h-px bg-slate-200 flex-1"></div>
+                         <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Ou escolha uma salva</span>
+                         <div className="h-px bg-slate-200 flex-1"></div>
+                       </div>
+                       
+                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                         {savedTags.slice(0, 4).map(tagObj => (
+                           <button 
+                             key={tagObj.id}
+                             onClick={() => handleSelectSavedTag(tagObj.tag)}
+                             className="bg-white dark:bg-[#1E293B] border-2 border-slate-100 dark:border-[#334155] hover:border-[#FBBF24] hover:bg-amber-50/30 rounded-2xl p-4 flex items-center justify-between group/tag transition-all shadow-sm active:scale-95"
+                           >
+                             <div className="flex items-center gap-3">
+                               <div className="bg-amber-100 p-2 rounded-lg group-hover/tag:bg-amber-500 transition-colors">
+                                 <Bookmark size={14} className="text-amber-600 group-hover/tag:text-white" />
+                               </div>
+                               <span className="font-black text-[#0F172A] dark:text-white tracking-wider uppercase text-sm">#{tagObj.tag}</span>
+                             </div>
+                             <div className="h-2 w-2 rounded-full bg-[#10B981] opacity-0 group-hover/tag:opacity-100 transition-opacity"></div>
+                           </button>
+                         ))}
+                       </div>
+                       
+                       {savedTags.length > 4 && (
+                         <button 
+                          onClick={() => setIsSavedTagsOpen(true)}
+                          className="mt-4 text-[10px] font-black uppercase text-slate-400 hover:text-[#F59E0B] transition-colors tracking-widest underline underline-offset-4"
+                         >
+                            Ver mais {savedTags.length - 4} tags
+                         </button>
+                       )}
+                     </div>
+                   )}
+                </div>
+
+                <div className="mt-12 w-full pt-8 border-t border-slate-100 dark:border-[#334155]">
+                  <div className="bg-slate-900 rounded-3xl p-6 text-left relative overflow-hidden shadow-xl border border-slate-800">
+                    <div className="absolute top-0 right-0 p-8 opacity-10 scale-150 rotate-12">
+                       <Gamepad2 size={120} className="text-white" />
+                    </div>
+                    <div className="relative z-10">
+                      <span className="inline-block bg-[#F59E0B] text-white text-[10px] font-black px-2 py-0.5 rounded-md mb-3 uppercase tracking-widest">Tutorial Rápido</span>
+                      <h4 className="text-white text-lg font-black uppercase tracking-tight italic mb-2">Onde está minha Tag?</h4>
+                      <p className="text-slate-400 text-xs font-bold leading-relaxed">
+                        Abra o Brawl Stars &gt; Toque no seu ícone de perfil superior esquerdo &gt; Copie a <span className="text-white">Player Tag</span> (ex: <span className="text-[#FBBF24]">#2VQL...</span>) logo abaixo do seu nome de usuário.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       ) : playerData ? (
         <>

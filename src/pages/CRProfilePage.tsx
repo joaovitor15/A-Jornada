@@ -515,7 +515,7 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
 
           <div className="relative z-10 w-full max-w-2xl">
             <div className="bg-white dark:bg-[#1E293B] rounded-[40px] p-1 shadow-[0_20px_50px_rgba(0,0,0,0.08)] border border-slate-100 dark:border-[#334155] overflow-hidden group">
-              <div className="bg-gradient-to-br from-white to-slate-50/50 p-10 flex flex-col items-center text-center rounded-[36px]">
+              <div className="bg-gradient-to-br from-white to-slate-50/50 dark:from-[#1E293B] dark:to-[#0F172A] p-10 flex flex-col items-center text-center rounded-[36px]">
                 
                 <div className="relative mb-8">
                   <div className="absolute inset-0 bg-[#3B82F6]/20 blur-2xl rounded-full scale-150 animate-pulse"></div>
@@ -536,12 +536,12 @@ export default function CRProfilePage({ activeProfileId }: GamePageProps) {
                 <div className="w-full space-y-4">
                    <div 
                     onClick={() => setIsSearchOpen(true)}
-                    className="w-full bg-[#f8fafc] border-2 border-dashed border-slate-200 dark:border-[#334155] hover:border-[#3B82F6] hover:bg-blue-50/30 rounded-2xl p-6 transition-all cursor-pointer flex flex-col items-center gap-2 group/search"
+                    className="w-full bg-[#f8fafc] dark:bg-[#1E293B]/50 border-2 border-dashed border-slate-200 dark:border-[#334155] hover:border-[#3B82F6] dark:hover:border-[#3B82F6] hover:bg-blue-50/30 dark:hover:bg-blue-900/20 rounded-2xl p-6 transition-all cursor-pointer flex flex-col items-center gap-2 group/search"
                    >
-                     <div className="bg-white dark:bg-[#1E293B] rounded-full p-3 shadow-sm border border-slate-100 dark:border-[#334155] group-hover/search:scale-110 transition-transform">
-                        <Search size={24} className="text-[#3B82F6]" />
+                     <div className="bg-white dark:bg-[#0F172A] rounded-full p-3 shadow-sm border border-slate-100 dark:border-[#334155] group-hover/search:scale-110 transition-transform">
+                        <Search size={24} className="text-[#3B82F6] dark:text-[#60A5FA]" />
                      </div>
-                     <span className="text-xs font-black uppercase tracking-widest text-slate-400 group-hover/search:text-[#3B82F6]">Clique na lupa acima para buscar sua tag</span>
+                     <span className="text-xs font-black uppercase tracking-widest text-slate-400 dark:text-slate-500 group-hover/search:text-[#3B82F6] dark:group-hover/search:text-[#60A5FA]">Clique na lupa acima para buscar sua tag</span>
                    </div>
 
                    {savedTags.length > 0 && (
