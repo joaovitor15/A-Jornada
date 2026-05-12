@@ -138,7 +138,7 @@ export default function CRBadgesPage({ activeProfileId }: CRBadgesPageProps) {
               <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 tracking-widest uppercase mb-8 flex items-center gap-2 border-b border-slate-200 dark:border-[#334155] pb-3">
                 <Award className="w-5 h-5 text-amber-500" /> Emblemas Lendários
               </h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-x-8 gap-y-12">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-x-4 sm:gap-x-8 gap-y-12">
                 {legendaryBadges.map((badge, index) => renderBadge(badge, index))}
               </div>
             </div>
@@ -149,7 +149,7 @@ export default function CRBadgesPage({ activeProfileId }: CRBadgesPageProps) {
               <h2 className="text-sm font-black text-slate-800 dark:text-slate-200 tracking-widest uppercase mb-8 flex items-center gap-2 border-b border-slate-200 dark:border-[#334155] pb-3">
                 <Award className="w-5 h-5 text-blue-500" /> Emblemas
               </h2>
-              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-x-8 gap-y-12">
+              <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 xl:grid-cols-9 gap-x-4 sm:gap-x-8 gap-y-12">
                 {normalBadges.map((badge, index) => renderBadge(badge, index))}
               </div>
             </div>

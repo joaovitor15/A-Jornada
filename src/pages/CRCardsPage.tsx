@@ -859,7 +859,7 @@ export default function CRCardsPage({ activeProfileId }: CRCardsPageProps) {
           {error}
         </div>
       ) : (
-        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-x-4 gap-y-14">
+        <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-8 gap-x-2 sm:gap-x-4 gap-y-12 sm:gap-y-14">
           <AnimatePresence>
             {groupedCards.map((group) => [
               group.rarity !== "none" && (

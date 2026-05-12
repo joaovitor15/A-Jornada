@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
 
 export interface CotacaoGSheet {
   TICKER: string;
@@ -13,10 +14,8 @@ export function useCotacoesGSheets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCotacoes = async () => {
+  const fetchCotacoesGoogle = async () => {
     try {
-      setLoading(true);
-      setError(null);
       const response = await fetch(API_URL);
       const resultText = await response.text();
       
@@ -28,9 +27,48 @@ export function useCotacoesGSheets() {
       const resultJSON = JSON.parse(resultText);
       if (Array.isArray(resultJSON)) {
         setData(resultJSON);
+        
+        // Salva na Supabase para cache em 2º plano
+        const cotacoesToUpsert = resultJSON.map(c => ({
+          ticker: c.TICKER,
+          cotacao: parseFloat(String(c.ULTIMA_COTACAO).replace(',', '.')) || 0,
+          updated_at: new Date().toISOString()
+        })).filter(c => c.ticker);
+
+        if (cotacoesToUpsert.length > 0) {
+          const { error: err } = await supabase.from('cotacoes_globais').upsert(cotacoesToUpsert, { onConflict: 'ticker' });
+          if (err) console.error("Erro ao salvar cache de cotações:", err);
+        }
       } else if (resultJSON.error) {
          throw new Error(resultJSON.error);
       }
+    } catch (err: any) {
+      console.error('Erro ao buscar cotações do Google Sheets:', err);
+    }
+  };
+
+  const fetchCotacoes = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Primeiro, tenta buscar rápido do cache na Supabase
+      const { data: cacheData, error: cacheError } = await supabase
+        .from('cotacoes_globais')
+        .select('*');
+        
+      if (!cacheError && cacheData && cacheData.length > 0) {
+        setData(cacheData.map((row: any) => ({
+          TICKER: row.ticker,
+          ULTIMA_COTACAO: row.cotacao,
+          DATA_ATUALIZACAO: row.updated_at
+        })));
+        setLoading(false); // Já exibimos dados, pode tirar o loading principal
+      }
+
+      // Baixa dados mais recentes pelo GSheets em "background" (já atualizando o state depois)
+      await fetchCotacoesGoogle();
+
     } catch (err: any) {
       setError(err.message || 'Erro ao buscar cotações.');
     } finally {

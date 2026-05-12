@@ -14,6 +14,8 @@ import { useTransacoes, Transacao } from "../hooks/useTransacoes";
 import { useCategories } from "../hooks/useCategories";
 import { useCards } from "../hooks/useCards";
 
+import { AnimatePresence, motion } from "motion/react";
+
 interface TransactionModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -145,8 +147,6 @@ export function TransactionModal({
     }
   }, [tipo, isOpen, transacaoParaEditar]);
 
-  if (!isOpen) return null;
-
   const formatarValor = (digitos: string) => {
     const numero = parseInt(digitos) / 100;
     return numero.toLocaleString("pt-BR", {
@@ -272,9 +272,22 @@ export function TransactionModal({
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
-      <div className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto">
-        <div className="flex items-center justify-between mb-6">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-50 flex items-center justify-center p-4"
+        >
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+            className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto"
+          >
+            <div className="flex items-center justify-between mb-6">
           <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">
             {transacaoParaEditar ? "Editar Transação" : "Nova Transação"}
           </h2>
@@ -567,7 +580,9 @@ export function TransactionModal({
             {transacaoParaEditar ? "Salvar Alterações" : "Confirmar"}
           </button>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
+  )}
+</AnimatePresence>
   );
 }

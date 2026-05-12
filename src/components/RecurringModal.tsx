@@ -175,21 +175,20 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
     onClose();
   };
 
-  if (!isOpen) return null;
-
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-        <motion.div 
-          initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]"
-          onClick={onClose}
-        />
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          className="bg-white dark:bg-[#1E293B] max-w-[460px] w-full rounded-[24px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] relative z-10 flex flex-col max-h-[90vh] overflow-y-auto"
-        >
-          <div className="p-[20px]">
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div 
+            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]"
+            onClick={onClose}
+          />
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-white dark:bg-[#1E293B] max-w-[460px] w-full rounded-[24px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] relative z-10 flex flex-col max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-[20px]">
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">{recorrencia ? 'Editar Recorrência' : `Nova Recorrência (${tipo === 'receita' ? 'Receita' : 'Despesa'})`}</h2>
               <button onClick={onClose} className="p-2 text-[#94A3B8] hover:bg-slate-100 rounded-full transition-colors"><X size={18} /></button>
@@ -382,6 +381,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
           </div>
         </motion.div>
       </div>
+      )}
     </AnimatePresence>
   );
 };

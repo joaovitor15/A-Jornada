@@ -1,0 +1,4 @@
+239:  // Mock data for the Clash Royale inspired dashboard
+340:          <span className="font-extrabold text-[#3B82F6] tracking-tight uppercase truncate">Bem Vindo ao Clash Royale</span>
+529:                  <span className="text-[#3B82F6]">Clash Royale</span>
+594:                        Abra o Clash Royale &gt; Toque no seu nome no menu inicial &gt; Copie a <span className="text-white">Player Tag</span> (ex: <span className="text-[#FBBF24]">#2VQL...</span>) logo abaixo do seu nome de usuário.

@@ -127,7 +127,7 @@ export default function BSBrawlersPage({ activeProfileId }: GamePageProps) {
           <p className="text-slate-500 dark:text-slate-400 dark:text-slate-500 mb-6 font-medium">Vá na página de Perfil e busque uma conta para carregar os Brawlers.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6 z-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4 md:gap-6 z-0">
           {sortedBrawlers.map((brawler, i) => {
 
             return (

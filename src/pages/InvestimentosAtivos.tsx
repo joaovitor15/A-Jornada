@@ -617,13 +617,13 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                                   
                                   <div className="text-center">
                                     <span className="text-[15px] text-[#0F172A] dark:text-white font-medium leading-none">
-                                      {formatQuantity(ativo.qtd)}
+                                      {classe.id === 'renda-fixa' ? '1' : formatQuantity(ativo.qtd)}
                                     </span>
                                   </div>
 
                                   <div className="text-center">
                                     <span className="text-[14px] text-[#0F172A] dark:text-white font-medium text-nowrap leading-none">
-                                      {formatCurrency(ativo.cotacao)}
+                                      {classe.id === 'renda-fixa' ? formatCurrency(ativo.qtd) : formatCurrency(ativo.cotacao)}
                                     </span>
                                   </div>
 
@@ -723,11 +723,15 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                                   </div>
                                   <div className="flex flex-col">
                                     <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Quantidade</span>
-                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">{formatQuantity(ativo.qtd)}</span>
+                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
+                                      {classe.id === 'renda-fixa' ? '1' : formatQuantity(ativo.qtd)}
+                                    </span>
                                   </div>
                                   <div className="flex flex-col items-end">
                                     <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Cotação</span>
-                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">{formatCurrency(ativo.cotacao)}</span>
+                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
+                                      {classe.id === 'renda-fixa' ? formatCurrency(ativo.qtd) : formatCurrency(ativo.cotacao)}
+                                    </span>
                                   </div>
                                 </div>
 
@@ -808,20 +812,31 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     value={novoAtivo.ticker}
                     onChange={(e) => setNovoAtivo({...novoAtivo, ticker: e.target.value})}
                   />
-                  <p className="text-[10px] text-[#94A3B8] dark:text-[#94A3B8] mt-1 font-medium">Basta digitar o ticker livremente. Não é necessário informar a bolsa (NASDAQ, NYSE).</p>
                 </div>
 
                 <div>
                   <label className="block text-xs font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
-                    Quantidade Inicial
+                    {novoAtivo.classe === 'renda-fixa' ? 'Valor Inicial (R$)' : 'Quantidade Inicial'}
                   </label>
                   <input 
                     type="text" 
                     inputMode="decimal"
-                    placeholder="Ex: 100 ou 0,50" 
+                    placeholder={novoAtivo.classe === 'renda-fixa' ? 'Ex: 1000,00' : 'Ex: 100 ou 0,50'} 
                     className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 text-[#0F172A] dark:text-white font-medium outline-none focus:border-[#2563EB] dark:focus:border-blue-500 transition-colors"
                     value={novoAtivo.qtd}
-                    onChange={(e) => setNovoAtivo({...novoAtivo, qtd: e.target.value.replace(/[^0-9.,]/g, '')})}
+                    onChange={(e) => {
+                      if (novoAtivo.classe === 'renda-fixa') {
+                        const digits = e.target.value.replace(/\D/g, '');
+                        if (digits) {
+                          const num = parseInt(digits, 10) / 100;
+                          setNovoAtivo({...novoAtivo, qtd: num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })});
+                        } else {
+                          setNovoAtivo({...novoAtivo, qtd: ''});
+                        }
+                      } else {
+                        setNovoAtivo({...novoAtivo, qtd: e.target.value.replace(/[^0-9.,]/g, '')});
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -858,7 +873,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-[#FFFFFF] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[90vh] overflow-y-auto"
+            className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] dark:shadow-[0_24px_48px_rgba(0,0,0,0.4)] max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">Nova Ordem</h2>
@@ -966,11 +981,11 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                 />
               </div>
 
-              {/* Preview Qtd */}
+              {/* Preview Qtd / Valor */}
               <div className="w-full bg-[#F1F5F9] dark:bg-[#334155] rounded-[14px] p-[16px] flex justify-between items-center mt-[14px]">
                  <div className="flex flex-col items-center flex-1">
                    <span className="text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">Atual</span>
-                   <span className="font-[800] text-[#0F172A] dark:text-white mt-1 text-[16px]">{formatQuantity(currentQtdForOrdem)}</span>
+                   <span className="font-[800] text-[#0F172A] dark:text-white mt-1 text-[16px]">{ordemClasse === 'renda-fixa' ? formatCurrency(currentQtdForOrdem) : formatQuantity(currentQtdForOrdem)}</span>
                  </div>
                  
                  <div className="text-[#94A3B8] dark:text-[#94A3B8] px-2 flex items-center justify-center">
@@ -978,9 +993,9 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                  </div>
 
                  <div className="flex flex-col items-center flex-1">
-                   <span className="text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">Nova QTD</span>
+                   <span className="text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">{ordemClasse === 'renda-fixa' ? 'Novo Valor' : 'Nova QTD'}</span>
                    <span className={`font-[800] mt-1 text-[16px] ${ordemAtivoId ? (ordemType === 'compra' ? 'text-[#16A34A] dark:text-green-400' : (ordemType === 'venda' ? 'text-[#EF4444] dark:text-red-400' : 'text-[#2563EB] dark:text-blue-400')) : 'text-[#0F172A] dark:text-white'}`}>
-                      {ordemAtivoId ? formatQuantity(newQtdForOrdem < 0 ? 0 : newQtdForOrdem) : '0'}
+                      {ordemAtivoId ? (ordemClasse === 'renda-fixa' ? formatCurrency(newQtdForOrdem < 0 ? 0 : newQtdForOrdem) : formatQuantity(newQtdForOrdem < 0 ? 0 : newQtdForOrdem)) : '0'}
                    </span>
                  </div>
               </div>
