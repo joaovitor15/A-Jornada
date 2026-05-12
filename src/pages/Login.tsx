@@ -61,21 +61,21 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
 
   return (
     <div className="min-h-screen w-full bg-[#F0F7FF] dark:bg-[#0F172A] flex items-center justify-center p-4 font-sans relative">
-      <div className="absolute top-4 right-4 z-10">
-        <button
-          onClick={toggleDarkMode}
-          className="p-2 rounded-full hover:bg-white/50 dark:hover:bg-[#1E293B]/50 transition-colors text-[#64748B] dark:text-[#94A3B8]"
-          title="Alternar Modo Escuro"
-        >
-          {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
-        </button>
-      </div>
-
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[400px] bg-white dark:bg-[#1E293B] rounded-[20px] p-10 shadow-[0_4px_24px_rgba(0,0,0,0.08)]"
+        className="w-full max-w-[400px] bg-white dark:bg-[#1E293B] rounded-[20px] p-10 shadow-[0_4px_24px_rgba(0,0,0,0.08)] relative"
       >
+        <div className="absolute top-4 right-4 z-10">
+          <button
+            onClick={toggleDarkMode}
+            className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-[#0F172A] transition-colors text-[#64748B] dark:text-[#94A3B8]"
+            title="Alternar Modo Escuro"
+          >
+            {isDarkMode ? <Sun size={20} /> : <Moon size={20} />}
+          </button>
+        </div>
+
         {/* TOPO DO CARD */}
         <div className="flex flex-col items-center mb-8">
           <div className="w-12 h-12 bg-[#2563EB] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200 dark:shadow-blue-900/30 mb-4">
