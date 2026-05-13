@@ -31,6 +31,7 @@ import BSBrawlersPage from './pages/BSBrawlersPage';
 
 export default function App() {
   const { user, loading: authLoading, login, cadastrar, logout } = useAuth();
+  const [hasLoaded, setHasLoaded] = useState(false);
   const [activePage, setActivePage] = useState<Page>(() => {
     return (localStorage.getItem('activePage') as Page) || 'dashboard';
   });
@@ -50,11 +51,22 @@ export default function App() {
     }
   }, [selectedGame]);
   const profilesHook = useProfiles();
-  const { profiles, setProfileActive } = profilesHook;
+  const { profiles, setProfileActive, loading: profilesLoading } = profilesHook;
+
+  useEffect(() => {
+    if (!authLoading && !profilesLoading && !hasLoaded) {
+      setHasLoaded(true);
+    }
+  }, [authLoading, profilesLoading, hasLoaded]);
   
   const activeProfile = profiles.find(p => p.is_active) || profiles[0] || null;
 
   useEffect(() => {
+    if (!profilesLoading && profiles.length === 0 && activePage !== 'profiles') {
+      setActivePage('profiles');
+      return;
+    }
+    
     if (!activeProfile) return;
 
     const finPages: Page[] = ['dashboard', 'transactions', 'categories', 'recorrentes', 'relatorios', 'cartoes'];
@@ -83,10 +95,12 @@ export default function App() {
     }
   }, [activeProfile?.enable_sistema_financeiro, activeProfile?.investimentos_ativo, activeProfile?.game_ativo, activeProfile?.id, activePage]);
 
-  if (authLoading) {
+  if (!hasLoaded && (authLoading || profilesLoading)) {
     return (
-      <div className="min-h-screen w-full flex items-center justify-center bg-[#F8FAFC]">
-        <Loader2 size={40} className="text-[#2563EB] animate-spin" />
+      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-slate-900 transition-colors">
+        <Loader2 size={40} className="text-[#2563EB] animate-spin mb-4" />
+        <h2 className="text-xl font-bold text-[#1E293B] dark:text-white mb-2">A Jornada</h2>
+        <p className="text-gray-500 dark:text-gray-400 animate-pulse font-medium text-sm">Carregando perfil e configurações...</p>
       </div>
     );
   }
@@ -123,23 +137,23 @@ export default function App() {
   ) => {
     if (!isModuleActive) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white p-8 rounded-3xl border border-[#E2E8F0] shadow-sm text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white dark:bg-[#1E293B] p-8 rounded-3xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm text-center">
+          <div className="w-16 h-16 bg-gray-50 dark:bg-[#0F172A] rounded-2xl flex items-center justify-center mb-4">
             <ShieldAlert size={32} className="text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-[#1E293B] mb-2">Módulo Desativado</h3>
-          <p className="text-[#64748B] max-w-sm">O {moduleName} está desativado para este perfil. Ative-o na barra lateral para acessar.</p>
+          <h3 className="text-xl font-bold text-[#1E293B] dark:text-white mb-2">Módulo Desativado</h3>
+          <p className="text-[#64748B] dark:text-gray-400 max-w-sm">O {moduleName} está desativado para este perfil. Ative-o na barra lateral para acessar.</p>
         </div>
       );
     }
     if (!isFeatureActive) {
       return (
-        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white p-8 rounded-3xl border border-[#E2E8F0] shadow-sm text-center">
-          <div className="w-16 h-16 bg-gray-50 rounded-2xl flex items-center justify-center mb-4">
+        <div className="flex flex-col items-center justify-center min-h-[400px] bg-white dark:bg-[#1E293B] p-8 rounded-3xl border border-[#E2E8F0] dark:border-[#334155] shadow-sm text-center">
+          <div className="w-16 h-16 bg-gray-50 dark:bg-[#0F172A] rounded-2xl flex items-center justify-center mb-4">
             <EyeOff size={32} className="text-gray-400" />
           </div>
-          <h3 className="text-xl font-bold text-[#1E293B] mb-2">Página Oculta</h3>
-          <p className="text-[#64748B] max-w-sm">A tela de <strong>{featureName}</strong> foi ocultada nas configurações do seu perfil.</p>
+          <h3 className="text-xl font-bold text-[#1E293B] dark:text-white mb-2">Página Oculta</h3>
+          <p className="text-[#64748B] dark:text-gray-400 max-w-sm">A tela de <strong>{featureName}</strong> foi ocultada nas configurações do seu perfil.</p>
         </div>
       );
     }
@@ -206,7 +220,7 @@ export default function App() {
           true,
           'Sistema de Investimentos',
           'Investimentos',
-          <InvestimentosDashboard activeProfileId={activeProfile?.id} />
+          <InvestimentosDashboard activeProfileId={activeProfile?.id} activeProfile={activeProfile} updateProfileModules={profilesHook.updateProfileModules} />
         );
       case 'investimentos_ativos':
         return renderContentWithGuard(

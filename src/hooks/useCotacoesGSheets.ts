@@ -7,7 +7,7 @@ export interface CotacaoGSheet {
   DATA_ATUALIZACAO: string;
 }
 
-const API_URL = "https://script.google.com/macros/s/AKfycbzmsz9GdRvOtLFvjqEHWCCqpb9FvbsYXKTjGTEzD9dpIaHWL8WzXthKyHJn2B718lZUwA/exec";
+const API_URL = "/api/cotacoes";
 
 export function useCotacoesGSheets() {
   const [data, setData] = useState<CotacaoGSheet[]>([]);
@@ -44,6 +44,8 @@ export function useCotacoesGSheets() {
       }
     } catch (err: any) {
       console.error('Erro ao buscar cotações do Google Sheets:', err);
+      // fallback
+      throw err;
     }
   };
 
@@ -79,16 +81,14 @@ export function useCotacoesGSheets() {
   const addTickerSync = async (ticker: string) => {
     try {
       // Usamos no-cors pois o Google Apps Script faz redirects e isso costuma falhar o fetch padrão POST
-      await fetch(API_URL, {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
-            'Content-Type': 'text/plain;charset=utf-8', 
+            'Content-Type': 'application/json', 
         },
-        body: JSON.stringify({ action: 'add', ticker }),
-        mode: 'no-cors'
+        body: JSON.stringify({ action: 'add', ticker })
       });
-      // Como a resposta é no-cors, o opaco impede ler o JSON.
-      // Damos um tempo para o GAS processar e re-buscamos.
+      if (!res.ok) throw new Error('Failed');
       setTimeout(fetchCotacoes, 4000);
       return true;
     } catch(err) {
@@ -99,14 +99,14 @@ export function useCotacoesGSheets() {
 
   const deleteTickerSync = async (ticker: string) => {
     try {
-      await fetch(API_URL, {
+      const res = await fetch(API_URL, {
         method: 'POST',
         headers: {
-            'Content-Type': 'text/plain;charset=utf-8', 
+            'Content-Type': 'application/json', 
         },
-        body: JSON.stringify({ action: 'delete', ticker }),
-        mode: 'no-cors'
+        body: JSON.stringify({ action: 'delete', ticker })
       });
+      if (!res.ok) throw new Error('Failed');
       setTimeout(fetchCotacoes, 2000);
       return true;
     } catch(err) {

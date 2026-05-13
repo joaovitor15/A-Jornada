@@ -14,8 +14,12 @@ import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip a
 import { supabase } from '../supabaseClient';
 import { useCotacoesGSheets } from '../hooks/useCotacoesGSheets';
 
+import { SupabaseProfile } from '../hooks/useProfiles';
+
 interface InvestimentosDashboardProps {
   activeProfileId?: string;
+  activeProfile?: SupabaseProfile | null;
+  updateProfileModules?: (id: string, modules: Partial<SupabaseProfile>) => Promise<{ error: any }>;
 }
 
 const CLASSES_DASHBOARD = [
@@ -43,7 +47,7 @@ const formatCurrency = (value: number, currency: 'BRL' | 'USD' = 'BRL') => {
   return new Intl.NumberFormat(currency === 'BRL' ? 'pt-BR' : 'en-US', { style: 'currency', currency: currency }).format(value);
 };
 
-export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboardProps) {
+export function InvestimentosDashboard({ activeProfileId, activeProfile, updateProfileModules }: InvestimentosDashboardProps) {
   const [moeda, setMoeda] = useState<'BRL' | 'USD'>('BRL');
   
   const [ativosCarteira, setAtivosCarteira] = useState<any[]>([]);
@@ -52,17 +56,19 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
   const [objectives, setObjectives] = useState<Record<string, number>>(DEFAULT_OBJECTIVES);
 
   useEffect(() => {
+    if (activeProfile) {
+      if (activeProfile.dashboard_metas_classes && Object.keys(activeProfile.dashboard_metas_classes).length > 0) {
+        setObjectives(activeProfile.dashboard_metas_classes);
+      }
+      if (activeProfile.dashboard_compras_mes !== undefined && activeProfile.dashboard_compras_mes !== null) {
+        setComprasMes(activeProfile.dashboard_compras_mes);
+      }
+    }
+  }, [activeProfile]);
+
+  useEffect(() => {
     async function loadData() {
       if (!activeProfileId) return;
-      // Load saved class objectives from localStorage
-      const savedObjs = localStorage.getItem(`metas_classes_${activeProfileId}`);
-      if (savedObjs) {
-        try { setObjectives(JSON.parse(savedObjs)); } catch (e) {}
-      }
-      const savedCompras = localStorage.getItem(`compras_mes_dashboard_${activeProfileId}`);
-      if (savedCompras) {
-        try { setComprasMes(parseInt(savedCompras, 10)); } catch (e) {}
-      }
 
       // Fetch user assets
       const { data, error } = await supabase
@@ -81,13 +87,17 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
     let val = parseFloat(valStr.replace(',', '.')) || 0;
     const newObjs = { ...objectives, [id]: val };
     setObjectives(newObjs);
-    localStorage.setItem(`metas_classes_${activeProfileId}`, JSON.stringify(newObjs));
+    if (activeProfileId && updateProfileModules) {
+       updateProfileModules(activeProfileId, { dashboard_metas_classes: newObjs });
+    }
   };
 
   const handleComprasMesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = parseInt(e.target.value.replace(/\D/g, ''), 10) || 0;
     setComprasMes(val);
-    localStorage.setItem(`compras_mes_dashboard_${activeProfileId}`, val.toString());
+    if (activeProfileId && updateProfileModules) {
+       updateProfileModules(activeProfileId, { dashboard_compras_mes: val });
+    }
   };
 
   // Calcula valores atuais e distribuição
@@ -426,6 +436,7 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
                     <div className="col-span-2 flex flex-col justify-center px-2">
                       <div className="flex items-center justify-center gap-1 mb-1">
                         <input
+                          key={`desktop-input-${row.id}-${row.objetivo}`}
                           type="text"
                           defaultValue={row.objetivo}
                           onBlur={(e) => handleObjectiveBlur(row.id, e.target.value)}
@@ -503,6 +514,7 @@ export function InvestimentosDashboard({ activeProfileId }: InvestimentosDashboa
                     <span className="text-[10px] font-[800] text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider">Objetivo</span>
                     <div className="flex items-center gap-1">
                       <input
+                        key={`mobile-input-${row.id}-${row.objetivo}`}
                         type="text"
                         defaultValue={row.objetivo}
                         onBlur={(e) => handleObjectiveBlur(row.id, e.target.value)}

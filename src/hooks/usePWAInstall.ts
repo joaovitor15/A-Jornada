@@ -13,7 +13,6 @@ export function usePWAInstall() {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstallable, setIsInstallable] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
-  const [isIOS, setIsIOS] = useState(false);
 
   useEffect(() => {
     // Check if already installed
@@ -21,11 +20,6 @@ export function usePWAInstall() {
       setIsInstalled(true);
     }
     
-    // Check if iOS
-    const userAgent = window.navigator.userAgent.toLowerCase();
-    const isIosDevice = /iphone|ipad|ipod/.test(userAgent);
-    setIsIOS(isIosDevice);
-
     const handleBeforeInstallPrompt = (e: Event) => {
       // Prevent the mini-infobar from appearing on mobile
       e.preventDefault();
@@ -67,5 +61,5 @@ export function usePWAInstall() {
     setDeferredPrompt(null);
   };
 
-  return { isInstallable, isInstalled, isIOS, promptInstall };
+  return { isInstallable, isInstalled, promptInstall };
 }

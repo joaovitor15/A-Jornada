@@ -23,6 +23,11 @@ export default defineConfig(({mode}) => {
           orientation: 'portrait',
           icons: [
             {
+              src: '/logo-app.svg',
+              sizes: 'any',
+              type: 'image/svg+xml'
+            },
+            {
               src: '/icon-192.png',
               sizes: '192x192',
               type: 'image/png'
@@ -36,7 +41,7 @@ export default defineConfig(({mode}) => {
               src: '/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'maskable'
             }
           ],
           screenshots: [
@@ -56,11 +61,15 @@ export default defineConfig(({mode}) => {
           ]
         },
         devOptions: {
-          enabled: false
+          enabled: true,
+          type: 'module',
+          navigateFallback: 'index.html'
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
-          maximumFileSizeToCacheInBytes: 4000000 // Aumenta para ~4MB
+          maximumFileSizeToCacheInBytes: 4000000, // Aumenta para ~4MB
+          navigateFallback: '/index.html',
+          navigateFallbackDenylist: [/^\/api/]
         }
       })
     ],

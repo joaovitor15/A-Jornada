@@ -61,8 +61,7 @@ export default function AppLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   
   const [isDarkMode, setIsDarkMode] = React.useState(false);
-  const { isInstallable, isIOS, isInstalled, promptInstall } = usePWAInstall();
-  const [showIOSPrompt, setShowIOSPrompt] = React.useState(false);
+  const { isInstallable, promptInstall } = usePWAInstall();
 
   React.useEffect(() => {
     // Check initial preference from localStorage or system
@@ -223,9 +222,7 @@ export default function AppLayout({
           >
             {isMobileMenuOpen ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
           </button>
-          <div className="text-[#2563EB] dark:text-[#3B82F6]">
-             <Wallet size={24} fill="currentColor" fillOpacity={0.1} />
-          </div>
+          <img src="/logo-app.svg" alt="A Jornada Logo" className="w-8 h-8 drop-shadow-sm" />
           <h1 className="text-base md:text-lg font-bold text-[#111827] dark:text-white tracking-tight truncate max-w-[120px] sm:max-w-none">A Jornada</h1>
         </div>
 
@@ -413,7 +410,7 @@ export default function AppLayout({
             ))}
             
             <AnimatePresence>
-              {(isInstallable || (isIOS && !isInstalled)) && (
+              {isInstallable && (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -421,13 +418,7 @@ export default function AppLayout({
                   className="mt-6 w-full px-4 mb-2"
                 >
                   <button
-                    onClick={() => {
-                      if (isInstallable) {
-                        promptInstall();
-                      } else {
-                        setShowIOSPrompt(true);
-                      }
-                    }}
+                    onClick={promptInstall}
                     className="w-full flex items-center justify-center gap-2 bg-[#2563EB] text-white py-2.5 px-3 rounded-xl font-bold hover:bg-[#1D4ED8] transition-colors shadow-sm"
                   >
                     <Download size={18} />
@@ -445,33 +436,6 @@ export default function AppLayout({
           </div>
         </main>
       </div>
-      {showIOSPrompt && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 p-4">
-          <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-6 max-w-sm w-full shadow-2xl relative">
-            <button 
-              onClick={() => setShowIOSPrompt(false)}
-              className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            >
-              <X size={20} />
-            </button>
-            <h3 className="text-xl font-bold dark:text-white mb-4">Instale no seu iPhone/iPad</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
-              Para instalar o aplicativo no seu dispositivo iOS:
-            </p>
-            <ol className="list-decimal pl-5 space-y-4 text-gray-800 dark:text-gray-200 mb-6">
-              <li>Toque no ícone <strong>Compartilhar</strong> na barra inferior do Safari (o quadrado com uma seta para cima).</li>
-              <li>Role para baixo e selecione <strong>Adicionar à Tela de Início</strong>.</li>
-              <li>Confirme tocando em <strong>Adicionar</strong> no canto superior direito.</li>
-            </ol>
-            <button
-              onClick={() => setShowIOSPrompt(false)}
-              className="w-full bg-[#2563EB] text-white font-bold py-3 rounded-xl"
-            >
-              Entendi
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

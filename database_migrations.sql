@@ -1,3 +1,7 @@
+-- Adicição de colunas de configurações da Dashboard na tabela profiles
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS dashboard_metas_classes JSONB;
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS dashboard_compras_mes INTEGER DEFAULT 2;
+
 -- Criação da tabela cards
 CREATE TABLE IF NOT EXISTS public.cards (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
