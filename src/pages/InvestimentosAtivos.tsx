@@ -51,7 +51,7 @@ const formatQuantity = (value: number) => {
 };
 
 export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProps) {
-  const [expandedClasses, setExpandedClasses] = useState<string[]>(['acoes-br', 'fiis']);
+  const [expandedClasses, setExpandedClasses] = useState<string[]>([]);
   const { data: cotacoesData, loading: cotacoesLoading, error: cotacoesError, refetch, addTickerSync, deleteTickerSync } = useCotacoesGSheets();
   
   // Local state for the user's portfolio holding via Supabase

@@ -24,5 +24,6 @@
     "noEmit": true,
     "types": ["vite/client"]
   },
-  "exclude": ["archive", "node_modules", "dist"]
+  "exclude": ["archive", "node_modules", "dist"],
+  "include": ["src"]
 }

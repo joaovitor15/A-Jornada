@@ -373,7 +373,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
               </div>
             </div>
           ) : (
-            <ResponsiveContainer width="100%" height={280}>
+            <ResponsiveContainer width="100%" height={280} minWidth={1} minHeight={1}>
               <AreaChart 
                 data={dadosGrafico} 
                 onClick={(e) => {

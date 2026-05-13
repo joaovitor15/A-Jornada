@@ -41,7 +41,7 @@ export const Sidebar = ({ activePage, onPageChange, isOpen, setIsOpen }: Sidebar
               exit={{ opacity: 0 }}
               className="font-bold text-[--color-brand-dark] text-xl truncate"
             >
-              Finanças Pro
+              Jornada
             </motion.div>
           )}
         </AnimatePresence>

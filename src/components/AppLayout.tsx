@@ -190,6 +190,7 @@ export default function AppLayout({
   const investimentosItems: MenuItem[] = activeProfile?.investimentos_ativo === true ? [
     ...(activeProfile?.investimentos_show_dashboard !== false ? [{ id: 'investimentos' as Page, icon: PieChart, title: 'Painel' }] : []),
     ...(activeProfile?.investimentos_show_ativos !== false ? [{ id: 'investimentos_ativos' as Page, icon: Activity, title: 'Ativos' }] : []),
+    ...(activeProfile?.investimentos_show_ativos !== false ? [{ id: 'investimentos_metas' as Page, icon: Target, title: 'Metas' }] : []),
     ...(activeProfile?.investimentos_show_operacoes !== false ? [{ id: 'investimentos_cofres' as Page, icon: Shield, title: 'Reserva' }] : [])
   ] : [];
 
@@ -222,8 +223,8 @@ export default function AppLayout({
           >
             {isMobileMenuOpen ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
           </button>
-          <img src="/logo-app.svg" alt="A Jornada Logo" className="w-8 h-8 drop-shadow-sm" />
-          <h1 className="text-base md:text-lg font-bold text-[#111827] dark:text-white tracking-tight truncate max-w-[120px] sm:max-w-none">A Jornada</h1>
+          <img src="/logo-app.svg" alt="Jornada Logo" className="w-8 h-8 drop-shadow-sm" />
+          <h1 className="text-base md:text-lg font-bold text-[#111827] dark:text-white tracking-tight truncate max-w-[120px] sm:max-w-none">Jornada</h1>
         </div>
 
         <div className="flex items-center gap-1 sm:gap-2 md:gap-5">

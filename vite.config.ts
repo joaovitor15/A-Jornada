@@ -13,8 +13,8 @@ export default defineConfig(({mode}) => {
       VitePWA({
         registerType: 'autoUpdate',
         manifest: {
-          name: 'A Jornada - Gestão e Games',
-          short_name: 'A Jornada',
+          name: 'Jornada - Gestão e Games',
+          short_name: 'Jornada',
           description: 'Acompanhe seu progresso, investimentos e games em um só lugar.',
           theme_color: '#3b82f6',
           background_color: '#ffffff',
@@ -61,15 +61,21 @@ export default defineConfig(({mode}) => {
           ]
         },
         devOptions: {
-          enabled: true,
+          enabled: false,
           type: 'module',
           navigateFallback: 'index.html'
         },
         workbox: {
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
-          maximumFileSizeToCacheInBytes: 4000000, // Aumenta para ~4MB
+          maximumFileSizeToCacheInBytes: 4000000,
           navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api/]
+          navigateFallbackDenylist: [/^\/api/],
+          runtimeCaching: [
+            {
+              urlPattern: /^\/api\//,
+              handler: 'NetworkOnly',
+            }
+          ]
         }
       })
     ],

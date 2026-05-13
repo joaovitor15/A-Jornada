@@ -22,6 +22,7 @@ import { CardsPage } from './pages/Cards';
 import { InvestimentosDashboard } from './pages/InvestimentosDashboard';
 import { InvestimentosAtivos } from './pages/InvestimentosAtivos';
 import { InvestimentosCofres } from './pages/InvestimentosCofres';
+import { InvestimentosMetas } from './pages/InvestimentosMetas';
 import GamePage from './pages/GamePage';
 import CRProfilePage from './pages/CRProfilePage';
 import CRCardsPage from './pages/CRCardsPage';
@@ -95,14 +96,8 @@ export default function App() {
     }
   }, [activeProfile?.enable_sistema_financeiro, activeProfile?.investimentos_ativo, activeProfile?.game_ativo, activeProfile?.id, activePage]);
 
-  if (!hasLoaded && (authLoading || profilesLoading)) {
-    return (
-      <div className="min-h-screen w-full flex flex-col items-center justify-center bg-white dark:bg-slate-900 transition-colors">
-        <Loader2 size={40} className="text-[#2563EB] animate-spin mb-4" />
-        <h2 className="text-xl font-bold text-[#1E293B] dark:text-white mb-2">A Jornada</h2>
-        <p className="text-gray-500 dark:text-gray-400 animate-pulse font-medium text-sm">Carregando perfil e configurações...</p>
-      </div>
-    );
+  if (authLoading && !user && !hasLoaded) {
+    return null;
   }
 
   if (!user) {
@@ -237,6 +232,14 @@ export default function App() {
           'Sistema de Investimentos',
           'Cofres & Provisões',
           <InvestimentosCofres activeProfileId={activeProfile?.id} />
+        );
+      case 'investimentos_metas':
+        return renderContentWithGuard(
+          activeProfile?.investimentos_ativo === true,
+          true,
+          'Sistema de Investimentos',
+          'Metas',
+          <InvestimentosMetas activeProfileId={activeProfile?.id} />
         );
       case 'game':
         return renderContentWithGuard(

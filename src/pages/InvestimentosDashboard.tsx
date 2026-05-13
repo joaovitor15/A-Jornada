@@ -335,7 +335,7 @@ export function InvestimentosDashboard({ activeProfileId, activeProfile, updateP
           <div className="flex-1 flex flex-col items-center justify-center min-h-[300px]">
             <div className="w-full h-64 relative">
               {distribuicaoData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                   <RechartsPieChart>
                     <Pie
                       data={distribuicaoData}
