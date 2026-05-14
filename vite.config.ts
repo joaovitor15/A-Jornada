@@ -28,6 +28,12 @@ export default defineConfig(({mode}) => {
               type: 'image/svg+xml'
             },
             {
+              src: '/logo-app.svg',
+              sizes: 'any',
+              type: 'image/svg+xml',
+              purpose: 'monochrome'
+            },
+            {
               src: '/icon-192.png',
               sizes: '192x192',
               type: 'image/png'

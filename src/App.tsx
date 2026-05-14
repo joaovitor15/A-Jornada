@@ -31,7 +31,7 @@ import BSProfilePage from './pages/BSProfilePage';
 import BSBrawlersPage from './pages/BSBrawlersPage';
 
 export default function App() {
-  const { user, loading: authLoading, login, cadastrar, logout } = useAuth();
+  const { user, loading: authLoading, login, loginWithGoogle, cadastrar, logout } = useAuth();
   const [hasLoaded, setHasLoaded] = useState(false);
   const [activePage, setActivePage] = useState<Page>(() => {
     return (localStorage.getItem('activePage') as Page) || 'dashboard';
@@ -101,7 +101,7 @@ export default function App() {
   }
 
   if (!user) {
-    return <Login onLogin={login} onRegister={cadastrar} />;
+    return <Login onLogin={login} onRegister={cadastrar} onLoginWithGoogle={loginWithGoogle} />;
   }
 
   const handleProfileChange = async (id: string) => {
