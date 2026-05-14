@@ -7,7 +7,6 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<{ error: any }>;
-  loginWithGoogle: () => Promise<{ error: any }>;
   cadastrar: (email: string, password: string) => Promise<{ error: any }>;
   logout: () => Promise<void>;
 }
@@ -38,11 +37,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setSession(session);
           setUser(session?.user ?? null);
           setLoading(false);
-
-          // Se estivermos num popup (login do google via popup) e tivermos logado com sucesso, fecha o popup
-          if (session && window.opener && window.opener !== window) {
-            window.close();
-          }
         }
       }
     );
@@ -55,22 +49,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   async function login(email, password) {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error };
-  }
-
-  async function loginWithGoogle() {
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: window.location.origin,
-        skipBrowserRedirect: true // Evita o bloqueio de iframes abrindo em popup
-      }
-    });
-
-    if (data?.url) {
-      window.open(data.url, 'google_login', 'width=500,height=600');
-    }
-
     return { error };
   }
 
@@ -102,7 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, login, loginWithGoogle, cadastrar, logout }}>
+    <AuthContext.Provider value={{ user, session, loading, login, cadastrar, logout }}>
       {children}
     </AuthContext.Provider>
   );
