@@ -37,9 +37,14 @@ CREATE POLICY "Usuários podem deletar seus próprios cards"
   ON public.cards FOR DELETE
   USING (auth.uid() = (SELECT user_id FROM public.profiles WHERE id = cards.profile_id));
 
--- Atualização na tabela transacoes
+-- Atualização na tabela transacoes e transacoes_recorrentes
 ALTER TABLE public.transacoes
 ADD COLUMN IF NOT EXISTS card_id UUID REFERENCES public.cards(id) ON DELETE SET NULL;
+
+ALTER TABLE public.transacoes_recorrentes
+ADD COLUMN IF NOT EXISTS forma_pagamento TEXT DEFAULT 'Dinheiro',
+ADD COLUMN IF NOT EXISTS card_id UUID REFERENCES public.cards(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS dia_emissao INTEGER;
 
 -- Tabela de ativos da carteira (Ações, FIIs, etc)
 CREATE TABLE IF NOT EXISTS public.ativos_carteira (

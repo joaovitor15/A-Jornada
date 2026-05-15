@@ -92,7 +92,17 @@ export default function AppLayout({
   useEffect(() => {
     if (!activeProfile?.id) return;
     
-    const fetchPendingRecorrentes = async () => {
+    // Using onSnapshot for real-time badge updates
+    const unsubscribe = supabase
+      .channel('recorrentes_badge')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'transacoes_recorrentes', filter: `profile_id=eq.${activeProfile.id}` },
+        () => fetchPendingCount()
+      )
+      .subscribe();
+
+    const fetchPendingCount = async () => {
       const { data, error } = await supabase
         .from('transacoes_recorrentes')
         .select('*')
@@ -118,11 +128,9 @@ export default function AppLayout({
 
         if (rec.frequencia === 'diaria') {
           if (!lastDate || (lastDate.getDate() !== currentDay || lastDate.getMonth() !== currentMonth || lastDate.getFullYear() !== currentYear)) {
-            // Se hoje ainda não foi lançada, tá pendente
             isPending = true;
           }
         } else if (rec.frequencia === 'semanal') {
-          // Simplificando pra semana atual
           const startOfWeek = new Date(now);
           startOfWeek.setDate(now.getDate() - currentDayOfWeek + 1);
           if (!lastDate || lastDate < startOfWeek) {
@@ -131,8 +139,28 @@ export default function AppLayout({
             }
           }
         } else if (rec.frequencia === 'mensal') {
-          if (!lastDate || (lastDate.getMonth() !== currentMonth || lastDate.getFullYear() !== currentYear)) {
+          const lastMonth = lastDate ? lastDate.getMonth() : -1;
+          const lastYear = lastDate ? lastDate.getFullYear() : -1;
+          
+          let targetMonth = currentMonth;
+          let targetYear = currentYear;
+          
+          const isPastEmission = rec.dia_emissao && currentDay >= rec.dia_emissao;
+          
+          if (isPastEmission) {
+            targetMonth++;
+            if (targetMonth > 11) {
+              targetMonth = 0;
+              targetYear++;
+            }
+          }
+
+          const isPaidForTarget = lastDate && (lastYear > targetYear || (lastYear === targetYear && lastMonth >= targetMonth));
+          
+          if (!isPaidForTarget) {
             if (rec.dia_vencimento && currentDay >= rec.dia_vencimento) {
+              isPending = true;
+            } else if (isPastEmission) {
               isPending = true;
             }
           }
@@ -142,7 +170,7 @@ export default function AppLayout({
               const vencimento = new Date(currentYear, rec.mes_vencimento - 1, rec.dia_vencimento);
               const diffTime = vencimento.getTime() - now.getTime();
               const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              if (diffDays <= 30 && diffDays >= 0) { // nos próximos 30 dias ou atrasado esse ano
+              if (diffDays <= 30 && diffDays >= 0) {
                 isPending = true;
               } else if (diffDays < 0) {
                  isPending = true;
@@ -157,8 +185,12 @@ export default function AppLayout({
       setPendingRecorrentesCount(pendingCount);
     };
 
-    fetchPendingRecorrentes();
-  }, [activeProfile?.id, activePage]); // reload if activePage changes (e.g. they came back from recorrentes)
+    fetchPendingCount();
+    
+    return () => {
+      unsubscribe.unsubscribe();
+    };
+  }, [activeProfile?.id]);
 
   // Fechar dropdowns ao clicar fora
   useEffect(() => {

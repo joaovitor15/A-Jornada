@@ -3,6 +3,7 @@ import { supabase } from '../supabaseClient';
 import { X, Check, TrendingUp, TrendingDown, Search, Calendar, AlertCircle, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useCards } from '../hooks/useCards';
+import { useProfiles } from '../hooks/useProfiles';
 
 interface RecurringModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
   const [valorVariavel, setValorVariavel] = useState(false);
   const [frequencia, setFrequencia] = useState<'diaria' | 'semanal' | 'mensal' | 'anual'>('mensal');
   const [diaVencimento, setDiaVencimento] = useState<number | ''>('');
+  const [diaEmissao, setDiaEmissao] = useState<number | ''>('');
   const [mesVencimento, setMesVencimento] = useState<number | ''>('');
   
   // Tag dropdown state
@@ -30,6 +32,10 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
   const [mostrarDropdownTag, setMostrarDropdownTag] = useState(false);
   
   const { cards } = useCards(activeProfileId || '');
+  const { profiles } = useProfiles();
+  const activeProfile = profiles.find(p => p.id === activeProfileId);
+  const isBusiness = activeProfile?.tipo === 'empresa';
+
   const [formaPagamento, setFormaPagamento] = useState('Dinheiro');
   const [cardId, setCardId] = useState<string | null>(null);
   const [ativa, setAtiva] = useState(true);
@@ -48,6 +54,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
         setValorStr(recorrencia.valor !== null ? (Math.round(recorrencia.valor * 100).toString()) : '0'); // using string cents for standard mask 
         setFrequencia(recorrencia.frequencia);
         setDiaVencimento(recorrencia.dia_vencimento || '');
+        setDiaEmissao(recorrencia.dia_emissao || '');
         setMesVencimento(recorrencia.mes_vencimento || '');
         setFormaPagamento(recorrencia.forma_pagamento || 'Dinheiro');
         setCardId(recorrencia.card_id || null);
@@ -70,6 +77,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
         setValorVariavel(false);
         setFrequencia('mensal');
         setDiaVencimento('');
+        setDiaEmissao('');
         setMesVencimento('');
         setTagSelecionada(null);
         setTagBusca('');
@@ -155,6 +163,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       valor: valorVariavel ? null : valorNumerico,
       frequencia,
       dia_vencimento: frequencia !== 'diaria' ? (diaVencimento === '' ? null : Number(diaVencimento)) : null,
+      dia_emissao: isBusiness && diaEmissao !== '' ? Number(diaEmissao) : null,
       mes_vencimento: frequencia === 'anual' ? (mesVencimento === '' ? null : Number(mesVencimento)) : null,
       categoria_id: tagObj ? tagObj.category_id : null,
       tag_id: tagSelecionada.id,
@@ -308,9 +317,17 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     </div>
                   )}
                   {frequencia === 'mensal' && (
-                    <div>
-                      <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
-                      <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
+                    <div className="flex gap-[12px]">
+                      <div className="flex-1">
+                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
+                        <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
+                      </div>
+                      {isBusiness && (
+                        <div className="flex-1">
+                          <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia de Tirar</label>
+                          <input type="number" min="1" max="31" value={diaEmissao} onChange={e => setDiaEmissao(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="Opcional" />
+                        </div>
+                      )}
                     </div>
                   )}
               </div>

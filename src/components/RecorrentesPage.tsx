@@ -4,6 +4,7 @@ import { Repeat, Plus, Check, Edit, Trash2, Calendar, CreditCard, Tag as TagIcon
 import { motion, AnimatePresence } from 'motion/react';
 import { RecurringModal } from './RecurringModal';
 import { useCategories } from '../hooks/useCategories';
+import { useProfiles } from '../hooks/useProfiles';
 
 interface RecorrentesPageProps {
   activeProfileId?: string;
@@ -21,13 +22,17 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const [editingRec, setEditingRec] = useState<any>(null);
   
   // New states for validation and launching
-  const [duplicateModal, setDuplicateModal] = useState<{isOpen: boolean, rec: any, targetStr: string, valorFinal: number} | null>(null);
-  const [variableValueModal, setVariableValueModal] = useState<{isOpen: boolean, rec: any} | null>(null);
+  const [duplicateModal, setDuplicateModal] = useState<{isOpen: boolean, rec: any, targetStr: string, valorFinal: number, isNextMonth?: boolean} | null>(null);
+  const [variableValueModal, setVariableValueModal] = useState<{isOpen: boolean, rec: any, isNextMonth?: boolean} | null>(null);
+  const [confirmLaunchModal, setConfirmLaunchModal] = useState<{isOpen: boolean, rec: any} | null>(null);
   const [variableValorStr, setVariableValorStr] = useState('0');
 
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null} | null>(null);
 
   const { categories, tags } = useCategories(activeProfileId);
+  const { profiles } = useProfiles();
+  const activeProfile = profiles.find(p => p.id === activeProfileId);
+  const isBusiness = activeProfile?.tipo === 'empresa';
 
   const fetchRecorrentes = async () => {
     if (!activeProfileId) return;
@@ -98,12 +103,33 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
           isPaid = true;
         }
     } else if (rec.frequencia === 'mensal') {
-        if (!lastDate || (lastDate.getMonth() !== currentMonth || lastDate.getFullYear() !== currentYear)) {
-          if (rec.dia_vencimento && currentDay >= rec.dia_vencimento) {
-            isPending = true;
-          }
+        const lastMonth = lastDate ? lastDate.getMonth() : -1;
+        const lastYear = lastDate ? lastDate.getFullYear() : -1;
+        
+        let targetMonth = currentMonth;
+        let targetYear = currentYear;
+        
+        // Se já passou do dia de emissão, o "alvo" de atenção do usuário é o mês seguinte
+        const isPastEmission = rec.dia_emissao && currentDay >= rec.dia_emissao;
+        
+        if (isPastEmission) {
+            targetMonth++;
+            if (targetMonth > 11) {
+                targetMonth = 0;
+                targetYear++;
+            }
+        }
+
+        const isPaidForTarget = lastDate && (lastYear > targetYear || (lastYear === targetYear && lastMonth >= targetMonth));
+        
+        if (isPaidForTarget) {
+            isPaid = true;
         } else {
-          isPaid = true; // Pago esse mês
+            if (rec.dia_vencimento && currentDay >= rec.dia_vencimento) {
+                isPending = true;
+            } else if (isPastEmission) {
+                isPending = true;
+            }
         }
     } else if (rec.frequencia === 'anual') {
         if (!lastDate || lastDate.getFullYear() !== currentYear) {
@@ -150,12 +176,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     });
   };
 
-  const iniciarLancamento = async (rec: any, providedValue?: number) => {
+  const iniciarLancamento = async (rec: any, providedValue?: number, isNextMonth: boolean = false) => {
      let valorCalculado = providedValue !== undefined ? providedValue : rec.valor;
 
      if (valorCalculado === null) {
        setVariableValorStr('0');
-       setVariableValueModal({ isOpen: true, rec });
+       setVariableValueModal({ isOpen: true, rec, isNextMonth });
        return;
      }
 
@@ -164,7 +190,16 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
      let mes = agora.getMonth();
      let targetDate = new Date();
 
+     if (isNextMonth) {
+       mes += 1;
+       if (mes > 11) {
+         mes = 0;
+         ano += 1;
+       }
+     }
+
      if (rec.frequencia === 'diaria') {
+        if (isNextMonth) agora.setDate(agora.getDate() + 1);
         targetDate = agora;
      } else if (rec.frequencia === 'semanal') {
         let day = agora.getDay();
@@ -181,6 +216,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
      } else if (rec.frequencia === 'anual') {
         let mesVenc = (rec.mes_vencimento || 1) - 1;
         let calcDia = rec.dia_vencimento || 1;
+        
+        if (isNextMonth) ano += 1;
+
         let ultimoDiaMes = new Date(ano, mesVenc + 1, 0).getDate();
         if (calcDia > ultimoDiaMes) calcDia = ultimoDiaMes;
         targetDate = new Date(ano, mesVenc, calcDia);
@@ -236,7 +274,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
      }
      
      if (existing && existing.length > 0) {
-        setDuplicateModal({ isOpen: true, rec, targetStr, valorFinal: valorCalculado });
+        setDuplicateModal({ isOpen: true, rec, targetStr, valorFinal: valorCalculado, isNextMonth });
         return;
      }
 
@@ -305,7 +343,11 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       const dias = ['Segunda', 'Terça', 'Quarta', 'Quinta', 'Sexta', 'Sábado', 'Domingo'];
       return `Toda ${dias[rec.dia_vencimento - 1] || 'Semana'}`;
     }
-    if (rec.frequencia === 'mensal') return `Dia ${rec.dia_vencimento}`;
+    if (rec.frequencia === 'mensal') {
+      let text = `Dia ${rec.dia_vencimento}`;
+      if (rec.dia_emissao) text += ` (Tirar: ${rec.dia_emissao})`;
+      return text;
+    }
     if (rec.frequencia === 'anual') return `${String(rec.dia_vencimento).padStart(2,'0')}/${String(rec.mes_vencimento).padStart(2,'0')}`;
     return '';
   };
@@ -444,7 +486,13 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
                         <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#F8FAFC] dark:border-[#0F172A]">
                           <button 
-                            onClick={() => iniciarLancamento(rec)}
+                            onClick={() => {
+                              if (isBusiness) {
+                                setConfirmLaunchModal({ isOpen: true, rec });
+                              } else {
+                                iniciarLancamento(rec);
+                              }
+                            }}
                             className={`flex items-center gap-[6px] px-[12px] py-[6px] rounded-[8px] text-[12px] font-[700] transition-colors ${status === 'pendente' ? 'bg-[#2563EB] text-white hover:bg-[#1D4ED8]' : 'bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:hover:bg-[#475569]'}`}
                           >
                             <Check size={14} />
@@ -504,7 +552,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                        const num = parseInt(variableValorStr) / 100;
                        if (num <= 0) return alert('Informe um valor acima de zero.');
                        setVariableValueModal(null);
-                       iniciarLancamento(variableValueModal.rec, num);
+                       iniciarLancamento(variableValueModal.rec, num, variableValueModal.isNextMonth);
                     }}
                     className="flex-1 bg-[#2563EB] text-white font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#1D4ED8] transition-all shadow-[0_4px_14px_rgba(37,99,235,0.3)] active:scale-[0.98]"
                  >
@@ -532,8 +580,11 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                  <button onClick={() => setDuplicateModal(null)} className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors">Cancelar</button>
                  <button 
                     onClick={() => {
+                       const rec = duplicateModal.rec;
+                       const valor = duplicateModal.valorFinal;
+                       const targetStr = duplicateModal.targetStr;
                        setDuplicateModal(null);
-                       executeLaunch(duplicateModal.rec, duplicateModal.targetStr, duplicateModal.valorFinal);
+                       executeLaunch(rec, targetStr, valor);
                     }}
                     className="flex-1 bg-[#EF4444] text-white font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#DC2626] transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] active:scale-[0.98]"
                  >
@@ -564,6 +615,50 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     className="flex-1 bg-[#EF4444] text-white font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#DC2626] transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] active:scale-[0.98]"
                  >
                     Sim, excluir
+                 </button>
+               </div>
+            </motion.div>
+        </div>
+      )}
+
+      {confirmLaunchModal?.isOpen && confirmLaunchModal.rec && (
+        <div className="fixed inset-0 z-[110] flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]" onClick={() => setConfirmLaunchModal(null)} />
+            <motion.div 
+               initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} 
+               className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[24px] w-full max-w-[400px] z-[111] shadow-2xl text-center"
+            >
+               <h3 className="text-[18px] font-[800] text-[#0F172A] dark:text-white mb-[8px]">Lançar Transação</h3>
+               <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] mb-[24px]">
+                 Deseja lançar a parcela de <strong>{confirmLaunchModal.rec.nome}</strong> para qual período?
+               </p>
+               
+               <div className="grid grid-cols-1 gap-[12px]">
+                 <button 
+                    onClick={() => {
+                        const rec = confirmLaunchModal.rec;
+                        setConfirmLaunchModal(null);
+                        iniciarLancamento(rec, undefined, false);
+                    }} 
+                    className="w-full bg-[#2563EB] text-white font-[700] text-[14px] rounded-[14px] py-[14px] hover:bg-[#1D4ED8] transition-all shadow-[0_4px_14px_rgba(37,99,235,0.2)]"
+                 >
+                    Mês Atual ({new Date().toLocaleDateString('pt-BR', { month: 'long' })})
+                 </button>
+                 <button 
+                    onClick={() => {
+                        const rec = confirmLaunchModal.rec;
+                        setConfirmLaunchModal(null);
+                        iniciarLancamento(rec, undefined, true);
+                    }}
+                    className="w-full bg-white dark:bg-[#334155] border-[1.5px] border-[#E2E8F0] dark:border-[#475569] text-[#0F172A] dark:text-white font-[700] text-[14px] rounded-[14px] py-[14px] hover:bg-[#F8FAFC] dark:hover:bg-[#475569] transition-all"
+                 >
+                    Mês Subsequente ({new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).toLocaleDateString('pt-BR', { month: 'long' })})
+                 </button>
+                 <button 
+                    onClick={() => setConfirmLaunchModal(null)} 
+                    className="w-full text-[#64748B] dark:text-[#94A3B8] font-[600] text-[13px] py-[8px] hover:underline"
+                 >
+                    Cancelar
                  </button>
                </div>
             </motion.div>
