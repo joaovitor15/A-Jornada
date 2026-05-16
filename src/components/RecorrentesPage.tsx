@@ -43,7 +43,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       .select(`
         *,
         categories ( id, nome, icone, cor ),
-        tags ( id, nome )
+        tags ( id, nome ),
+        cards ( id, nome )
       `)
       .eq('profile_id', activeProfileId);
       
@@ -57,6 +58,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   useEffect(() => {
     fetchRecorrentes();
+
+    // Refresh when window regains focus (e.g. user deleted something in other tab and came back)
+    window.addEventListener('focus', fetchRecorrentes);
+    return () => window.removeEventListener('focus', fetchRecorrentes);
   }, [activeProfileId]);
 
   const usedFreqs = Array.from(new Set(recorrentes.map(r => r.frequencia)));
@@ -148,6 +153,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         }
     }
 
+    if (rec.ativa === false) return 'inativa';
     if (isPaid) return 'pago';
     if (isPending) return 'pendente';
     return 'aguardando';
@@ -278,19 +284,37 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         return;
      }
 
-     await executeLaunch(rec, targetStr, valorCalculado);
+     const totalParcelas = rec.num_parcelas || 1;
+     
+     if (totalParcelas > 1) {
+        // Multi-installment launch
+        for (let i = 0; i < totalParcelas; i++) {
+          const installmentDate = new Date(targetDate);
+           installmentDate.setMonth(targetDate.getMonth() + i);
+          
+          const instStr = `${installmentDate.getFullYear()}-${String(installmentDate.getMonth()+1).padStart(2,'0')}-${String(installmentDate.getDate()).padStart(2,'0')}`;
+          const currentInst = i + 1;
+          const descParcelada = `${rec.nome} (${currentInst}/${totalParcelas})`;
+          
+          await executeLaunch(rec, instStr, valorCalculado, descParcelada, currentInst);
+        }
+     } else {
+        await executeLaunch(rec, targetStr, valorCalculado);
+     }
   };
 
-  const executeLaunch = async (rec: any, targetStr: string, valorFinal: number) => {
+  const executeLaunch = async (rec: any, targetStr: string, valorFinal: number, customDesc?: string, currentInstallment?: number) => {
     const novaTransacao = {
       profile_id: rec.profile_id,
-      descricao: rec.nome,
+      descricao: customDesc || rec.nome,
       valor: valorFinal,
       tipo: rec.tipo,
       tag_id: rec.tag_id,
-      forma_pagamento: rec.forma_pagamento || 'Cartão de Crédito',
+      forma_pagamento: rec.card_id ? 'cartao_credito' : (rec.forma_pagamento || 'dinheiro'),
+      card_id: rec.card_id,
       data: targetStr,
-      recorrente_id: rec.id
+      recorrente_id: rec.id,
+      num_parcelas: currentInstallment || null
     };
     
     // update data
@@ -298,6 +322,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     
     const { error: insErr } = await supabase.from('transacoes').insert([novaTransacao]);
     if (!insErr) {
+      // Only update ultima_lancada if it's the only one or the last one of the batch
+      // Alternatively, update it always, it will just move forward
       await supabase.from('transacoes_recorrentes').update({ ultima_lancada: targetISO }).eq('id', rec.id);
       fetchRecorrentes(); 
     } else {
@@ -468,6 +494,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                           {status === 'aguardando' && (
                             <span className="bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] text-[10px] font-[700] px-[8px] py-[3px] rounded-[6px] shrink-0 uppercase tracking-wider">Esperando</span>
                           )}
+                          {status === 'inativa' && (
+                            <span className="bg-[#F1F5F9] dark:bg-[#334155] text-[#94A3B8] text-[10px] font-[700] px-[8px] py-[3px] rounded-[6px] shrink-0 uppercase tracking-wider opacity-60">Inativa</span>
+                          )}
                         </div>
 
                         <div className="flex flex-col gap-[4px]">
@@ -478,26 +507,43 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                               {rec.tipo === 'receita' ? '+' : '-'} R$ {rec.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </div>
                           )}
-                          <div className="flex items-center gap-[6px] text-[12px] text-[#94A3B8]">
-                            <Calendar size={13} />
-                            <span>{formatPeriodText(rec)}</span>
+                          <div className="flex flex-col gap-[4px]">
+                            <div className="flex items-center gap-[6px] text-[12px] text-[#94A3B8]">
+                              <Calendar size={13} />
+                              <span>{formatPeriodText(rec)}</span>
+                            </div>
+                            <div className="flex flex-col gap-[4px]">
+                              <div className="flex items-center gap-[6px] text-[12px] text-[#94A3B8]">
+                                <CreditCard size={12} className="text-[#94A3B8]" />
+                                <span>
+                                  {rec.forma_pagamento?.toLowerCase() === 'dinheiro' 
+                                    ? 'Dinheiro' 
+                                    : `${rec.cards?.nome || 'Cartão'}${rec.num_parcelas > 1 ? ` em ${rec.num_parcelas} vezes de R$ ${(rec.valor / rec.num_parcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : ''}`
+                                  }
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between mt-2 pt-3 border-t border-[#F8FAFC] dark:border-[#0F172A]">
-                          <button 
-                            onClick={() => {
-                              if (isBusiness) {
-                                setConfirmLaunchModal({ isOpen: true, rec });
-                              } else {
-                                iniciarLancamento(rec);
-                              }
-                            }}
-                            className={`flex items-center gap-[6px] px-[12px] py-[6px] rounded-[8px] text-[12px] font-[700] transition-colors ${status === 'pendente' ? 'bg-[#2563EB] text-white hover:bg-[#1D4ED8]' : 'bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:hover:bg-[#475569]'}`}
-                          >
-                            <Check size={14} />
-                            Lançar
-                          </button>
+                          {status !== 'inativa' ? (
+                            <button 
+                              onClick={() => {
+                                if (isBusiness) {
+                                  setConfirmLaunchModal({ isOpen: true, rec });
+                                } else {
+                                  iniciarLancamento(rec);
+                                }
+                              }}
+                              className={`flex items-center gap-[6px] px-[12px] py-[6px] rounded-[8px] text-[12px] font-[700] transition-colors ${status === 'pendente' ? 'bg-[#2563EB] text-white hover:bg-[#1D4ED8]' : 'bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#E2E8F0] dark:hover:bg-[#475569]'}`}
+                            >
+                              <Check size={14} />
+                              Lançar
+                            </button>
+                          ) : (
+                            <div className="text-[11px] font-[600] text-[#94A3B8] italic">Recorrência Pausada</div>
+                          )}
                           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button 
                               onClick={() => { setEditingRec(rec); setIsModalOpen(true); }}

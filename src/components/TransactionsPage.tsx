@@ -386,11 +386,14 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                                 <div className="flex items-center gap-[4px] text-[12px] text-[#94A3B8] dark:text-[#64748B]">
                                   <CreditCard size={12} />
                                   <span className="italic">
-                                    {t.forma_pagamento === 'pix' ? 'Pix' : 
-                                     t.forma_pagamento === 'cartao_credito' ? 'Crédito' :
-                                     t.forma_pagamento === 'cartao_debito' ? 'Débito' :
-                                     t.forma_pagamento === 'dinheiro' ? 'Dinheiro' :
-                                     'A definir'}
+                                    {t.cards?.nome || (
+                                      t.forma_pagamento === 'cartao_credito' ? 'Crédito' :
+                                      t.forma_pagamento === 'cartao_debito' ? 'Débito' :
+                                      t.forma_pagamento === 'pix' ? 'Pix' :
+                                      t.forma_pagamento === 'dinheiro' ? 'Dinheiro' :
+                                      t.forma_pagamento || 'A definir'
+                                    )}
+                                    {t.num_parcelas && t.num_parcelas > 1 ? ` (${t.num_parcelas}ª parc.)` : ''}
                                   </span>
                                 </div>
                               )}

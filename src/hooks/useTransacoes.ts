@@ -11,8 +11,14 @@ export interface Transacao {
   forma_pagamento: string;
   tag_id: string;
   card_id?: string;
+  recorrente_id?: string;
+  num_parcelas?: number;
   criado_em: string;
   atualizado_em: string;
+  cards?: {
+    id: string;
+    nome: string;
+  };
   tags?: {
     id: string;
     nome: string;
@@ -43,6 +49,7 @@ export function useTransacoes() {
         .from('transacoes')
         .select(`
           *,
+          cards ( id, nome ),
           tags (
             id,
             nome,
@@ -88,6 +95,7 @@ export function useTransacoes() {
         .from('transacoes')
         .select(`
           *,
+          cards ( id, nome ),
           tags (
             id,
             nome,
@@ -131,6 +139,8 @@ export function useTransacoes() {
     valor: number;
     forma_pagamento: string;
     card_id?: string;
+    recorrente_id?: string;
+    num_parcelas?: number;
   }) => {
     setLoading(true);
     setError(null);
@@ -145,7 +155,9 @@ export function useTransacoes() {
           data: dados.data,
           valor: dados.valor,
           forma_pagamento: dados.forma_pagamento,
-          card_id: dados.card_id
+          card_id: dados.card_id,
+          recorrente_id: dados.recorrente_id,
+          num_parcelas: dados.num_parcelas
         })
         .select()
         .single();
@@ -172,6 +184,8 @@ export function useTransacoes() {
     valor?: number;
     forma_pagamento?: string;
     card_id?: string | null;
+    recorrente_id?: string | null;
+    num_parcelas?: number | null;
   }) => {
     setLoading(true);
     setError(null);
@@ -204,6 +218,20 @@ export function useTransacoes() {
     setLoading(true);
     setError(null);
     try {
+      // Get the transaction details before deleting to check if it's recurring
+      // Wrapped in try/catch to handle cases where columns might be missing temporarily
+      let tx: any = null;
+      try {
+        const { data } = await supabase
+          .from('transacoes')
+          .select('recorrente_id, data')
+          .eq('id', id)
+          .single();
+        tx = data;
+      } catch (e) {
+        console.warn('Could not fetch recurring info for transaction', e);
+      }
+
       const { error: err } = await supabase
         .from('transacoes')
         .delete()
@@ -212,6 +240,24 @@ export function useTransacoes() {
       if (err) {
         console.error('Erro ao excluir transação:', err);
         throw err;
+      }
+
+      // If it was a recurring transaction, we need to update the status in the recurring table
+      if (tx?.recorrente_id) {
+        // Find the most recent transaction for this recurring item (excluding the one we just deleted)
+        const { data: lastTx } = await supabase
+          .from('transacoes')
+          .select('data')
+          .eq('recorrente_id', tx.recorrente_id)
+          .order('data', { ascending: false })
+          .limit(1);
+
+        const newLastDate = lastTx && lastTx.length > 0 ? `${lastTx[0].data}T12:00:00Z` : null;
+
+        await supabase
+          .from('transacoes_recorrentes')
+          .update({ ultima_lancada: newLastDate })
+          .eq('id', tx.recorrente_id);
       }
 
       return { success: true };

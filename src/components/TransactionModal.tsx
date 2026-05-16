@@ -61,9 +61,12 @@ export function TransactionModal({
       setTipo(transacaoParaEditar.tipo);
       setDescricao(transacaoParaEditar.descricao);
       setData(transacaoParaEditar.data);
-      setFormaPagamento(transacaoParaEditar.forma_pagamento || "dinheiro");
+      const fpOriginal = transacaoParaEditar.forma_pagamento?.toLowerCase() || "";
+      const isCardOriginal = fpOriginal.includes("cartao") || !!transacaoParaEditar.card_id;
+      
+      setFormaPagamento(isCardOriginal ? (transacaoParaEditar.card_id || "cartao_credito") : "dinheiro");
       setCardId(transacaoParaEditar.card_id || "");
-      setParcelas("1");
+      setParcelas(transacaoParaEditar.num_parcelas?.toString() || "1");
       setDigitosValor(Math.round(transacaoParaEditar.valor * 100).toString());
 
       if (transacaoParaEditar.tags) {
@@ -230,6 +233,8 @@ export function TransactionModal({
       valor: valorNumerico,
       forma_pagamento: isCard ? "cartao_credito" : "dinheiro",
       card_id: isCard ? cardId : null,
+      num_parcelas: isCard ? parseInt(parcelas) : null,
+      recorrente_id: transacaoParaEditar?.recorrente_id || null
     };
 
     if (transacaoParaEditar) {
@@ -258,6 +263,7 @@ export function TransactionModal({
             valor: valorParcela,
             data: dataFormatada,
             descricao: `${descricao} (${i + 1}/${parcelasInt})`,
+            num_parcelas: i + 1
           });
           if (error) errorOcorreu = error;
         }

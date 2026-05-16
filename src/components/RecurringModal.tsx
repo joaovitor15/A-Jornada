@@ -38,6 +38,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
 
   const [formaPagamento, setFormaPagamento] = useState('Dinheiro');
   const [cardId, setCardId] = useState<string | null>(null);
+  const [numParcelas, setNumParcelas] = useState<number>(1);
   const [ativa, setAtiva] = useState(true);
 
   const [saving, setSaving] = useState(false);
@@ -56,8 +57,9 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
         setDiaVencimento(recorrencia.dia_vencimento || '');
         setDiaEmissao(recorrencia.dia_emissao || '');
         setMesVencimento(recorrencia.mes_vencimento || '');
-        setFormaPagamento(recorrencia.forma_pagamento || 'Dinheiro');
+        setFormaPagamento(recorrencia.forma_pagamento || 'dinheiro');
         setCardId(recorrencia.card_id || null);
+        setNumParcelas(recorrencia.num_parcelas || 1);
         setAtiva(recorrencia.ativa !== false);
 
         if (recorrencia.tags) {
@@ -81,8 +83,9 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
         setMesVencimento('');
         setTagSelecionada(null);
         setTagBusca('');
-        setFormaPagamento('Dinheiro');
+        setFormaPagamento('dinheiro');
         setCardId(null);
+        setNumParcelas(1);
         setAtiva(true);
       }
     }
@@ -167,8 +170,9 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       mes_vencimento: frequencia === 'anual' ? (mesVencimento === '' ? null : Number(mesVencimento)) : null,
       categoria_id: tagObj ? tagObj.category_id : null,
       tag_id: tagSelecionada.id,
-      forma_pagamento: isCard ? 'Cartão de Crédito' : 'Dinheiro',
+      forma_pagamento: isCard ? 'cartao_credito' : 'dinheiro',
       card_id: isCard ? cardId : null,
+      num_parcelas: isCard ? numParcelas : null,
       ativa
     };
 
@@ -354,20 +358,20 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                   <div>
                     <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Forma de Pagamento</label>
                     <select 
-                      value={formaPagamento === 'Dinheiro' ? 'Dinheiro' : (cardId || '')} 
+                      value={formaPagamento === 'dinheiro' ? 'dinheiro' : (cardId || '')} 
                       onChange={e => {
                         const val = e.target.value;
-                        if (val === 'Dinheiro') {
-                          setFormaPagamento('Dinheiro');
+                        if (val === 'dinheiro') {
+                          setFormaPagamento('dinheiro');
                           setCardId(null);
                         } else {
-                          setFormaPagamento('Cartão de Crédito');
+                          setFormaPagamento('cartao_credito');
                           setCardId(val);
                         }
                       }} 
                       className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
                     >
-                      <option value="Dinheiro">Dinheiro</option>
+                      <option value="dinheiro">Dinheiro</option>
                       {cards.map(c => (
                         <option key={c.id} value={c.id}>{c.nome}</option>
                       ))}
@@ -386,6 +390,31 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                   </label>
                 </div>
               </div>
+
+              {/* Parcelamento - Só aparece se for cartão */}
+              {(formaPagamento === 'cartao_credito' || cardId) && (
+                <motion.div 
+                  initial={{ opacity: 0, height: 0 }} 
+                  animate={{ opacity: 1, height: 'auto' }}
+                  className="overflow-hidden"
+                >
+                  <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Número de Parcelas</label>
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
+                      <CreditCard size={14} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#94A3B8]" />
+                      <input 
+                        type="number" 
+                        min="1" 
+                        value={numParcelas} 
+                        onChange={e => setNumParcelas(Number(e.target.value) || 1)}
+                        className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px_10px_36px] text-[14px] font-[500] outline-none transition-all focus:border-[#2563EB]"
+                        placeholder="Ex: 12"
+                      />
+                    </div>
+                    <div className="text-[13px] text-[#64748B] dark:text-[#94A3B8] font-[500]">vezes</div>
+                  </div>
+                </motion.div>
+              )}
             </div>
 
             <div className="mt-[24px] flex gap-[12px]">
