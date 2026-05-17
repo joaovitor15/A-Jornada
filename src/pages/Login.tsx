@@ -11,6 +11,7 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -151,6 +152,20 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
                 className="w-full bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] text-slate-800 dark:text-slate-200 rounded-lg pl-11 pr-4 py-2.5 text-sm transition-all focus:border-[#2563EB] focus:ring-4 focus:ring-blue-50 dark:focus:ring-blue-900/30 outline-none placeholder:text-[#94A3B8]"
               />
             </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={rememberMe}
+                onChange={(e) => setRememberMe(e.target.checked)}
+                className="w-4 h-4 rounded border-[#E2E8F0] dark:border-[#334155] text-[#2563EB] focus:ring-[#2563EB]/20 transition-all cursor-pointer"
+              />
+              <span className="text-[13px] text-[#64748B] dark:text-[#94A3B8] group-hover:text-[#374151] dark:group-hover:text-[#CBD5E1] transition-colors select-none">
+                Lembrar-me
+              </span>
+            </label>
           </div>
 
           <button
