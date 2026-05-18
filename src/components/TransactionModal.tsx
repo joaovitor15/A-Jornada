@@ -161,19 +161,9 @@ export function TransactionModal({
   const valorExibido = formatarValor(digitosValor);
   const valorNumerico = parseInt(digitosValor) / 100;
 
-  const handleValorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Tab" || e.key === "Enter") return;
-    e.preventDefault();
-    if (e.key === "Backspace") {
-      setDigitosValor((prev) => prev.slice(0, -1) || "0");
-      return;
-    }
-    if (!/[0-9]/.test(e.key)) return;
-    setDigitosValor((prev) => {
-      const novo = prev === "0" ? e.key : prev + e.key;
-      if (novo.length > 10) return prev;
-      return novo;
-    });
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
+    setDigitosValor(value || "0");
   };
 
   const tagsFiltradas = tags.filter((tag) => {
@@ -286,24 +276,24 @@ export function TransactionModal({
           exit={{ opacity: 0 }}
           className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-50 flex items-center justify-center p-4"
         >
-          <motion.div 
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
-            transition={{ type: "spring", stiffness: 300, damping: 25 }}
-            className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[24px] p-[20px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] max-h-[80vh] overflow-y-auto"
-          >
-            <div className="flex items-center justify-between mb-6">
-          <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">
-            {transacaoParaEditar ? "Editar Transação" : "Nova Transação"}
-          </h2>
-          <button
-            onClick={onClose}
-            className="text-[#94A3B8] hover:text-[#0F172A] dark:text-white transition-colors"
-          >
-            <X size={18} />
-          </button>
-        </div>
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              transition={{ type: "spring", stiffness: 300, damping: 25 }}
+              className="bg-white dark:bg-[#1C1B1F] rounded-[28px] p-[24px] w-full max-w-[420px] shadow-[0_24px_48px_rgba(0,0,0,0.2)] max-h-[85vh] overflow-y-auto border border-[#E2E8F0] dark:border-[#43474E]"
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-[18px] font-[800] text-[#1A1C1E] dark:text-[#E2E2E6]">
+                  {transacaoParaEditar ? "Editar Transação" : "Nova Transação"}
+                </h2>
+                <button
+                  onClick={onClose}
+                  className="p-2 text-[#43474E] dark:text-[#C4C6CF] hover:bg-[#F1F5F9] dark:hover:bg-[#2D2F31] rounded-full transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
 
         <div className="flex gap-[10px] mb-[18px]">
           <button
@@ -475,9 +465,9 @@ export function TransactionModal({
               </label>
               <input
                 type="text"
+                inputMode="numeric"
                 value={valorExibido}
-                onKeyDown={handleValorKeyDown}
-                readOnly
+                onChange={handleValorChange}
                 className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] ${
                   tipo === "receita" ? "text-[#16A34A]" : "text-[#EF4444]"
                 }`}
@@ -518,48 +508,33 @@ export function TransactionModal({
               </div>
 
               {formaPagamento !== "dinheiro" && !transacaoParaEditar && (
-                <div className="animate-in fade-in slide-in-from-top-1 duration-200 mt-3 flex items-center gap-3 bg-[#F8FAFC] dark:bg-[#0F172A] p-3 rounded-xl border border-[#E2E8F0] dark:border-[#334155]">
+                <div className="animate-in fade-in slide-in-from-top-1 duration-200 mt-3 flex items-center gap-3 bg-[#F8FAFC] dark:bg-[#1A1C1E] p-3 rounded-xl border border-[#E2E8F0] dark:border-[#43474E]">
                   <div className="flex-1">
                     <label className="block text-[10px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">
                       Parcelas
                     </label>
-                    <div className="relative" ref={containerParcelasRef}>
-                      <button
-                        type="button"
-                        onClick={() => setMostrarDropdownParcelas(!mostrarDropdownParcelas)}
-                        className="w-full flex items-center justify-between text-left bg-white border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-3 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white outline-none cursor-pointer focus:border-[#2563EB]"
-                      >
-                        <span>{parcelas}x de R$ {(valorNumerico / parseInt(parcelas)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                        <ChevronDown size={14} className={`text-[#64748B] dark:text-[#94A3B8] transition-transform ${mostrarDropdownParcelas ? 'rotate-180' : ''}`} />
-                      </button>
-
-                      {mostrarDropdownParcelas && (
-                        <div className="absolute top-[calc(100%+4px)] left-0 w-full min-w-[140px] bg-white border border-[#E2E8F0] dark:border-[#334155] rounded-xl shadow-xl z-[70] overflow-hidden">
-                          <div className="max-h-[180px] overflow-y-auto custom-scrollbar p-1">
-                            {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => {
-                              const isActive = parcelas === String(n);
-                              return (
-                                <button
-                                  key={n}
-                                  type="button"
-                                  onClick={() => {
-                                    setParcelas(String(n));
-                                    setMostrarDropdownParcelas(false);
-                                  }}
-                                  className={`w-full text-left px-3 py-2 text-xs transition-colors rounded-lg flex items-center justify-between ${
-                                    isActive
-                                      ? "bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] font-bold"
-                                      : "text-[#0F172A] dark:text-white font-medium hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A] dark:bg-[#0F172A]"
-                                  }`}
-                                >
-                                  <span>{n}x de R$ {(valorNumerico / n).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
-                                  {isActive && <Check size={14} className="text-[#2563EB]" />}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
+                    <div className="relative">
+                      <div className="grid grid-cols-2 gap-2 max-h-[160px] overflow-y-auto px-1 py-1 custom-scrollbar">
+                        {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => {
+                          const isActive = parcelas === String(n);
+                          const valorParcela = valorNumerico / n;
+                          return (
+                            <button
+                              key={n}
+                              type="button"
+                              onClick={() => setParcelas(String(n))}
+                              className={`flex flex-col items-center justify-center p-2 rounded-xl border transition-all ${
+                                isActive
+                                  ? "bg-[#D1E4FF] dark:bg-[#00497D] border-[#0061A4] text-[#001D36] dark:text-[#D1E4FF] shadow-sm"
+                                  : "bg-white dark:bg-[#2D2F31] border-[#E2E8F0] dark:border-[#43474E] text-[#43474E] dark:text-[#C4C6CF] hover:bg-[#F1F5F9] dark:hover:bg-[#333537]"
+                              }`}
+                            >
+                              <span className="text-[10px] font-bold uppercase opacity-70 leading-none mb-0.5">{n}x de</span>
+                              <span className="text-[13px] font-extrabold leading-none">R$ {valorParcela.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   </div>
                 </div>

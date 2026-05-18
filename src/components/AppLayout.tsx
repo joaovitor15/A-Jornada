@@ -246,7 +246,7 @@ export default function AppLayout({
   ].filter(g => g.items.length > 0);
 
   return (
-    <div className="flex flex-col h-screen bg-[#F7F9FC] dark:bg-[#1A1C1E] overflow-hidden font-sans">
+    <div className="flex flex-col h-screen bg-[#F4F7FB] dark:bg-[#1A1C1E] overflow-hidden font-sans">
       <header className="h-[64px] bg-white dark:bg-[#1C1B1F] border-b border-[#E2E8F0] dark:border-[#43474E] flex items-center justify-between px-4 md:px-6 z-50 shrink-0 relative transition-all duration-300">
         <div className="flex items-center gap-3">
           <button 

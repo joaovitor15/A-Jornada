@@ -180,7 +180,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
   };
 
   return (
-    <div className="p-[16px] md:p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[20px] md:gap-[24px] bg-[#F8FAFF] dark:bg-[#1A1C1E] min-h-screen pb-[100px] md:pb-[24px] relative">
+    <div className="p-[16px] md:p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[20px] md:gap-[24px] pb-[100px] md:pb-[24px] relative">
       {/* 1. CABEÇALHO DA PÁGINA */}
       <div className="flex flex-col md:flex-row items-center md:justify-center gap-[12px] md:relative mb-[8px] md:mb-[24px]">
         
