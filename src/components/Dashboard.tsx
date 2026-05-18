@@ -180,25 +180,26 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
   };
 
   return (
-    <div className="p-[16px] md:p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[20px] md:gap-[24px] pb-[100px] md:pb-[24px] relative">
+    <div className="p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[24px] bg-[#F8FAFC] dark:bg-[#0F172A] min-h-screen">
       {/* 1. CABEÇALHO DA PÁGINA */}
-      <div className="flex flex-col md:flex-row items-center md:justify-center gap-[12px] md:relative mb-[8px] md:mb-[24px]">
+      <div className="flex flex-col md:flex-row items-center md:justify-center gap-[12px] md:relative mb-[24px]">
         
-        {/* FAB para Nova Transação - Fixado no mobile, normal no desktop */}
-        <div className="fixed bottom-6 right-6 z-40 md:absolute md:top-0 md:right-0 md:bottom-auto">
+        {/* Nova Transação - mobile: order 1, desktop: absolute right */}
+        <div className="order-1 md:order-none md:absolute md:right-0 w-full md:w-auto">
           <button 
             onClick={() => setIsTransactionModalOpen(true)}
-            className="flex items-center gap-[12px] rounded-[16px] px-[16px] py-[16px] md:py-[12px] md:px-[24px] bg-[#D1E4FF] dark:bg-[#00497D] text-[#001D36] dark:text-[#D1E4FF] font-[600] text-[16px] shadow-[0_4px_20px_rgba(0,0,0,0.15)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.2)] transition-all cursor-pointer active:scale-95"
+            className="w-full md:w-auto flex justify-center items-center gap-[6px] rounded-[100px] px-[22px] py-[10px] text-white font-[700] text-[14px] shadow-[0_4px_14px_rgba(37,99,235,0.35)] hover:-translate-y-[1px] transition-transform cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)' }}
           >
-            <Plus size={24} strokeWidth={2.5} />
-            <span className="hidden md:inline">Nova Transação</span>
+            <Plus size={15} />
+            Nova Transação
           </button>
         </div>
 
-        {/* LADO CENTRO - Filtros de período */}
-        <div className="flex flex-col md:flex-row gap-[12px] w-full md:w-auto">
-          {/* Ano */}
-          <div className="flex justify-between md:justify-center items-center gap-[10px] bg-[#EDF1F9] dark:bg-[#2D2F31] rounded-[24px] px-[16px] py-[10px]">
+        {/* LADO CENTRO - Filtros de período - mobile: order 2, desktop: center */}
+        <div className="order-2 md:order-none flex flex-col md:flex-row gap-[12px] w-full md:w-auto">
+          {/* Ano - mobile: order 1, desktop: order 2 */}
+          <div className="order-1 md:order-2 flex justify-between md:justify-center items-center gap-[10px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[16px] py-[8px]">
             <button onClick={() => setAnoSelecionado(prev => prev - 1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer">
               <ChevronLeft size={14} />
             </button>
@@ -261,65 +262,67 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
       {/* 2. CARDS DE RESUMO */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
         {/* CARD 1 — RECEITAS */}
-        <div className="bg-[#E7F3E8] dark:bg-[#192B1C] rounded-[28px] p-[24px] shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between mb-[12px]">
-            <div className="p-[8px] bg-white/50 dark:bg-black/20 rounded-[12px] text-[#1D6F31] dark:text-[#4ADE80] w-[40px] h-[40px] flex items-center justify-center">
-              <TrendingUp size={22} />
+        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+          <div className="flex items-start justify-between mb-[16px]">
+            <div className="p-[6px] bg-[#F0FDF4] dark:bg-green-900/20 rounded-full text-[#16A34A] dark:text-green-500 w-[32px] h-[32px] flex items-center justify-center">
+              <TrendingUp size={18} />
             </div>
-            <span className="text-[12px] text-[#1D6F31]/70 dark:text-[#4ADE80]/70 font-bold tracking-wider">
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8] font-bold tracking-wider">
               Receitas
             </span>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
-               <div className="h-9 w-32 bg-white/30 dark:bg-white/10 animate-pulse rounded-lg mt-1"></div>
+               <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[28px] font-[800] text-[#1D6F31] dark:text-[#4ADE80] leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
+              <span className="text-[28px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
             )}
           </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#16A34A] dark:bg-green-500" />
         </div>
 
         {/* CARD 2 — DESPESAS */}
-        <div className="bg-[#FBE9E7] dark:bg-[#2D1B19] rounded-[28px] p-[24px] shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between mb-[12px]">
-            <div className="p-[8px] bg-white/50 dark:bg-black/20 rounded-[12px] text-[#B91C1C] dark:text-[#F87171] w-[40px] h-[40px] flex items-center justify-center">
-              <TrendingDown size={22} />
+        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+          <div className="flex items-start justify-between mb-[16px]">
+            <div className="p-[6px] bg-[#FEF2F2] dark:bg-red-900/20 rounded-full text-[#EF4444] dark:text-red-500 w-[32px] h-[32px] flex items-center justify-center">
+              <TrendingDown size={18} />
             </div>
-            <span className="text-[12px] text-[#B91C1C]/70 dark:text-[#F87171]/70 font-bold tracking-wider">
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8] font-bold tracking-wider">
               Despesas
             </span>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
-               <div className="h-9 w-32 bg-white/30 dark:bg-white/10 animate-pulse rounded-lg mt-1"></div>
+               <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[28px] font-[800] text-[#B91C1C] dark:text-[#F87171] leading-tight flex-wrap break-all">{formatarValor(despesasValor)}</span>
+              <span className="text-[28px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValor)}</span>
             )}
           </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#EF4444] dark:bg-red-500" />
         </div>
 
         {/* CARD 3 — SALDO TOTAL */}
-        <div className="bg-[#E3F2FD] dark:bg-[#1A2634] rounded-[28px] p-[24px] shadow-sm relative overflow-hidden group hover:shadow-md transition-shadow">
-          <div className="flex items-start justify-between mb-[12px]">
-            <div className="p-[8px] bg-white/50 dark:bg-black/20 rounded-[12px] text-[#0D47A1] dark:text-[#60A5FA] w-[40px] h-[40px] flex items-center justify-center">
-              <Wallet size={22} />
+        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+          <div className="flex items-start justify-between mb-[16px]">
+            <div className="p-[6px] bg-[#EFF6FF] dark:bg-blue-900/20 rounded-full text-[#2563EB] dark:text-blue-500 w-[32px] h-[32px] flex items-center justify-center">
+              <Wallet size={18} />
             </div>
-            <span className="text-[12px] text-[#0D47A1]/70 dark:text-[#60A5FA]/70 font-bold tracking-wider">
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8] font-bold tracking-wider">
               Saldo Total
             </span>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
-               <div className="h-9 w-32 bg-white/30 dark:bg-white/10 animate-pulse rounded-lg mt-1"></div>
+               <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className={`text-[28px] font-[800] leading-tight flex-wrap break-all ${saldoTotal < 0 ? 'text-[#B91C1C] dark:text-[#F87171]' : 'text-[#0D47A1] dark:text-[#60A5FA]'}`}>
+              <span className={`text-[28px] font-[800] leading-tight flex-wrap break-all ${saldoTotal < 0 ? 'text-[#EF4444] dark:text-red-500' : 'text-[#2563EB] dark:text-blue-500'}`}>
                 {formatarValor(saldoTotal)}
               </span>
             )}
           </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#2563EB] dark:bg-blue-500" />
         </div>
       </div>
-
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <CardFaturaDashboard activeProfileId={activeProfileId} />

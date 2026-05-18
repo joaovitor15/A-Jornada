@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Landmark, Mail, Lock, Loader2, AlertCircle, Sun, Moon } from 'lucide-react';
 import { motion } from 'motion/react';
+import JornadaLogo from '../components/JornadaLogo';
 
 interface LoginProps {
   onLogin: (email, password) => Promise<{ error: any }>;

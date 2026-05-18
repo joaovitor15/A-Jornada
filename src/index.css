@@ -5,33 +5,13 @@
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-light: #E8F4FD;
+  --color-brand-primary: #2196F3;
+  --color-brand-dark: #1565C0;
+  --color-bg-main: #F0F7FF;
   
-  /* Material Design 3 Colors (Blue Seed) */
-  --md-primary: #0061A4;
-  --md-on-primary: #FFFFFF;
-  --md-primary-container: #D1E4FF;
-  --md-on-primary-container: #001D36;
-  
-  --md-secondary: #535F70;
-  --md-on-secondary: #FFFFFF;
-  --md-secondary-container: #D7E3F7;
-  --md-on-secondary-container: #101C2B;
-  
-  --md-surface: #FDFCFF;
-  --md-on-surface: #1A1C1E;
-  --md-surface-variant: #DFE2EB;
-  --md-on-surface-variant: #43474E;
-  
-  /* Dark Mode tokens will be applied via utility classes mostly, 
-     but let's define some base surfaces */
-  --color-brand-light: var(--md-primary-container);
-  --color-brand-primary: var(--md-primary);
-  --color-brand-dark: #00497D;
-  --color-bg-main: #F8FAFF;
-  
-  --radius-card: 28px;
-  --radius-button: 20px;
-  --radius-fab: 16px;
+  --radius-card: 16px;
+  --radius-button: 50px;
 }
 
 @layer base {

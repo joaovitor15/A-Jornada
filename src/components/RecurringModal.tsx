@@ -115,9 +115,19 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
     }
   }, [mostrarDropdownTag, tagSelecionada]);
 
-  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.replace(/\D/g, "");
-    setValorStr(value || "0");
+  const handleValorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Tab' || e.key === 'Enter') return;
+    e.preventDefault();
+    if (e.key === 'Backspace') {
+      setValorStr(prev => prev.slice(0, -1) || '0');
+      return;
+    }
+    if (!/[0-9]/.test(e.key)) return;
+    setValorStr(prev => {
+      const novo = prev === '0' ? e.key : prev + e.key;
+      if (novo.length > 10) return prev;
+      return novo;
+    });
   };
 
   const formatarValor = (digitos: string) => {
@@ -187,15 +197,15 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
             className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px]"
             onClick={onClose}
           />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white dark:bg-[#1C1B1F] max-w-[460px] w-full rounded-[28px] shadow-[0_24px_48px_rgba(0,0,0,0.2)] relative z-10 flex flex-col max-h-[90vh] overflow-y-auto border border-[#E2E8F0] dark:border-[#43474E]"
-            >
-              <div className="p-[24px]">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-[18px] font-[800] text-[#1A1C1E] dark:text-[#E2E2E6]">{recorrencia ? 'Editar Recorrência' : `Nova Recorrência (${tipo === 'receita' ? 'Receita' : 'Despesa'})`}</h2>
-                <button onClick={onClose} className="p-2 text-[#43474E] dark:text-[#C4C6CF] hover:bg-[#F1F5F9] dark:hover:bg-[#2D2F31] rounded-full transition-colors"><X size={18} /></button>
-              </div>
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="bg-white dark:bg-[#1E293B] max-w-[460px] w-full rounded-[24px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] relative z-10 flex flex-col max-h-[90vh] overflow-y-auto"
+          >
+            <div className="p-[20px]">
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-[18px] font-[800] text-[#0F172A] dark:text-white">{recorrencia ? 'Editar Recorrência' : `Nova Recorrência (${tipo === 'receita' ? 'Receita' : 'Despesa'})`}</h2>
+              <button onClick={onClose} className="p-2 text-[#94A3B8] hover:bg-slate-100 rounded-full transition-colors"><X size={18} /></button>
+            </div>
 
             <div className="space-y-[14px]">
               {/* Nome */}
@@ -264,10 +274,11 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                   <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Valor</label>
                   <input 
                     type="text" 
-                    inputMode="numeric"
+                    inputMode="decimal"
                     value={valorVariavel ? 'Variável' : valorExibido} 
-                    onChange={handleValorChange}
+                    onKeyDown={handleValorKeyDown}
                     disabled={valorVariavel}
+                    readOnly
                     className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${!valorVariavel && tipo === 'receita' ? 'text-[#16A34A]' : ''} ${!valorVariavel && tipo === 'despesa' ? 'text-[#EF4444]' : ''}`} 
                   />
                 </div>
@@ -389,23 +400,19 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                   className="overflow-hidden"
                 >
                   <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Número de Parcelas</label>
-                  <div className="flex flex-col gap-2">
-                    <div className="relative">
+                  <div className="flex items-center gap-3">
+                    <div className="relative flex-1">
                       <CreditCard size={14} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#94A3B8]" />
                       <input 
                         type="number" 
                         min="1" 
                         value={numParcelas} 
                         onChange={e => setNumParcelas(Number(e.target.value) || 1)}
-                        className="w-full bg-[#F8FAFC] dark:bg-[#1A1C1E] border-[1.5px] border-[#E2E8F0] dark:border-[#43474E] rounded-[14px] p-[10px_14px_10px_36px] text-[14px] font-[600] text-[#1A1C1E] dark:text-[#E2E2E6] outline-none transition-all focus:border-[#2563EB]"
+                        className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px_10px_36px] text-[14px] font-[500] outline-none transition-all focus:border-[#2563EB]"
                         placeholder="Ex: 12"
                       />
                     </div>
-                    {numParcelas > 1 && (
-                      <div className="text-[12px] text-[#1D6F31] dark:text-[#4ADE80] font-[700] px-2">
-                        {numParcelas}x de R$ {(valorNumerico / numParcelas).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} cada
-                      </div>
-                    )}
+                    <div className="text-[13px] text-[#64748B] dark:text-[#94A3B8] font-[500]">vezes</div>
                   </div>
                 </motion.div>
               )}

@@ -28,6 +28,8 @@ import { SupabaseProfile } from '../hooks/useProfiles';
 import { motion, AnimatePresence } from 'motion/react';
 import { usePWAInstall } from '../hooks/usePWAInstall';
 
+import JornadaLogo from './JornadaLogo';
+
 const PROFILE_ICONS: Record<string, any> = {
   User, Building2, Users, UserCheck, Briefcase, Home, Star, Crown, Heart, Smile,
   Coffee, Rocket, Shield, Award, Target, Zap, Globe, Landmark, PiggyBank,
@@ -246,39 +248,39 @@ export default function AppLayout({
   ].filter(g => g.items.length > 0);
 
   return (
-    <div className="flex flex-col h-screen bg-[#F4F7FB] dark:bg-[#1A1C1E] overflow-hidden font-sans">
-      <header className="h-[64px] bg-white dark:bg-[#1C1B1F] border-b border-[#E2E8F0] dark:border-[#43474E] flex items-center justify-between px-4 md:px-6 z-50 shrink-0 relative transition-all duration-300">
-        <div className="flex items-center gap-3">
+    <div className="flex flex-col h-screen bg-[#F0F2F5] dark:bg-[#0F172A] overflow-hidden font-sans">
+      <header className="h-[60px] bg-white dark:bg-[#1E293B] border-b border-[#E5E7EB] dark:border-[#334155] flex items-center justify-between px-3 md:px-6 z-50 shrink-0 relative transition-colors duration-300">
+        <div className="flex items-center gap-2 md:gap-3">
           <button 
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 rounded-full text-[#43474E] dark:text-[#C4C6CF] hover:bg-[#F1F5F9] dark:hover:bg-[#43474E] transition-colors"
+            className="p-1.5 rounded-xl text-[#2563EB] dark:text-[#3B82F6] hover:bg-blue-50 dark:hover:bg-[#0F172A] transition-colors"
           >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            {isMobileMenuOpen ? <X size={24} strokeWidth={2.5} /> : <Menu size={24} strokeWidth={2.5} />}
           </button>
-          <div className="flex items-center gap-2">
-            <img src="/logo-app.svg" alt="Jornada Logo" className="w-8 h-8" />
-            <h1 className="text-xl font-medium text-[#1A1C1E] dark:text-[#E2E2E6] tracking-tight">Jornada</h1>
-          </div>
+          <img src="/logo-app.svg" alt="Jornada Logo" className="w-8 h-8 drop-shadow-sm" />
+          <h1 className="text-base md:text-lg font-bold text-[#111827] dark:text-white tracking-tight truncate max-w-[120px] sm:max-w-none">Jornada</h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 md:gap-5">
           {/* PROFILE SELECTOR REFINED */}
           <div className="relative" ref={dropdownRef}>
             <button 
               onClick={() => setIsProfileOpen(!isProfileOpen)}
-              className="flex items-center gap-2 p-1.5 rounded-full hover:bg-[#F1F5F9] dark:hover:bg-[#43474E] transition-all cursor-pointer group"
+              className="flex items-center gap-2 py-1 px-2 rounded-full hover:bg-gray-50 dark:hover:bg-[#334155] transition-all cursor-pointer group"
             >
               <div 
                 className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-sm transition-transform group-hover:scale-105"
-                style={{ backgroundColor: activeProfile?.cor || '#0061A4' }}
+                style={{ backgroundColor: activeProfile?.cor || '#2563EB' }}
               >
                  {(() => {
                    const ActiveIcon = activeProfile?.icone ? PROFILE_ICONS[activeProfile.icone] || User : User;
-                   return <ActiveIcon size={18} strokeWidth={2} />;
+                   return <ActiveIcon size={18} strokeWidth={2.5} />;
                  })()}
               </div>
-              <span className="hidden sm:inline text-sm font-medium text-[#1A1C1E] dark:text-[#E2E2E6]">{activeProfile?.name || 'Perfil'}</span>
-              <ChevronDown size={14} className={`text-[#43474E] dark:text-[#C4C6CF] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
+              <div className="flex flex-col items-start leading-tight">
+                <span className="text-[13px] font-bold text-[#0F172A] dark:text-white">{activeProfile?.name || 'Selecione'}</span>
+              </div>
+              <ChevronDown size={14} className={`text-[#6B7280] dark:text-[#94A3B8] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
             </button>
 
             <AnimatePresence>
@@ -360,20 +362,20 @@ export default function AppLayout({
           />
         )}
 
-        <aside className={`fixed inset-y-0 left-0 top-[64px] w-[260px] bg-[#FDFCFF] dark:bg-[#1A1C1E] border-r border-[#E2E8F0] dark:border-[#43474E] flex flex-col items-start py-6 z-40 shrink-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed inset-y-0 left-0 top-[60px] w-[200px] bg-white dark:bg-[#1E293B] border-r border-[#E5E7EB] dark:border-[#334155] flex flex-col items-start py-4 z-40 shrink-0 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] transition-transform duration-300 ease-in-out ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
           <div className="flex flex-col w-full pb-8">
             {/* SYSTEM INDICATORS (SIDEBAR) */}
             {activeProfile && (
-              <div className="flex items-center justify-center gap-4 w-full px-6 mb-6 pb-6 border-b border-[#E2E2E6] dark:border-[#43474E] shrink-0">
+              <div className="flex items-center justify-center gap-3 w-full px-4 mb-4 pb-4 border-b border-[#E5E7EB] dark:border-[#334155] shrink-0">
                 <button
                   onClick={async () => {
                     const newValue = activeProfile.enable_sistema_financeiro === false;
                     await updateProfileModules(activeProfile.id, { enable_sistema_financeiro: newValue });
                   }}
-                  className={`p-3 rounded-2xl transition-all cursor-pointer ${activeProfile.enable_sistema_financeiro !== false ? 'bg-[#D1E4FF] dark:bg-[#00497D] shadow-sm' : 'bg-[#F1F5F9] dark:bg-[#2D2F31]'}`}
-                  title="Financeiro"
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${activeProfile.enable_sistema_financeiro !== false ? 'bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/40' : 'bg-gray-50 dark:bg-[#0F172A] hover:bg-gray-100 dark:hover:bg-[#334155]'}`}
+                  title={activeProfile.enable_sistema_financeiro !== false ? "Desativar Sistema Financeiro" : "Ativar Sistema Financeiro"}
                 >
-                  <Banknote size={24} className={activeProfile.enable_sistema_financeiro !== false ? 'text-[#001D36] dark:text-[#D1E4FF]' : 'text-[#43474E] dark:text-[#C4C6CF]'} />
+                  <Banknote size={20} strokeWidth={2} className={activeProfile.enable_sistema_financeiro !== false ? 'text-[#2563EB] dark:text-[#3B82F6]' : 'text-[#94A3B8] dark:text-[#64748B]'} />
                 </button>
 
                 <button
@@ -381,10 +383,10 @@ export default function AppLayout({
                     const newValue = !activeProfile.investimentos_ativo;
                     await updateProfileModules(activeProfile.id, { investimentos_ativo: newValue });
                   }}
-                  className={`p-3 rounded-2xl transition-all cursor-pointer ${activeProfile.investimentos_ativo ? 'bg-[#D1E4FF] dark:bg-[#00497D] shadow-sm' : 'bg-[#F1F5F9] dark:bg-[#2D2F31]'}`}
-                  title="Investimentos"
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${activeProfile.investimentos_ativo ? 'bg-green-50 dark:bg-green-900/20 hover:bg-green-100 dark:hover:bg-green-900/40' : 'bg-gray-50 dark:bg-[#0F172A] hover:bg-gray-100 dark:hover:bg-[#334155]'}`}
+                  title={activeProfile.investimentos_ativo ? "Desativar Sistema de Investimentos" : "Ativar Sistema de Investimentos"}
                 >
-                  <TrendingUp size={24} className={activeProfile.investimentos_ativo ? 'text-[#001D36] dark:text-[#D1E4FF]' : 'text-[#43474E] dark:text-[#C4C6CF]'} />
+                  <TrendingUp size={20} strokeWidth={2} className={activeProfile.investimentos_ativo ? 'text-[#16A34A] dark:text-[#22C55E]' : 'text-[#94A3B8] dark:text-[#64748B]'} />
                 </button>
 
                 <button
@@ -392,20 +394,20 @@ export default function AppLayout({
                     const newValue = !activeProfile.game_ativo;
                     await updateProfileModules(activeProfile.id, { game_ativo: newValue });
                   }}
-                  className={`p-3 rounded-2xl transition-all cursor-pointer ${activeProfile.game_ativo ? 'bg-[#D1E4FF] dark:bg-[#00497D] shadow-sm' : 'bg-[#F1F5F9] dark:bg-[#2D2F31]'}`}
-                  title="Game"
+                  className={`p-2 rounded-xl transition-all cursor-pointer ${activeProfile.game_ativo ? 'bg-purple-50 dark:bg-purple-900/20 hover:bg-purple-100 dark:hover:bg-purple-900/40' : 'bg-gray-50 dark:bg-[#0F172A] hover:bg-gray-100 dark:hover:bg-[#334155]'}`}
+                  title={activeProfile.game_ativo ? "Desativar Sistema Game" : "Ativar Sistema Game"}
                 >
-                  <Gamepad2 size={24} className={activeProfile.game_ativo ? 'text-[#001D36] dark:text-[#D1E4FF]' : 'text-[#43474E] dark:text-[#C4C6CF]'} />
+                  <Gamepad2 size={20} strokeWidth={2} className={activeProfile.game_ativo ? 'text-[#8B5CF6] dark:text-[#A855F7]' : 'text-[#94A3B8] dark:text-[#64748B]'} />
                 </button>
               </div>
             )}
 
             {menuGroups.map(group => (
-              <div key={group.id} className="mb-6 w-full">
-                <h3 className="px-6 py-2 text-xs font-medium text-[#43474E] dark:text-[#C4C6CF] uppercase tracking-wider mb-1">
+              <div key={group.id} className="mb-6 w-full px-4">
+                <h3 className="text-[11px] font-bold text-[#94A3B8] uppercase tracking-wider mb-3 text-center">
                   {group.title}
                 </h3>
-                <div className="flex flex-col gap-1 px-4">
+                <div className="grid grid-cols-2 gap-2">
                   {group.items.map(item => {
                     const isActive = activePage === item.id;
                     return (
@@ -413,18 +415,25 @@ export default function AppLayout({
                         key={item.id}
                         onClick={() => {
                           onPageChange(item.id);
-                          setIsMobileMenuOpen(false);
+                          setIsMobileMenuOpen(false); // Close sidebar when a page is selected
                         }}
-                        className={`flex items-center gap-3 px-4 py-3 rounded-full transition-all duration-200 group relative ${
-                          isActive 
-                            ? 'bg-[#D1E4FF] dark:bg-[#00497D] text-[#001D36] dark:text-[#D1E4FF] font-medium' 
-                            : 'text-[#43474E] dark:text-[#C4C6CF] hover:bg-[#F1F5F9] dark:hover:bg-[#2D2F31]'
-                        }`}
+                        title={item.title || item.id}
+                        className="relative mx-auto flex flex-col items-center justify-start w-full group py-1"
                       >
-                        <item.icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                        <span className="text-sm">{item.title}</span>
+                        <div className={`w-[48px] h-[48px] mb-1.5 rounded-full flex items-center justify-center transition-all duration-200 ease-in-out ${
+                          isActive 
+                            ? 'bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] dark:text-[#60A5FA] shadow-sm ring-1 ring-[#BFDBFE] dark:ring-[#2563EB]' 
+                            : 'bg-transparent text-[#64748B] dark:text-[#94A3B8] group-hover:bg-[#F8FAFC] dark:group-hover:bg-[#334155] group-hover:text-[#0F172A] dark:group-hover:text-white'
+                        }`}>
+                          <item.icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
+                        </div>
+                        <span className={`text-[10px] font-medium leading-tight text-center px-1 transition-colors ${
+                          isActive ? 'text-[#2563EB] dark:text-[#60A5FA] font-bold' : 'text-[#64748B] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:group-hover:text-white'
+                        }`}>
+                          {item.title}
+                        </span>
                         {item.badge !== undefined && item.badge > 0 && (
-                          <span className="absolute right-4 w-5 h-5 bg-[#B3261E] dark:bg-[#F2B8B5] text-white dark:text-[#601410] text-[10px] font-bold rounded-full flex items-center justify-center">
+                          <span className="absolute top-0 right-3 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center border-2 border-white z-10">
                             {item.badge}
                           </span>
                         )}

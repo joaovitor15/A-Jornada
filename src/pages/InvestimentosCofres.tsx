@@ -1022,6 +1022,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                         <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor (R$)</label>
                         <input 
                           type="text" 
+                          inputMode="decimal"
                           value={inputValue}
                           onChange={(e) => handleGenericCurrencyChange(e, setInputValue)}
                           placeholder="0,00"
@@ -1032,6 +1033,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                         <label className="text-[10px] font-black text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-2">Valor Total (R$)</label>
                         <input 
                           type="text" 
+                          inputMode="decimal"
                           value={objetivoValue}
                           onChange={(e) => handleGenericCurrencyChange(e, setObjetivoValue)}
                           placeholder="0,00"
