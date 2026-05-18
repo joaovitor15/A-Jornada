@@ -549,7 +549,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                 </div>
 
                 <div className="flex items-center gap-6">
-                  {classe.totalCotas && (
+                  {classe.totalCotas && classe.id !== 'renda-fixa' && (
                     <div className="hidden md:flex bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] px-3 py-1 rounded-lg text-xs font-bold text-[#64748B] dark:text-[#94A3B8] items-center gap-1">
                       <span>#</span> {classe.totalCotas.toLocaleString('pt-BR')} cotas
                     </div>
@@ -617,7 +617,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                                   
                                   <div className="text-center">
                                     <span className="text-[15px] text-[#0F172A] dark:text-white font-medium leading-none">
-                                      {classe.id === 'renda-fixa' ? '1' : formatQuantity(ativo.qtd)}
+                                      {classe.id === 'renda-fixa' ? '-' : formatQuantity(ativo.qtd)}
                                     </span>
                                   </div>
 
@@ -721,12 +721,14 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                                       <span className="text-[#94A3B8] dark:text-[#94A3B8] font-bold">-</span>
                                     )}
                                   </div>
-                                  <div className="flex flex-col">
-                                    <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Quantidade</span>
-                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
-                                      {classe.id === 'renda-fixa' ? '1' : formatQuantity(ativo.qtd)}
-                                    </span>
-                                  </div>
+                                  {classe.id !== 'renda-fixa' && (
+                                    <div className="flex flex-col">
+                                      <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Quantidade</span>
+                                      <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
+                                        {formatQuantity(ativo.qtd)}
+                                      </span>
+                                    </div>
+                                  )}
                                   <div className="flex flex-col items-end">
                                     <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Cotação</span>
                                     <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
