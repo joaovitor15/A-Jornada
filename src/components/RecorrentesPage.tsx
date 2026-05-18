@@ -28,6 +28,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const [variableValorStr, setVariableValorStr] = useState('0');
 
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null} | null>(null);
+  const variableValorRef = React.useRef<HTMLInputElement>(null);
 
   const { categories, tags } = useCategories(activeProfileId);
   const { profiles } = useProfiles();
@@ -159,19 +160,30 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     return 'aguardando';
   };
 
+  useEffect(() => {
+    if (variableValorRef.current && variableValueModal?.isOpen) {
+      const length = variableValorRef.current.value.length;
+      variableValorRef.current.setSelectionRange(length, length);
+    }
+  }, [variableValorStr, variableValueModal?.isOpen]);
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement>) => {
+    const target = e.currentTarget;
+    setTimeout(() => {
+      const length = target.value.length;
+      target.setSelectionRange(length, length);
+    }, 50);
+  };
+
+  const handleVariableValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
+    const cleanedValue = value.replace(/^0+/, "") || "0";
+    if (cleanedValue.length > 10) return;
+    setVariableValorStr(cleanedValue);
+  };
+
   const handleVariableValorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Tab' || e.key === 'Enter') return;
-    e.preventDefault();
-    if (e.key === 'Backspace') {
-      setVariableValorStr(prev => prev.slice(0, -1) || '0');
-      return;
-    }
-    if (!/[0-9]/.test(e.key)) return;
-    setVariableValorStr(prev => {
-      const novo = prev === '0' ? e.key : prev + e.key;
-      if (novo.length > 10) return prev;
-      return novo;
-    });
   };
 
   const formatarValor = (digitos: string) => {
@@ -582,11 +594,15 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                <div className="mb-[20px]">
                   <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Valor</label>
                   <input 
+                    ref={variableValorRef}
                     type="text" 
+                    inputMode="numeric"
                     value={formatarValor(variableValorStr)} 
+                    onChange={handleVariableValorChange}
                     onKeyDown={handleVariableValorKeyDown}
-                    readOnly
-                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]"
+                    onFocus={handleInputFocus}
+                    onClick={handleInputFocus}
+                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] text-right"
                     autoFocus
                   />
                </div>

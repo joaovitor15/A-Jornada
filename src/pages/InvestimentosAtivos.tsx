@@ -108,6 +108,31 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
   const [ordemAtivoId, setOrdemAtivoId] = useState('');
   const [ordemQtd, setOrdemQtd] = useState('');
 
+  const inputNovoAtivoQtdRef = React.useRef<HTMLInputElement>(null);
+  const inputOrdemQtdRef = React.useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (inputNovoAtivoQtdRef.current) {
+      const length = inputNovoAtivoQtdRef.current.value.length;
+      inputNovoAtivoQtdRef.current.setSelectionRange(length, length);
+    }
+  }, [novoAtivo.qtd]);
+
+  useEffect(() => {
+    if (inputOrdemQtdRef.current) {
+      const length = inputOrdemQtdRef.current.value.length;
+      inputOrdemQtdRef.current.setSelectionRange(length, length);
+    }
+  }, [ordemQtd]);
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement>) => {
+    const target = e.currentTarget;
+    setTimeout(() => {
+      const length = target.value.length;
+      target.setSelectionRange(length, length);
+    }, 50);
+  };
+
   const toggleClass = (id: string) => {
     setExpandedClasses(prev => 
       prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]
@@ -152,12 +177,34 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
 
     // Salvar no Supabase
     try {
+      const rawQtd = novoAtivo.qtd;
+      let parsedQtd = 0;
+      
+      if (novoAtivo.classe === 'renda-fixa') {
+        // Renda fixa is always formatted as 1.234,56
+        parsedQtd = parseFloat(rawQtd.replace(/\./g, '').replace(',', '.')) || 0;
+      } else {
+        // For others, identify if it's using comma or dot as decimal
+        // If it has both, comma is almost certainly decimal in Brazil (1.500,00)
+        // If it has only one, and it's a dot, it might be US format (1.5)
+        const hasComma = rawQtd.includes(',');
+        const hasDot = rawQtd.includes('.');
+        
+        if (hasComma && hasDot) {
+          parsedQtd = parseFloat(rawQtd.replace(/\./g, '').replace(',', '.')) || 0;
+        } else if (hasComma) {
+          parsedQtd = parseFloat(rawQtd.replace(',', '.')) || 0;
+        } else {
+          parsedQtd = parseFloat(rawQtd) || 0;
+        }
+      }
+
       const dbAtivo = {
         profile_id: activeProfileId,
         classe: novoAtivo.classe,
         ticker_original: rawTicker,
         ticker_google: formattedTicker,
-        qtd: parseFloat(novoAtivo.qtd.replace(/\./g, '').replace(',', '.')) || parseFloat(novoAtivo.qtd) || 0,
+        qtd: parsedQtd,
         objetivo: 0
       };
 
@@ -721,20 +768,29 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                                       <span className="text-[#94A3B8] dark:text-[#94A3B8] font-bold">-</span>
                                     )}
                                   </div>
-                                  {classe.id !== 'renda-fixa' && (
-                                    <div className="flex flex-col">
-                                      <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Quantidade</span>
-                                      <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
-                                        {formatQuantity(ativo.qtd)}
+                                  {classe.id !== 'renda-fixa' ? (
+                                    <>
+                                      <div className="flex flex-col">
+                                        <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Quantidade</span>
+                                        <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
+                                          {formatQuantity(ativo.qtd)}
+                                        </span>
+                                      </div>
+                                      <div className="flex flex-col items-end">
+                                        <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Cotação</span>
+                                        <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
+                                          {formatCurrency(ativo.cotacao)}
+                                        </span>
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <div className="flex flex-col col-span-2 bg-[#F8FAFC] dark:bg-[#0F172A] p-2 rounded-xl border border-[#E2E8F0] dark:border-[#334155]">
+                                      <span className="text-[10px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Saldo Atual Registrado</span>
+                                      <span className="font-bold text-[#2563EB] dark:text-blue-400 text-[16px]">
+                                        {formatCurrency(ativo.qtd)}
                                       </span>
                                     </div>
                                   )}
-                                  <div className="flex flex-col items-end">
-                                    <span className="text-[10px] font-bold text-[#94A3B8] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Cotação</span>
-                                    <span className="font-medium text-[#0F172A] dark:text-white text-[14px]">
-                                      {classe.id === 'renda-fixa' ? formatCurrency(ativo.qtd) : formatCurrency(ativo.cotacao)}
-                                    </span>
-                                  </div>
                                 </div>
 
                                 {/* Objetivos Footer */}
@@ -821,11 +877,14 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     {novoAtivo.classe === 'renda-fixa' ? 'Valor Inicial (R$)' : 'Quantidade Inicial'}
                   </label>
                   <input 
+                    ref={inputNovoAtivoQtdRef}
                     type="text" 
-                    inputMode="decimal"
+                    inputMode="numeric"
                     placeholder={novoAtivo.classe === 'renda-fixa' ? 'Ex: 1000,00' : 'Ex: 100 ou 0,50'} 
                     className="w-full border-2 border-[#E2E8F0] dark:border-[#334155] rounded-xl px-4 py-3 text-[#0F172A] dark:text-white font-medium outline-none focus:border-[#2563EB] dark:focus:border-blue-500 transition-colors"
                     value={novoAtivo.qtd}
+                    onFocus={handleInputFocus}
+                    onClick={handleInputFocus}
                     onChange={(e) => {
                       if (novoAtivo.classe === 'renda-fixa') {
                         const digits = e.target.value.replace(/\D/g, '');
@@ -934,7 +993,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                       }}
                     >
                       <option value="todas">Todas</option>
-                      {CLASSES_ATIVOS_OPCOES.filter(c => c.id !== 'renda-fixa' || ordemClasse === 'renda-fixa').map(opt => (
+                      {CLASSES_ATIVOS_OPCOES.map(opt => (
                          <option key={opt.id} value={opt.id}>{opt.nome}</option>
                       ))}
                     </select>
@@ -944,7 +1003,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Ativo</label>
                     <div className="relative">
                       <select
-                        className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] appearance-none cursor-pointer"
+                        className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[12px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] appearance-none cursor-pointer"
                         value={ordemAtivoId}
                         onChange={(e) => setOrdemAtivoId(e.target.value)}
                       >
@@ -960,27 +1019,34 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
               </div>
 
               <div>
-                <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px] text-center">{ordemClasse === 'renda-fixa' ? 'Valor (R$)' : 'Quantidade (Cotas)'}</label>
-                <input 
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="0"
-                  className={`w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-center text-[18px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] ${ordemType === 'compra' ? 'text-[#16A34A] dark:text-green-400' : (ordemType === 'venda' ? 'text-[#EF4444] dark:text-red-400' : 'text-[#2563EB] dark:text-blue-400')}`}
-                  value={ordemQtd}
-                  onChange={(e) => {
-                    if (ordemClasse === 'renda-fixa') {
-                      const digits = e.target.value.replace(/\D/g, '');
-                      if (digits) {
-                        const num = parseInt(digits, 10) / 100;
-                        setOrdemQtd(num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[8px] text-center">{ordemClasse === 'renda-fixa' ? 'Valor (R$)' : 'Quantidade (Cotas)'}</label>
+                <div className="relative">
+                  <input 
+                    ref={inputOrdemQtdRef}
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="0"
+                    onFocus={handleInputFocus}
+                    onClick={handleInputFocus}
+                    className={`w-full border-[2px] border-[#E2E8F0] dark:border-[#334155] rounded-[18px] p-[16px_20px] text-center text-[24px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] dark:focus:border-blue-500 focus:shadow-[0_0_0_4px_rgba(37,99,235,0.12)] ${ordemType === 'compra' ? 'text-[#16A34A] dark:text-green-400' : (ordemType === 'venda' ? 'text-[#EF4444] dark:text-red-400' : 'text-[#2563EB] dark:text-blue-400')}`}
+                    value={ordemQtd}
+                    onChange={(e) => {
+                      if (ordemClasse === 'renda-fixa') {
+                        const digits = e.target.value.replace(/\D/g, '');
+                        if (digits) {
+                          const num = parseInt(digits, 10) / 100;
+                          setOrdemQtd(num.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+                        } else {
+                          setOrdemQtd('');
+                        }
                       } else {
-                        setOrdemQtd('');
+                        // For non-fixed income, allow numbers and decimal separators
+                        const val = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
+                        setOrdemQtd(val);
                       }
-                    } else {
-                      setOrdemQtd(e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.'));
-                    }
-                  }}
-                />
+                    }}
+                  />
+                </div>
               </div>
 
               {/* Preview Qtd / Valor */}

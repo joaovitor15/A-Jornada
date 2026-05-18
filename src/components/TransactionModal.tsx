@@ -51,6 +51,7 @@ export function TransactionModal({
   const [mostrarDropdownTag, setMostrarDropdownTag] = useState(false);
   const containerTagRef = useRef<HTMLDivElement>(null);
   const inputTagRef = useRef<HTMLInputElement>(null);
+  const inputValorRef = useRef<HTMLInputElement>(null);
 
   const [parcelas, setParcelas] = useState("1");
 
@@ -141,19 +142,36 @@ export function TransactionModal({
   const valorExibido = formatarValor(digitosValor);
   const valorNumerico = parseInt(digitosValor) / 100;
 
+  // Garantir que o cursor fique no final do input ao editar (especialmente mobile)
+  useEffect(() => {
+    if (inputValorRef.current) {
+      const length = inputValorRef.current.value.length;
+      inputValorRef.current.setSelectionRange(length, length);
+    }
+  }, [digitosValor]);
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement>) => {
+    const target = e.currentTarget;
+    // Timeout helps ensure the focus event has settled
+    setTimeout(() => {
+      const length = target.value.length;
+      target.setSelectionRange(length, length);
+    }, 50);
+  };
+
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value.replace(/\D/g, "");
+    // Remove leading zeros
+    const cleanedValue = value.replace(/^0+/, "") || "0";
+    if (cleanedValue.length > 10) return;
+    setDigitosValor(cleanedValue);
+  };
+
   const handleValorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Tab" || e.key === "Enter") return;
-    e.preventDefault();
-    if (e.key === "Backspace") {
-      setDigitosValor((prev) => prev.slice(0, -1) || "0");
-      return;
-    }
-    if (!/[0-9]/.test(e.key)) return;
-    setDigitosValor((prev) => {
-      const novo = prev === "0" ? e.key : prev + e.key;
-      if (novo.length > 10) return prev;
-      return novo;
-    });
+    // On mobile, we let handleValorChange handle the logic
+    // On desktop, we still prevent default for non-numeric keys if needed, 
+    // but a simpler approach is to let the input be free and just clean it in onChange
   };
 
   const tagsFiltradas = tags.filter((tag) => {
@@ -454,11 +472,14 @@ export function TransactionModal({
                 Valor
               </label>
               <input
+                ref={inputValorRef}
                 type="text"
-                inputMode="decimal"
+                inputMode="numeric"
                 value={valorExibido}
+                onChange={handleValorChange}
                 onKeyDown={handleValorKeyDown}
-                readOnly
+                onFocus={handleInputFocus}
+                onClick={handleInputFocus}
                 className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] ${
                   tipo === "receita" ? "text-[#16A34A]" : "text-[#EF4444]"
                 }`}

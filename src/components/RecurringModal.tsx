@@ -42,9 +42,26 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
   const [ativa, setAtiva] = useState(true);
 
   const [saving, setSaving] = useState(false);
-
   const containerTagRef = useRef<HTMLDivElement>(null);
   const inputTagRef = useRef<HTMLInputElement>(null);
+  const inputValorRef = useRef<HTMLInputElement>(null);
+
+  const [parcelas, setParcelas] = useState(1); // placeholder for local use if needed
+
+  useEffect(() => {
+    if (inputValorRef.current && valorStr !== 'Variável') {
+      const length = inputValorRef.current.value.length;
+      inputValorRef.current.setSelectionRange(length, length);
+    }
+  }, [valorStr]);
+
+  const handleInputFocus = (e: React.FocusEvent<HTMLInputElement> | React.MouseEvent<HTMLInputElement>) => {
+    const target = e.currentTarget;
+    setTimeout(() => {
+      const length = target.value.length;
+      target.setSelectionRange(length, length);
+    }, 50);
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -115,19 +132,16 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
     }
   }, [mostrarDropdownTag, tagSelecionada]);
 
+  const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (valorVariavel) return;
+    const value = e.target.value.replace(/\D/g, "");
+    const cleanedValue = value.replace(/^0+/, "") || "0";
+    if (cleanedValue.length > 10) return;
+    setValorStr(cleanedValue);
+  };
+
   const handleValorKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Tab' || e.key === 'Enter') return;
-    e.preventDefault();
-    if (e.key === 'Backspace') {
-      setValorStr(prev => prev.slice(0, -1) || '0');
-      return;
-    }
-    if (!/[0-9]/.test(e.key)) return;
-    setValorStr(prev => {
-      const novo = prev === '0' ? e.key : prev + e.key;
-      if (novo.length > 10) return prev;
-      return novo;
-    });
   };
 
   const formatarValor = (digitos: string) => {
@@ -273,12 +287,15 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                 <div>
                   <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Valor</label>
                   <input 
+                    ref={inputValorRef}
                     type="text" 
-                    inputMode="decimal"
+                    inputMode="numeric"
                     value={valorVariavel ? 'Variável' : valorExibido} 
+                    onChange={handleValorChange}
                     onKeyDown={handleValorKeyDown}
+                    onFocus={handleInputFocus}
+                    onClick={handleInputFocus}
                     disabled={valorVariavel}
-                    readOnly
                     className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${!valorVariavel && tipo === 'receita' ? 'text-[#16A34A]' : ''} ${!valorVariavel && tipo === 'despesa' ? 'text-[#EF4444]' : ''}`} 
                   />
                 </div>
