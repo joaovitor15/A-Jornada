@@ -223,7 +223,7 @@ export default function App() {
           activeProfile?.investimentos_show_ativos !== false,
           'Sistema de Investimentos',
           'Meus Ativos',
-          <InvestimentosAtivos activeProfileId={activeProfile?.id} />
+          <InvestimentosAtivos activeProfileId={activeProfile?.id} activeProfile={activeProfile} />
         );
       case 'investimentos_cofres':
         return renderContentWithGuard(

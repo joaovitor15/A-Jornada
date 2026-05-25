@@ -26,6 +26,7 @@ import { supabase } from '../supabaseClient';
 
 interface InvestimentosAtivosProps {
   activeProfileId?: string;
+  activeProfile?: any;
 }
 
 const CLASSES_ATIVOS_OPCOES = [
@@ -50,7 +51,7 @@ const formatQuantity = (value: number) => {
   return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 8 }).format(value);
 };
 
-export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProps) {
+export function InvestimentosAtivos({ activeProfileId, activeProfile }: InvestimentosAtivosProps) {
   const [expandedClasses, setExpandedClasses] = useState<string[]>([]);
   const { data: cotacoesData, loading: cotacoesLoading, error: cotacoesError, refetch, addTickerSync, deleteTickerSync } = useCotacoesGSheets();
   
@@ -333,8 +334,8 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
     
     // Obter Metas e Compras Mês do Dashboard do localStorage para saber se a Classe tem 'COMPRA'
     const dashboardMetasRaw = localStorage.getItem(`metas_classes_${activeProfileId}`);
-    const dashboardMetas = dashboardMetasRaw ? JSON.parse(dashboardMetasRaw) : { 'fiis': 30, 'acoes-br': 30, 'stocks-us': 15, 'reits-us': 10, 'etfs-us': 5, 'renda-fixa': 10, 'cripto': 0 };
-    const dashboardComprasMes = parseInt(localStorage.getItem(`compras_mes_dashboard_${activeProfileId}`) || '2', 10);
+    const dashboardMetas = activeProfile?.dashboard_metas_classes ?? (dashboardMetasRaw ? JSON.parse(dashboardMetasRaw) : { 'fiis': 30, 'acoes-br': 30, 'stocks-us': 15, 'reits-us': 10, 'etfs-us': 5, 'renda-fixa': 10, 'cripto': 0 });
+    const dashboardComprasMes = activeProfile?.dashboard_compras_mes ?? parseInt(localStorage.getItem(`compras_mes_dashboard_${activeProfileId}`) || '2', 10);
 
     meusAtivosPersistidos.forEach(ativoInfo => {
       const cat = getCategoriaProps(ativoInfo.classe);
@@ -427,7 +428,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
     // 4. Calcular o rebalanceamento interno DENTRO de cada Classe
     groupedMap.forEach(group => {
       const classIsCompra = classesParaComprar.includes(group.id);
-      const comprasMesClasse = comprasMesClasses[group.id] ?? 1;
+      const comprasMesClasse = comprasMesClasses[group.id] ?? dashboardComprasMes;
       
       const globalClassDiferenca = classesDiferenca.find(c => c.id === group.id)?.diferenca || 0;
       const targetClassTotal = classIsCompra && globalClassDiferenca > 0 
@@ -482,7 +483,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
       const indexB = CLASSES_ATIVOS_OPCOES.findIndex(c => c.id === b.id);
       return (indexA !== -1 ? indexA : 999) - (indexB !== -1 ? indexB : 999);
     });
-  }, [cotacoesData, meusAtivosPersistidos, activeProfileId, comprasMesClasses]);
+  }, [cotacoesData, meusAtivosPersistidos, activeProfileId, comprasMesClasses, activeProfile]);
 
   const displayData = dynamicClassesData;
 
@@ -608,11 +609,7 @@ export function InvestimentosAtivos({ activeProfileId }: InvestimentosAtivosProp
                     </div>
                   </div>
 
-                  {!classe.classIsCompra && (
-                    <div className="hidden lg:flex bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider">
-                      Não Recomendada
-                    </div>
-                  )}
+
 
                   <div className={`hidden md:flex px-3 py-1 rounded-lg text-xs font-bold items-center gap-1.5 ${classe.metaAtingida === 100 ? 'bg-green-50 text-green-700' : classe.metaAtingida > 100 ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'}`}>
                     Meta Ideal: {classe.metaAtingida}% 
