@@ -17,6 +17,7 @@ import {
   UserPlus,
   CheckCircle2,
   Settings,
+  Calendar,
   Building2, Users, UserCheck, Home, Star, Crown, Heart, Smile,
   Coffee, Rocket, Award, Target, Zap, Globe, Landmark, PiggyBank,
   DollarSign, GraduationCap, Baby, Dog, Car, Plane, Gamepad2,
@@ -216,7 +217,7 @@ export default function AppLayout({
     ...(activeProfile?.financeiro_show_dashboard !== false ? [{ id: 'dashboard' as Page, icon: LayoutDashboard, title: 'Dashboard' }] : []),
     ...(activeProfile?.financeiro_show_transacoes !== false ? [{ id: 'transactions' as Page, icon: Wallet, title: 'Transações' }] : []),
     ...(activeProfile?.financeiro_show_cartoes !== false ? [{ id: 'cartoes' as Page, icon: CreditCard, title: 'Cartões' }] : []),
-    ...(activeProfile?.financeiro_show_transacoes_recorrentes !== false ? [{ id: 'recorrentes' as Page, icon: Repeat, badge: pendingRecorrentesCount, title: 'Recorrentes' }] : []),
+    ...(activeProfile?.financeiro_show_transacoes_recorrentes !== false ? [{ id: 'recorrentes' as Page, icon: Calendar, badge: pendingRecorrentesCount, title: 'Provisões' }] : []),
     ...(activeProfile?.financeiro_show_relatorios !== false ? [{ id: 'relatorios' as Page, icon: BarChart2, title: 'Relatórios' }] : []),
     ...(activeProfile?.financeiro_show_categorias !== false ? [{ id: 'categories' as Page, icon: Tag, title: 'Categorias' }] : []),
   ] : [];

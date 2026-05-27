@@ -21,6 +21,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
   const [tipo, setTipo] = useState<'receita' | 'despesa'>('despesa');
   const [valorStr, setValorStr] = useState('');
   const [valorVariavel, setValorVariavel] = useState(false);
+  const [lancamentoRapido, setLancamentoRapido] = useState(false);
   const [frequencia, setFrequencia] = useState<'diaria' | 'semanal' | 'mensal' | 'anual'>('mensal');
   const [diaVencimento, setDiaVencimento] = useState<number | ''>('');
   const [diaEmissao, setDiaEmissao] = useState<number | ''>('');
@@ -94,6 +95,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
         setTipo(initialType);
         setValorStr('0');
         setValorVariavel(false);
+        setLancamentoRapido(false);
         setFrequencia('mensal');
         setDiaVencimento('');
         setDiaEmissao('');
@@ -187,15 +189,24 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       forma_pagamento: isCard ? 'cartao_credito' : 'dinheiro',
       card_id: isCard ? cardId : null,
       num_parcelas: isCard ? numParcelas : null,
-      ativa
+      ativa,
+      lancamento_rapido: lancamentoRapido
     };
 
     if (recorrencia) {
-      const { error } = await supabase.from('transacoes_recorrentes').update(dataObj).eq('id', recorrencia.id);
+      const updateData = { ...dataObj, ultima_lancada: '2000-01-01T12:00:00.000Z' };
+      const { error } = await supabase.from('transacoes_recorrentes').update(updateData).eq('id', recorrencia.id);
       if (error) console.error(error);
     } else {
-      const { error } = await supabase.from('transacoes_recorrentes').insert([dataObj]);
-      if (error) console.error(error);
+      const todayIso = new Date().toISOString();
+      // Se for lançamento rápido e já tivermos o dia, podemos usar a data de hoje.
+      const insertData = { ...dataObj, data_criacao: todayIso, ultima_lancada: lancamentoRapido ? todayIso : null };
+      
+      const { data: novaRec, error } = await supabase.from('transacoes_recorrentes').insert([insertData]).select().single();
+      
+      if (error) {
+        console.error(error);
+      }
     }
     setSaving(false);
     onSaved();
@@ -299,7 +310,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${!valorVariavel && tipo === 'receita' ? 'text-[#16A34A]' : ''} ${!valorVariavel && tipo === 'despesa' ? 'text-[#EF4444]' : ''}`} 
                   />
                 </div>
-                <div className="pb-3 flex items-center">
+                <div className="pb-3 flex flex-col items-start justify-end space-y-[10px]">
                   <label className="flex items-center gap-2 cursor-pointer group">
                     <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${valorVariavel ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
                       {valorVariavel && <Check size={14} className="text-white" />}
@@ -307,107 +318,89 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     <input type="checkbox" checked={valorVariavel} onChange={e => setValorVariavel(e.target.checked)} className="hidden" />
                     <span className="text-[13px] font-[600] text-[#475569] select-none">Valor Variável</span>
                   </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${lancamentoRapido ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
+                      {lancamentoRapido && <Check size={14} className="text-white" />}
+                    </div>
+                    <input type="checkbox" checked={lancamentoRapido} onChange={e => setLancamentoRapido(e.target.checked)} className="hidden" />
+                    <span className="text-[13px] font-[600] text-[#475569] select-none">Lançamento Rápido</span>
+                  </label>
                 </div>
               </div>
 
               {/* Frequência */}
-              <div className="grid grid-cols-2 gap-[12px] items-start">
-                  <div>
-                    <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Frequência</label>
-                    <select value={frequencia} onChange={e => setFrequencia(e.target.value as any)} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]">
-                      <option value="diaria">Diária</option>
-                      <option value="semanal">Semanal</option>
-                      <option value="mensal">Mensal</option>
-                      <option value="anual">Anual</option>
-                    </select>
-                  </div>
-                  
-                  {/* Dia/Mês de Vencimento */}
-                  {frequencia === 'semanal' && (
-                    <div>
-                      <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia da Semana</label>
-                      <select value={diaVencimento} onChange={e => setDiaVencimento(Number(e.target.value))} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB]">
-                        <option value="">Selecione...</option>
-                        <option value="1">Segunda-feira</option>
-                        <option value="2">Terça-feira</option>
-                        <option value="3">Quarta-feira</option>
-                        <option value="4">Quinta-feira</option>
-                        <option value="5">Sexta-feira</option>
-                        <option value="6">Sábado</option>
-                        <option value="7">Domingo</option>
-                      </select>
-                    </div>
-                  )}
-                  {frequencia === 'mensal' && (
-                    <div className="flex gap-[12px]">
-                      <div className="flex-1">
-                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
-                        <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
-                      </div>
-                      {isBusiness && (
-                        <div className="flex-1">
-                          <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia de Tirar</label>
-                          <input type="number" min="1" max="31" value={diaEmissao} onChange={e => setDiaEmissao(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="Opcional" />
-                        </div>
-                      )}
-                    </div>
-                  )}
-              </div>
-
-              {frequencia === 'anual' && (
+              {!lancamentoRapido && (
+                <>
                   <div className="grid grid-cols-2 gap-[12px] items-start">
                       <div>
-                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
-                        <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
-                      </div>
-                      <div>
-                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Mês</label>
-                        <select value={mesVencimento} onChange={e => setMesVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB]">
-                          <option value="">Selecione...</option>
-                          {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('pt-BR', { month: 'long' })}</option>)}
+                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Frequência</label>
+                        <select value={frequencia} onChange={e => setFrequencia(e.target.value as any)} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]">
+                          <option value="mensal">Mensal</option>
+                          <option value="anual">Anual</option>
                         </select>
                       </div>
+                      
+                      {/* Dia/Mês de Vencimento */}
+                      {frequencia === 'mensal' && (
+                        <div className="flex gap-[12px]">
+                          <div className="flex-1">
+                            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
+                            <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
+                          </div>
+                          {isBusiness && (
+                            <div className="flex-1">
+                              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia de Tirar</label>
+                              <input type="number" min="1" max="31" value={diaEmissao} onChange={e => setDiaEmissao(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="Opcional" />
+                            </div>
+                          )}
+                        </div>
+                      )}
                   </div>
+
+                  {frequencia === 'anual' && (
+                      <div className="grid grid-cols-2 gap-[12px] items-start">
+                          <div>
+                            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
+                            <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
+                          </div>
+                          <div>
+                            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Mês</label>
+                            <select value={mesVencimento} onChange={e => setMesVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB]">
+                              <option value="">Selecione...</option>
+                              {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('pt-BR', { month: 'long' })}</option>)}
+                            </select>
+                          </div>
+                      </div>
+                  )}
+                </>
               )}
 
-              {/* Forma Pagamento e Ativa */}
-              <div className="grid grid-cols-2 gap-[12px] items-end">
-                {tipo === 'despesa' && cards.length > 0 ? (
-                  <div>
-                    <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Forma de Pagamento</label>
-                    <select 
-                      value={formaPagamento === 'dinheiro' ? 'dinheiro' : (cardId || '')} 
-                      onChange={e => {
-                        const val = e.target.value;
-                        if (val === 'dinheiro') {
-                          setFormaPagamento('dinheiro');
-                          setCardId(null);
-                        } else {
-                          setFormaPagamento('cartao_credito');
-                          setCardId(val);
-                        }
-                      }} 
-                      className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
-                    >
-                      <option value="dinheiro">Dinheiro</option>
-                      {cards.map(c => (
-                        <option key={c.id} value={c.id}>{c.nome}</option>
-                      ))}
-                    </select>
-                  </div>
-                ) : (
-                  <div className="opacity-0 pointer-events-none"></div>
-                )}
-                <div className="pb-3 flex items-center">
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${ativa ? 'bg-[#10B981] border-[#10B981]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
-                      {ativa && <Check size={14} className="text-white" />}
-                    </div>
-                    <input type="checkbox" checked={ativa} onChange={e => setAtiva(e.target.checked)} className="hidden" />
-                    <span className="text-[13px] font-[600] text-[#475569] select-none">Recorrência Ativa</span>
-                  </label>
+              {/* Forma Pagamento */}
+              {tipo === 'despesa' && cards.length > 0 && (
+                <div>
+                  <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Forma de Pagamento</label>
+                  <select 
+                    value={formaPagamento === 'dinheiro' ? 'dinheiro' : (cardId || '')} 
+                    onChange={e => {
+                      const val = e.target.value;
+                      if (val === 'dinheiro') {
+                        setFormaPagamento('dinheiro');
+                        setCardId(null);
+                      } else {
+                        setFormaPagamento('cartao_credito');
+                        setCardId(val);
+                      }
+                    }} 
+                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
+                  >
+                    <option value="dinheiro">Dinheiro</option>
+                    {cards.map(c => (
+                      <option key={c.id} value={c.id}>{c.nome}</option>
+                    ))}
+                  </select>
                 </div>
-              </div>
+              )}
 
               {/* Parcelamento - Só aparece se for cartão */}
               {(formaPagamento === 'cartao_credito' || cardId) && (

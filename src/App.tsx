@@ -190,7 +190,7 @@ export default function App() {
           finActive, 
           activeProfile?.financeiro_show_transacoes_recorrentes !== false, 
           'Sistema Financeiro', 
-          'Despesas Recorrentes', 
+          'Provisões & Recorrências', 
           <RecorrentesPage activeProfileId={activeProfile?.id} />
         );
       case 'relatorios':
@@ -230,7 +230,7 @@ export default function App() {
           activeProfile?.investimentos_ativo === true,
           activeProfile?.investimentos_show_operacoes !== false,
           'Sistema de Investimentos',
-          'Cofres & Provisões',
+          'Cofres & Metas',
           <InvestimentosCofres activeProfileId={activeProfile?.id} />
         );
       case 'investimentos_metas':

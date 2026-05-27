@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Search, TrendingUp, TrendingDown, CreditCard, Pencil, Trash2, AlertTriangle, ReceiptText, ChevronDown, Check } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Search, TrendingUp, TrendingDown, CreditCard, Pencil, Trash2, AlertTriangle, ReceiptText, ChevronDown, Check, RotateCcw } from 'lucide-react';
 import { useTransacoes, Transacao } from '../hooks/useTransacoes';
 import { TransactionModal } from './TransactionModal';
 import { motion, AnimatePresence } from 'motion/react';
@@ -12,7 +12,7 @@ const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'O
 const MESES_COMPLETOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
-  const { transacoes, loading, carregarTransacoesMes, excluirTransacao } = useTransacoes();
+  const { transacoes, loading, carregarTransacoesMes, excluirTransacao, editarTransacao } = useTransacoes();
   const [dataAtual, setDataAtual] = useState(new Date());
   
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,6 +22,8 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
   const [filtroTipo, setFiltroTipo] = useState<'todos' | 'receitas' | 'despesas'>('todos');
 
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [transacaoParaEfetivar, setTransacaoParaEfetivar] = useState<Transacao | null>(null);
+  const [valorEfetivoStr, setValorEfetivoStr] = useState('');
 
   const mesAtual = dataAtual.getMonth() + 1;
   const anoAtual = dataAtual.getFullYear();
@@ -135,6 +137,38 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
   const handleDelete = async (id: string) => {
     await excluirTransacao(id);
     setConfirmDeleteId(null);
+    if (activeProfileId) {
+      carregarTransacoesMes(activeProfileId, mesAtual, anoAtual);
+    }
+  };
+
+  const handleCancelarEfetivacao = async (t: Transacao) => {
+    const originalPrevisto = t.valor_previsto !== undefined ? t.valor_previsto : t.valor;
+    await editarTransacao(t.id, {
+      status: 'previsto',
+      valor: originalPrevisto
+    });
+    if (activeProfileId) {
+      carregarTransacoesMes(activeProfileId, mesAtual, anoAtual);
+    }
+  };
+
+  const handleConfirmarEfetivacao = async () => {
+    if (!transacaoParaEfetivar) return;
+    
+    // Converte vírgula para ponto e remove possíveis milhares
+    const parsedValor = parseFloat(valorEfetivoStr.replace(/\s/g, '').replace(/\./g, '').replace(',', '.'));
+    if (isNaN(parsedValor) || parsedValor <= 0) {
+      alert("Por favor, digite um valor válido.");
+      return;
+    }
+
+    await editarTransacao(transacaoParaEfetivar.id, {
+      status: 'pago',
+      valor: parsedValor
+    });
+
+    setTransacaoParaEfetivar(null);
     if (activeProfileId) {
       carregarTransacoesMes(activeProfileId, mesAtual, anoAtual);
     }
@@ -381,6 +415,28 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                                 {t.tags?.nome || 'Sem tag'}
                               </span>
 
+                              {/* SITUAÇÃO BADGE */}
+                              {t.status === 'previsto' && (
+                                <span className="inline-flex items-center gap-[4px] px-[6px] py-[1.5px] rounded-[100px] text-[10px] font-[800] bg-[#FEF9C3] text-[#CA8A04] border border-[#FEF08A] uppercase tracking-wider dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-900">
+                                  Previsto
+                                </span>
+                              )}
+
+                              {/* VARIância / RESULTADO DE COMPARAÇÃO */}
+                              {t.status === 'pago' && t.valor_previsto !== undefined && t.valor_previsto !== t.valor && (
+                                <span className={`inline-flex items-center gap-[4px] px-[6px] py-[1.5px] rounded-[100px] text-[10px] font-[700] uppercase tracking-wider ${
+                                  t.tipo === 'despesa'
+                                    ? t.valor > t.valor_previsto
+                                      ? 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/45 dark:text-rose-400 dark:border-rose-900'
+                                      : 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/45 dark:text-emerald-400 dark:border-emerald-900'
+                                    : t.valor > t.valor_previsto
+                                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/45 dark:text-emerald-400 dark:border-emerald-900'
+                                      : 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/45 dark:text-rose-400 dark:border-rose-900'
+                                }`}>
+                                  Resultado: {t.valor > t.valor_previsto ? '+' : '-'}{formatarMoeda(Math.abs(t.valor - t.valor_previsto))}
+                                </span>
+                              )}
+
                               {/* FORMA DE PAGAMENTO */}
                               {t.tipo === 'despesa' && (
                                 <div className="flex items-center gap-[4px] text-[12px] text-[#94A3B8] dark:text-[#64748B]">
@@ -410,6 +466,19 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                           </div>
                           
                           <div className="flex items-center gap-[4px]">
+                            {t.status === 'previsto' && (
+                              <button
+                                onClick={() => {
+                                  setTransacaoParaEfetivar(t);
+                                  setValorEfetivoStr(t.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }));
+                                }}
+                                className="flex items-center gap-1 p-[4px_10px] rounded-[8px] bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#CA8A04] transition-colors cursor-pointer text-[11px] font-[700]"
+                                title="Efetivar Lançamento"
+                              >
+                                <Check size={11} strokeWidth={3} />
+                                <span>Efetivar</span>
+                              </button>
+                            )}
                             <button
                               onClick={() => {
                                 setTransacaoParaEditar(t);
@@ -436,6 +505,69 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
           </div>
         )}
       </div>
+
+      {/* MODAL DE EFETIVAÇÃO DE LANÇAMENTO (PAGO VS PREVISTO) */}
+      {transacaoParaEfetivar && (
+        <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
+          <div className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[20px] p-[24px] w-full max-w-[380px] shadow-[0_24px_48px_rgba(0,0,0,0.15)] flex flex-col border-[1.5px] border-[#F1F5F9] dark:border-[#334155]">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`w-[40px] h-[40px] rounded-full flex items-center justify-center ${
+                transacaoParaEfetivar.tipo === 'receita' ? 'bg-[#DCFCE7] text-[#16A34A]' : 'bg-[#FEE2E2] text-[#EF4444]'
+              }`}>
+                {transacaoParaEfetivar.tipo === 'receita' ? <TrendingUp size={18} /> : <TrendingDown size={18} />}
+              </div>
+              <div>
+                <h3 className="text-[16px] font-[800] text-[#0F172A] dark:text-white">Efetivar Lançamento</h3>
+                <p className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">{transacaoParaEfetivar.tipo === 'receita' ? 'Receber previsto' : 'Confirmar pagamento'}</p>
+              </div>
+            </div>
+
+            <div className="bg-[#F8FAFC] dark:bg-[#0F172A] rounded-xl p-3 border border-[#E2E8F0] dark:border-[#334155] mb-4 space-y-1.5">
+              <div className="text-[13px] font-[700] text-[#0F172A] dark:text-white line-clamp-1">{transacaoParaEfetivar.descricao}</div>
+              <div className="flex justify-between text-[11px] text-[#64748B] dark:text-[#94A3B8] font-bold">
+                <span>VALOR PREVISTO:</span>
+                <span>R$ {transacaoParaEfetivar.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+
+            <div className="space-y-1 mb-6">
+              <label className="block text-[11px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">
+                Valor Efetivo (Pago / Recebido)
+              </label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[14px] font-[700] text-[#64748B]">R$</span>
+                <input
+                  type="text"
+                  value={valorEfetivoStr}
+                  onChange={(e) => setValorEfetivoStr(e.target.value)}
+                  placeholder="0,00"
+                  className="w-full pl-9 pr-4 py-2.5 bg-white dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-xl text-[16px] font-[800] text-[#0F172A] dark:text-white outline-none focus:border-[#2563EB]"
+                />
+              </div>
+              <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold">Você pode corrigir o valor se o pagamento foi diferente do previsto.</span>
+            </div>
+
+            <div className="flex gap-[10px] w-full">
+              <button 
+                onClick={() => setTransacaoParaEfetivar(null)}
+                className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[600] text-[14px] py-[10px] rounded-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors cursor-pointer"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={handleConfirmarEfetivacao}
+                className={`flex-1 text-white font-[700] text-[14px] py-[10px] rounded-[12px] transition-colors cursor-pointer shadow-md ${
+                  transacaoParaEfetivar.tipo === 'receita'
+                    ? 'bg-[#16A34A] hover:bg-[#15803D]'
+                    : 'bg-[#2563EB] hover:bg-[#1D4ED8]'
+                }`}
+              >
+                Confirmar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       {confirmDeleteId && (

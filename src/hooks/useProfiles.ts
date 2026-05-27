@@ -134,6 +134,96 @@ export function useProfiles() {
       return { error };
     }
 
+    if (modules.investimentos_ativo !== undefined) {
+      try {
+        const active = !!modules.investimentos_ativo;
+        if (active) {
+          const { data: cat } = await supabase
+            .from('categories')
+            .select('id, archived')
+            .eq('profile_id', id)
+            .ilike('nome', 'Investimentos')
+            .limit(1)
+            .maybeSingle();
+
+          let categoryId = cat?.id;
+
+          if (!categoryId) {
+            const { data: newCat } = await supabase
+              .from('categories')
+              .insert({ 
+                profile_id: id, 
+                nome: 'Investimentos', 
+                tipo: 'despesa', 
+                cor: '#10B981', 
+                icone: 'TrendingUp' 
+              })
+              .select()
+              .single();
+            categoryId = newCat?.id;
+          } else if (cat.archived) {
+            await supabase
+              .from('categories')
+              .update({ archived: false, archived_at: null })
+              .eq('id', categoryId);
+            await supabase
+              .from('tags')
+              .update({ archived: false })
+              .or(`category_id.eq.${categoryId},categoria_id.eq.${categoryId}`);
+          }
+
+          // Ensure all required tags exist for the Investimentos category
+          if (categoryId) {
+            const { data: existingTags } = await supabase
+              .from('tags')
+              .select('nome')
+              .or(`category_id.eq.${categoryId},categoria_id.eq.${categoryId}`);
+              
+            const expectedTags = ['Aportes', 'Rendimentos', 'Dividendos', 'Resgates'];
+            const existingTagNames = existingTags?.map((t: any) => t.nome?.toLowerCase() || '') || [];
+            
+            const tagsToInsert = expectedTags
+              .filter(t => !existingTagNames.includes(t.toLowerCase()))
+              .map(t => ({ 
+                profile_id: id, 
+                category_id: categoryId, 
+                categoria_id: categoryId, 
+                nome: t 
+              }));
+              
+            if (tagsToInsert.length > 0) {
+              await supabase.from('tags').insert(tagsToInsert);
+            }
+          }
+        } else {
+          // Archive investments category when inactive
+          const { data: cat } = await supabase
+            .from('categories')
+            .select('id')
+            .eq('profile_id', id)
+            .ilike('nome', 'Investimentos')
+            .limit(1)
+            .maybeSingle();
+
+          if (cat) {
+            await supabase
+              .from('categories')
+              .update({ 
+                archived: true, 
+                archived_at: new Date().toISOString() 
+              })
+              .eq('id', cat.id);
+            await supabase
+              .from('tags')
+              .update({ archived: true })
+              .or(`category_id.eq.${cat.id},categoria_id.eq.${cat.id}`);
+          }
+        }
+      } catch (err) {
+        console.error("Erro ao sincronizar categoria de Investimentos:", err);
+      }
+    }
+
     await fetchProfiles();
     setLoading(false);
     return { error: null };

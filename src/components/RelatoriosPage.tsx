@@ -244,10 +244,12 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
   const getChartData = (tipoTransacao: 'receita' | 'despesa', agrupamento: 'categoria' | 'tag') => {
     const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
+    const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
 
     const txs = transacoes.filter(t => {
       if (t.tipo !== tipoTransacao) return false;
       if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+      if (t.tags?.categories?.id && investCatIds.includes(t.tags.categories.id)) return false;
       return true;
     });
 
@@ -400,7 +402,12 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-2">
         {(() => {
            const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
-           const validTxs = transacoes.filter(t => !t.tags?.categories?.id || !cardCatIds.includes(t.tags.categories.id));
+           const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
+           const validTxs = transacoes.filter(t => {
+             if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+             if (t.tags?.categories?.id && investCatIds.includes(t.tags.categories.id)) return false;
+             return true;
+           });
 
            const totalReceitas = validTxs.filter(t => t.tipo === 'receita').reduce((acc, curr) => acc + Number(curr.valor), 0);
            const totalDespesas = validTxs.filter(t => t.tipo === 'despesa').reduce((acc, curr) => acc + Number(curr.valor), 0);

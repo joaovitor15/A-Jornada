@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard } from 'lucide-react';
 import { TransactionModal } from './TransactionModal';
 import { supabase } from '../supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -45,8 +45,16 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
     setDropdownMesAberto(false);
   };
 
+  const [saldoAnterior, setSaldoAnterior] = useState(0);
   const [receitasValor, setReceitasValor] = useState(0);
   const [despesasValor, setDespesasValor] = useState(0);
+  const [investimentosValor, setInvestimentosValor] = useState(0);
+  const [cartoesValor, setCartoesValor] = useState(0);
+  const [receitasPago, setReceitasPago] = useState(0);
+  const [receitasPrevisto, setReceitasPrevisto] = useState(0);
+  const [despesasPago, setDespesasPago] = useState(0);
+  const [despesasPrevisto, setDespesasPrevisto] = useState(0);
+  const [economiaDespesas, setEconomiaDespesas] = useState(0);
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
 
   const [isCardsLoading, setIsCardsLoading] = useState(true);
@@ -63,9 +71,40 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
       const mesStr = ms.toString().padStart(2, '0');
       const ultimoDia = new Date(an, ms, 0).getDate();
 
+      const { data: antData } = await supabase
+        .from('transacoes')
+        .select(`valor, tipo, status, tags ( categories!tags_category_id_fkey ( nome ) )`)
+        .eq('profile_id', activeProfileId)
+        .is('card_id', null)
+        .lt('data', `${an}-${mesStr}-01`);
+
+      let saldoAntCalc = 0;
+      if (antData) {
+          antData.forEach(t => {
+              if (t.status !== 'previsto') {
+                  const tagCat = t.tags?.categories?.nome?.toLowerCase();
+                  if (tagCat === 'investimentos') {
+                      // Investimentos pagos também reduzem o saldo se forma real (já tratado na lógica atual, ou os dois reduzem? Na vdd a gnt desconta depois, mas como as transações da base já definem tipo...)
+                      // The current logic considers all investments as positive values that are subtracted from the balance. Let's just follow the native tipo here. Wait, investments logic is complex. 
+                      // Se a transação original for tipo='despesa' e tiver tag 'investimento', vai subtrair do saldo (pq add como despesa e dps subtrai dnv se não tratarmos).
+                      // In the current month logic, `recsArr` and `dspsArr` EXCLUDE investments. And then `investimentosValor` is computed and SUBTRACTED.
+                      // So investments ALWAYS decrease the balance, regardless of `tipo`.
+                      saldoAntCalc -= (t.valor || 0);
+                  } else {
+                      if (t.tipo === 'receita') saldoAntCalc += (t.valor || 0);
+                      else if (t.tipo === 'despesa') saldoAntCalc -= (t.valor || 0);
+                  }
+              }
+          });
+      }
+      setSaldoAnterior(saldoAntCalc);
+
       const { data: receitas } = await supabase
         .from('transacoes')
-        .select('valor')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome ) )
+        `)
         .eq('profile_id', activeProfileId)
         .eq('tipo', 'receita')
         .is('card_id', null)
@@ -74,18 +113,231 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
 
       const { data: despesas } = await supabase
         .from('transacoes')
-        .select('valor')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome ) )
+        `)
         .eq('profile_id', activeProfileId)
         .eq('tipo', 'despesa')
         .is('card_id', null)
         .gte('data', `${an}-${mesStr}-01`)
         .lte('data', `${an}-${mesStr}-${ultimoDia}`);
 
-      const sumReceitas = (receitas || []).reduce((acc, obj) => acc + (obj.valor || 0), 0);
-      const sumDespesas = (despesas || []).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      // Separar receitas por pago vs previsto
+      const recsArrOriginal = receitas || [];
+      const dspsArrOriginal = despesas || [];
 
-      setReceitasValor(sumReceitas);
-      setDespesasValor(sumDespesas);
+      const recsArr = recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
+      const dspsArr = dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
+
+      const invesArr = [
+        ...recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
+        ...dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() === 'investimentos')
+      ];
+
+      const sumRecsPago = recsArr.filter(r => r.status !== 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumRecsPrev = recsArr.filter(r => r.status === 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
+
+      const sumDspsPago = dspsArr.filter(d => d.status !== 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumDspsPrev = dspsArr.filter(d => d.status === 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+
+      // Separar investimentos por pago
+      const sumInvesPago = invesArr.filter(d => d.status !== 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
+
+      // Calcular economia (valor_previsto - valor) para despesas ja pagas
+      const paidDespesasWithPrev = dspsArr.filter(d => d.status !== 'previsto' && d.valor_previsto !== undefined && d.valor_previsto !== null);
+      const calcEconomia = paidDespesasWithPrev.reduce((acc, d) => acc + ((d.valor_previsto || d.valor) - d.valor), 0);
+
+      // --- FETCH RECORRENTES PARA INCLUIR NA PROVISÃO ---
+      const { data: recorrentesRaw, error: recError } = await supabase
+        .from('transacoes_recorrentes')
+        .select('*, categories (nome)')
+        .eq('profile_id', activeProfileId)
+        .eq('ativa', true);
+
+      if (recError) {
+        console.error("Error fetching recorrentes for dashboard:", recError);
+      }
+
+      let sumDspsPrevRecorrente = 0;
+      let sumRecsPrevRecorrente = 0;
+      if (recorrentesRaw) {
+          recorrentesRaw.forEach(rec => {
+              if (rec.lancamento_rapido) return;
+              // Avoid investiments if categoriy name checks out
+              const recCatName = rec.categories?.nome || '';
+              if (recCatName.toLowerCase() === 'investimentos') return;
+
+              const createdDateStr = rec.data_criacao || rec.created_at || rec.ultima_lancada;
+              const createdDate = createdDateStr ? new Date(createdDateStr) : new Date();
+              let startYear = createdDate.getFullYear();
+              let startMonth = createdDate.getMonth();
+
+              if (rec.dia_vencimento) {
+                  if (createdDate.getDate() > Number(rec.dia_vencimento)) {
+                      startMonth += 1;
+                      if (startMonth > 11) { startMonth = 0; startYear += 1; }
+                  }
+              }
+
+              const activeYearStr = rec.ultima_lancada || rec.data_criacao || rec.created_at;
+              const activeYear = activeYearStr ? new Date(activeYearStr).getFullYear() : startYear;
+
+              const targetYear = anoSelecionado;
+              const monthIdx = mesSelecionado - 1;
+              const monthDiff = (targetYear - startYear) * 12 + (monthIdx - startMonth);
+              let shouldRender = true;
+
+              if (rec.num_parcelas && rec.num_parcelas > 1) {
+                  if (monthDiff < 0 || monthDiff >= rec.num_parcelas) shouldRender = false;
+              }
+              if (rec.frequencia === 'anual') {
+                  const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+                  if (monthIdx !== tMonth) shouldRender = false;
+              }
+
+              const effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
+              const effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
+              const projectedTimeId = targetYear * 12 + monthIdx;
+              const creationTimeId = effStartYear * 12 + effStartMonth;
+
+              if (projectedTimeId < creationTimeId) shouldRender = false;
+              else if (targetYear !== activeYear) shouldRender = false;
+
+              if (!shouldRender) return;
+
+              if (rec.tipo === 'despesa') {
+                  // Compare with existing dspsArr
+                  const matched = dspsArr.find(t => {
+                       if (t.recorrente_id === rec.id) return true;
+                       const safeDesc = t.descricao || '';
+                       const cleanRecName = rec.nome || '';
+                       const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                         cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                       if (nameMatch) {
+                           const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                           if (diff <= 0.01) {
+                               if (rec.dia_vencimento) {
+                                   try {
+                                       const tDay = new Date(t.data + 'T12:00:00Z').getUTCDate();
+                                       if (tDay === Number(rec.dia_vencimento)) return true;
+                                   } catch(e) {}
+                               } else {
+                                   return true;
+                               }
+                           }
+                       }
+                       return false;
+                  });
+
+                  if (!matched) {
+                      sumDspsPrevRecorrente += Number(rec.valor) || 0;
+                  }
+              } else if (rec.tipo === 'receita') {
+                  // Compare with existing recsArr
+                  const matched = recsArr.find(t => {
+                       if (t.recorrente_id === rec.id) return true;
+                       const safeDesc = t.descricao || '';
+                       const cleanRecName = rec.nome || '';
+                       const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                         cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                       if (nameMatch) {
+                           const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                           if (diff <= 0.01) {
+                               if (rec.dia_vencimento) {
+                                   try {
+                                       const tDay = new Date(t.data + 'T12:00:00Z').getUTCDate();
+                                       if (tDay === Number(rec.dia_vencimento)) return true;
+                                   } catch(e) {}
+                               } else {
+                                   return true;
+                               }
+                           }
+                       }
+                       return false;
+                  });
+
+                  if (!matched) {
+                      sumRecsPrevRecorrente += Number(rec.valor) || 0;
+                  }
+              }
+          });
+      }
+
+      setReceitasPago(sumRecsPago);
+      setReceitasPrevisto(sumRecsPrev + sumRecsPrevRecorrente);
+      setDespesasPago(sumDspsPago);
+      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente);
+      setEconomiaDespesas(calcEconomia);
+
+      // receitasValor e despesasValor representam o que de fato ocorreu para manter a integridade do saldo e graficos
+      setReceitasValor(sumRecsPago + saldoAntCalc);
+      setDespesasValor(sumDspsPago);
+      setInvestimentosValor(sumInvesPago);
+
+      // --- LOGICA DO CARTAO ---
+      const { data: userCards } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('profile_id', activeProfileId);
+
+      const { data: transacoesCardsRaw } = await supabase
+        .from('transacoes')
+        .select('*')
+        .eq('profile_id', activeProfileId)
+        .not('card_id', 'is', null);
+
+      let faturaNoMesSoma = 0;
+
+      if (userCards && transacoesCardsRaw) {
+        transacoesCardsRaw.forEach(t => {
+          const cardInfo = userCards.find(c => c.id === t.card_id);
+          if (cardInfo) {
+            const dateParts = t.data.split('-');
+            if(dateParts.length >= 3) {
+                const year = parseInt(dateParts[0], 10);
+                const month = parseInt(dateParts[1], 10);
+                const day = parseInt(dateParts[2], 10);
+
+                let mesFechamento = month;
+                let anoFechamento = year;
+                if (day > cardInfo.dia_fechamento_fatura) {
+                    mesFechamento++;
+                    if (mesFechamento > 12) {
+                        mesFechamento = 1;
+                        anoFechamento++;
+                    }
+                }
+                
+                let mesVencimento = mesFechamento;
+                let anoVencimento = anoFechamento;
+                if (cardInfo.dia_vencimento_fatura < cardInfo.dia_fechamento_fatura) {
+                    mesVencimento++;
+                    if (mesVencimento > 12) {
+                        mesVencimento = 1;
+                        anoVencimento++;
+                    }
+                }
+
+                // A fatura que vencera no mesSelecionado
+                let targetMesVencimento = mesSelecionado;
+                let targetAnoVencimento = anoSelecionado;
+
+                const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
+
+                if (mesVencimento === targetMesVencimento && anoVencimento === targetAnoVencimento) {
+                    if (t.tipo === 'despesa') {
+                        faturaNoMesSoma += (vl || 0);
+                    } else if (t.tipo === 'receita') {
+                        faturaNoMesSoma -= (vl || 0);
+                    }
+                }
+            }
+          }
+        });
+      }
+      setCartoesValor(faturaNoMesSoma > 0 ? faturaNoMesSoma : 0);
+
       setIsCardsLoading(false);
     };
 
@@ -100,7 +352,10 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
       setIsChartLoading(true);
       const { data: transacoesAno } = await supabase
         .from('transacoes')
-        .select('valor, tipo, data')
+        .select(`
+          *,
+          tags ( categories!tags_category_id_fkey ( nome ) )
+        `)
         .eq('profile_id', activeProfileId)
         .is('card_id', null)
         .gte('data', `${anoSelecionado}-01-01`)
@@ -116,6 +371,12 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
       }));
 
       (transacoesAno || []).forEach(t => {
+        // Ignorar investimentos nas despesas do gráfico
+        if (t.tipo === 'despesa' && t.tags?.categories?.nome?.toLowerCase() === 'investimentos') return;
+        // Ignorar previsões futuras do gráfico de fluxo financeiro realizado
+
+        if (t.status === 'previsto') return;
+
         const dateParts = t.data.split('-');
         if (dateParts.length >= 2) {
           const mes = parseInt(dateParts[1], 10) - 1;
@@ -136,7 +397,14 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
     fetchGrafico();
   }, [activeProfileId, anoSelecionado, isTransactionModalOpen]);
   
-  const saldoTotal = receitasValor - despesasValor;
+  const targetMesVencimento = mesSelecionado;
+  const targetAnoVencimento = anoSelecionado;
+  const nomesMeses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto + receitasPrevisto - cartoesValor;
 
   const formatarValor = (valor: number) =>
     valor.toLocaleString('pt-BR', {
@@ -260,22 +528,22 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
       </div>
 
       {/* 2. CARDS DE RESUMO */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px]">
+      <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-[16px]">
         {/* CARD 1 — RECEITAS */}
         <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
           <div className="flex items-start justify-between mb-[16px]">
             <div className="p-[6px] bg-[#F0FDF4] dark:bg-green-900/20 rounded-full text-[#16A34A] dark:text-green-500 w-[32px] h-[32px] flex items-center justify-center">
               <TrendingUp size={18} />
             </div>
-            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8] font-bold tracking-wider">
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
               Receitas
             </span>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
-               <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[28px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
             )}
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#16A34A] dark:bg-green-500" />
@@ -287,35 +555,95 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
             <div className="p-[6px] bg-[#FEF2F2] dark:bg-red-900/20 rounded-full text-[#EF4444] dark:text-red-500 w-[32px] h-[32px] flex items-center justify-center">
               <TrendingDown size={18} />
             </div>
-            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8] font-bold tracking-wider">
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
               Despesas
             </span>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
-               <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[28px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValor)}</span>
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValor)}</span>
             )}
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#EF4444] dark:bg-red-500" />
         </div>
 
-        {/* CARD 3 — SALDO TOTAL */}
+        {/* CARD 3 — INVESTIMENTOS */}
+        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+          <div className="flex items-start justify-between mb-[16px]">
+            <div className="p-[6px] bg-[#ECFDF5] dark:bg-emerald-900/20 rounded-full text-[#10B981] dark:text-emerald-500 w-[32px] h-[32px] flex items-center justify-center">
+              <PieChart size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              Investimentos
+            </span>
+          </div>
+          <div className="flex flex-col">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#10B981] dark:text-emerald-500 leading-tight flex-wrap break-all">{formatarValor(investimentosValor)}</span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-[#10B981] dark:bg-emerald-500" />
+        </div>
+
+        {/* CARD 4 — PROVISÃO */}
+        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+          <div className="flex items-start justify-between mb-[16px]">
+            <div className="p-[6px] bg-amber-50 dark:bg-amber-900/20 rounded-full text-amber-500 dark:text-amber-400 w-[32px] h-[32px] flex items-center justify-center">
+              <Clock size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              Provisão
+            </span>
+          </div>
+          <div className="flex flex-col">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-amber-500 dark:text-amber-400 leading-tight flex-wrap break-all">{formatarValor(despesasPrevisto)}</span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-amber-500 dark:bg-amber-400" />
+        </div>
+
+        {/* CARD 5 — CARTÃO */}
+        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+          <div className="flex items-start justify-between mb-[16px]">
+            <div className="p-[6px] bg-purple-50 dark:bg-purple-900/20 rounded-full text-purple-500 dark:text-purple-400 w-[32px] h-[32px] flex items-center justify-center">
+              <CreditCard size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
+            </span>
+          </div>
+          <div className="flex flex-col">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesValor)}</span>
+            )}
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-purple-500 dark:bg-purple-400" />
+        </div>
+
+        {/* CARD 6 — SALDO TOTAL */}
         <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
           <div className="flex items-start justify-between mb-[16px]">
             <div className="p-[6px] bg-[#EFF6FF] dark:bg-blue-900/20 rounded-full text-[#2563EB] dark:text-blue-500 w-[32px] h-[32px] flex items-center justify-center">
               <Wallet size={18} />
             </div>
-            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8] font-bold tracking-wider">
-              Saldo Total
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider whitespace-nowrap overflow-hidden text-ellipsis">
+              Saldo Final
             </span>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
-               <div className="h-9 w-32 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className={`text-[28px] font-[800] leading-tight flex-wrap break-all ${saldoTotal < 0 ? 'text-[#EF4444] dark:text-red-500' : 'text-[#2563EB] dark:text-blue-500'}`}>
+              <span className={`text-[20px] 2xl:text-[24px] font-[800] leading-tight flex-wrap break-all ${saldoTotal < 0 ? 'text-[#EF4444] dark:text-red-500' : 'text-[#2563EB] dark:text-blue-500'}`}>
                 {formatarValor(saldoTotal)}
               </span>
             )}

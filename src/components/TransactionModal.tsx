@@ -54,6 +54,7 @@ export function TransactionModal({
   const inputValorRef = useRef<HTMLInputElement>(null);
 
   const [parcelas, setParcelas] = useState("1");
+  const [status, setStatus] = useState<"previsto" | "pago">("pago");
 
   useEffect(() => {
     if (isOpen && transacaoParaEditar) {
@@ -67,6 +68,7 @@ export function TransactionModal({
       setCardId(transacaoParaEditar.card_id || "");
       setParcelas(transacaoParaEditar.num_parcelas?.toString() || "1");
       setDigitosValor(Math.round(transacaoParaEditar.valor * 100).toString());
+      setStatus(transacaoParaEditar.status || "pago");
 
       if (transacaoParaEditar.tags) {
         setTagSelecionada({
@@ -88,6 +90,7 @@ export function TransactionModal({
       setFormaPagamento("dinheiro");
       setCardId("");
       setParcelas("1");
+      setStatus("pago");
       setErro(null);
     }
   }, [isOpen, transacaoParaEditar]);
@@ -222,8 +225,7 @@ export function TransactionModal({
 
     const isCard = tipo === "despesa" && formaPagamento !== "dinheiro";
 
-    const dadosSalvar = {
-      profile_id: perfilId,
+    const dadosSalvar: any = {
       tipo,
       descricao,
       tag_id: tagSelecionada.id,
@@ -232,15 +234,21 @@ export function TransactionModal({
       forma_pagamento: isCard ? "cartao_credito" : "dinheiro",
       card_id: isCard ? cardId : null,
       num_parcelas: isCard ? parseInt(parcelas) : null,
-      recorrente_id: transacaoParaEditar?.recorrente_id || null
+      recorrente_id: transacaoParaEditar?.recorrente_id || null,
+      valor_previsto: transacaoParaEditar && transacaoParaEditar.valor_previsto !== undefined ? transacaoParaEditar.valor_previsto : valorNumerico,
     };
+    
+    if (!transacaoParaEditar) {
+       dadosSalvar.profile_id = perfilId;
+       dadosSalvar.status = "pago"; // Forçar pago para lançamentos novos (já que ocultamos o campo)
+    }
 
     if (transacaoParaEditar) {
       const { success, error } = await editarTransacao(
         transacaoParaEditar.id,
         dadosSalvar,
       );
-      if (error) alert(error);
+      if (error) setErro({ campo: "descricao", mensagem: error });
       else onClose();
     } else {
       const parcelasInt = parseInt(parcelas);
@@ -265,11 +273,11 @@ export function TransactionModal({
           });
           if (error) errorOcorreu = error;
         }
-        if (errorOcorreu) alert(errorOcorreu);
+        if (errorOcorreu) setErro({ campo: "descricao", mensagem: errorOcorreu });
         else onClose();
       } else {
         const { success, error } = await criarTransacao(dadosSalvar);
-        if (error) alert(error);
+        if (error) setErro({ campo: "descricao", mensagem: error });
         else onClose();
       }
     }
@@ -550,7 +558,40 @@ export function TransactionModal({
               )}
             </div>
           )}
+
+
         </div>
+
+        <AnimatePresence>
+          {erro && erro.campo !== "descricao" && erro.campo !== "tag" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-[20px] bg-[#FEF2F2] border-[1.5px] border-[#F87171] p-3 rounded-[12px] flex items-start gap-2 text-[#B91C1C]"
+            >
+              <AlertCircle size={18} className="mt-[2px] shrink-0" />
+              <div className="text-[13px] font-[600] leading-tight flex-1">
+                <span className="font-bold">Atenção:</span><br/>
+                {typeof erro.mensagem === 'object' ? JSON.stringify((erro.mensagem as any).message || erro.mensagem) : erro.mensagem}
+              </div>
+            </motion.div>
+          )}
+          {erro && erro.campo === "descricao" && erro.mensagem !== "Informe uma descrição" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="mt-[20px] bg-[#FEF2F2] border-[1.5px] border-[#F87171] p-3 rounded-[12px] flex items-start gap-2 text-[#B91C1C]"
+            >
+              <AlertCircle size={18} className="mt-[2px] shrink-0" />
+              <div className="text-[13px] font-[600] leading-tight flex-1">
+                <span className="font-bold">Erro do Sistema:</span><br/>
+                {typeof erro.mensagem === 'object' ? JSON.stringify((erro.mensagem as any).message || erro.mensagem) : erro.mensagem}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="mt-[24px] flex gap-[12px]">
           <button

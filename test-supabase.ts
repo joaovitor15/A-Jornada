@@ -1,12 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL || 'SUA_URL_AQUI';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'SUA_CHAVE_ANON_AQUI';
+const supabaseUrl = process.env.VITE_SUPABASE_URL || 'https://jczncmoklxyevcghnylk.supabase.co';
+const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || '...'; // I will grep it
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+async function main() {
+  const supabase = createClient(supabaseUrl, supabaseKey);
+  const { data, error } = await supabase
+    .from('transacoes')
+    .select(`
+      id,
+      tipo,
+      tags ( categories!tags_category_id_fkey ( nome ) )
+    `)
+    .limit(1);
 
-async function test() {
-  const { data, error } = await supabase.from('cofres').select('*');
-  console.log("Data:", data, "Error:", error);
+  console.log(JSON.stringify(data, null, 2));
 }
-test();
+
+main();

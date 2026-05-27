@@ -97,3 +97,12 @@ CREATE POLICY "Usuários podem atualizar cotações globais"
 CREATE POLICY "Usuários podem fazer update em cotações globais"
   ON public.cotacoes_globais FOR UPDATE
   USING (auth.role() = 'authenticated');
+
+-- Atualização na tabela transacoes para controle de previsão e preenchimento (pago vs previsto)
+ALTER TABLE public.transacoes
+ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pago',
+ADD COLUMN IF NOT EXISTS valor_previsto NUMERIC(10, 2);
+
+-- Preencher valor_previsto retroativamente para evitar nulos em itens antigos
+UPDATE public.transacoes SET valor_previsto = valor WHERE valor_previsto IS NULL;
+

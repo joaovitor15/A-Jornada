@@ -551,7 +551,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         <div>
           <div className="flex items-center gap-3 mb-1">
             <Shield size={24} className="text-[#10B981]" />
-            <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">Cofres & Provisões</h2>
+            <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">Cofres & Metas</h2>
           </div>
           <p className="text-[#64748B] dark:text-[#94A3B8] text-sm font-medium">Guarde Dinheiro.</p>
         </div>
@@ -588,17 +588,6 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                 <div 
                   onClick={() => {
                     setIsNewCofreDropdownOpen(false);
-                    openCofreModal('provisao');
-                  }}
-                  className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#FEE2E2] dark:bg-red-900/20 transition-all duration-200 cursor-pointer"
-                >
-                  <CalendarDays size={16} className="text-[#EF4444] dark:text-red-400" />
-                  <span className="text-[14px] font-[600] text-[#EF4444] dark:text-red-400">Provisões</span>
-                </div>
-                <div className="border-t border-[#F1F5F9] my-[4px]" />
-                <div 
-                  onClick={() => {
-                    setIsNewCofreDropdownOpen(false);
                     openCofreModal('meta');
                   }}
                   className="flex items-center gap-[10px] px-[14px] py-[10px] rounded-[10px] hover:bg-[#EFF6FF] transition-all duration-200 cursor-pointer"
@@ -617,7 +606,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         <div className="text-center py-12 text-[#94A3B8] dark:text-[#94A3B8] font-bold">Carregando...</div>
       ) : (
       <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* TOTAL GERAL */}
         <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-l-[6px] border-l-[#64748B] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
           <div>
@@ -652,23 +641,6 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
               {totalReservaObjetivo > 0 ? ((totalReserva / totalReservaObjetivo) * 100).toFixed(1) : '0.0'}%
             </span>
           </div>
-        </div>
-
-        {/* PROVISÕES */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-l-[6px] border-l-[#EF4444] border border-r-[#E2E8F0] border-t-[#E2E8F0] border-b-[#E2E8F0] shadow-sm relative overflow-hidden flex flex-col justify-between">
-          <div>
-            <div className="flex items-center gap-2 text-[#94A3B8] dark:text-[#94A3B8] font-[800] text-[10px] uppercase tracking-wider mb-2">
-              <CalendarDays size={14} className="text-[#EF4444] dark:text-red-400" strokeWidth={3} />
-              Provisões (Saldo)
-            </div>
-            <div className="text-3xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4">
-              {formatCurrency(totalProvisao)}
-            </div>
-          </div>
-          <div className="flex items-center justify-between border-t border-dashed border-[#E2E8F0] dark:border-[#334155] pt-4 mt-auto">
-            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Mensal: {formatCurrency(mensalidadeProvisoes)}</span>
-            <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold">Anual: {formatCurrency(anualProvisoes)}</span>
-           </div>
         </div>
 
         {/* METAS */}
@@ -718,55 +690,6 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                     {reservas.map(renderCardTemplate)}
                   </div>
               )}
-           </div>
-        </div>
-
-        {/* PROVISÕES BLOCO */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-[24px] border border-[#E2E8F0] dark:border-[#334155] shadow-sm">
-           <div className="px-6 py-5 border-b border-[#E2E8F0] dark:border-[#334155] flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                 <div className="bg-white dark:bg-[#1E293B] p-2 rounded-xl shadow-sm border border-slate-100 dark:border-[#334155]">
-                   <CalendarDays className="text-[#EF4444] dark:text-red-400" size={20} strokeWidth={2.5}/>
-                 </div>
-                 <h3 className="font-[900] text-[#0F172A] dark:text-white text-lg">Provisões</h3>
-              </div>
-              <div className="text-right flex items-center gap-3 hidden sm:flex">
-                 <span className="font-bold text-[#EF4444] dark:text-red-400">{formatCurrency(totalProvisao)}</span>
-                 <div className="h-4 w-[1px] bg-[#E2E8F0] dark:bg-[#475569]"></div>
-                 <span className="text-xs text-[#94A3B8] dark:text-[#94A3B8] font-semibold">Mensal: <span className="text-[#64748B] dark:text-[#94A3B8]">{formatCurrency(mensalidadeProvisoes)}</span></span>
-                 <span className="text-xs text-[#94A3B8] dark:text-[#94A3B8] font-semibold">Anual: <span className="text-[#64748B] dark:text-[#94A3B8]">{formatCurrency(anualProvisoes)}</span></span>
-              </div>
-           </div>
-           <div className="p-6 bg-[#F8FAFC] dark:bg-[#020817]/40 rounded-b-[24px] space-y-10">
-              
-              {/* Provisões Mensais */}
-              <div>
-                <div className="flex items-center mb-6">
-                   <span className="bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#F59E0B] dark:text-[#FBBF24] text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-xl rounded-tl-none -ml-6 -mt-2">Planos Mensais</span>
-                </div>
-                {provisoesMensais.length === 0 ? (
-                    <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-6">Nenhuma provisão mensal detalhada.</div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {provisoesMensais.map(renderCardTemplate)}
-                    </div>
-                )}
-              </div>
-
-              {/* Provisões Anuais / Únicas */}
-              <div>
-                <div className="flex items-center mb-6">
-                   <span className="bg-[#FEF3C7] dark:bg-[#F59E0B]/20 text-[#F59E0B] dark:text-[#FBBF24] text-[11px] font-black uppercase tracking-wider px-4 py-2 rounded-xl rounded-tl-none -ml-6 border-t border-slate-100 dark:border-[#334155]">Pagamentos Únicos / Anuais</span>
-                </div>
-                {provisoesAnuais.length === 0 ? (
-                    <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-6">Nenhuma provisão anual detalhada.</div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {provisoesAnuais.map(renderCardTemplate)}
-                    </div>
-                )}
-              </div>
-
            </div>
         </div>
 

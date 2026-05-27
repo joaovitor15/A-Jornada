@@ -182,10 +182,10 @@ export default function Categories({ activeProfile }: CategoriesProps) {
   
   const receitas = displayedCategories.filter(c => c.tipo === 'receita');
   const despesas = displayedCategories.filter(c => c.tipo === 'despesa').sort((a, b) => {
-    const aIsCard = a.nome.toLowerCase() === 'cartão de crédito';
-    const bIsCard = b.nome.toLowerCase() === 'cartão de crédito';
-    if (aIsCard && !bIsCard) return 1;
-    if (!aIsCard && bIsCard) return -1;
+    const aIsSys = a.nome.toLowerCase() === 'cartão de crédito' || a.nome.toLowerCase() === 'investimentos';
+    const bIsSys = b.nome.toLowerCase() === 'cartão de crédito' || b.nome.toLowerCase() === 'investimentos';
+    if (aIsSys && !bIsSys) return 1;
+    if (!aIsSys && bIsSys) return -1;
     return a.nome.localeCompare(b.nome);
   });
 
@@ -315,7 +315,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
 
           {/* LADO DIREITO: TOPO DO CARD */}
           <div className="flex items-center gap-[2px] shrink-0">
-            {category.nome.toLowerCase() === 'cartão de crédito' ? (
+            {category.nome.toLowerCase() === 'cartão de crédito' || category.nome.toLowerCase() === 'investimentos' ? (
               <div title="Categoria de Sistema" className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569]">
                 <Lock size={13} />
               </div>

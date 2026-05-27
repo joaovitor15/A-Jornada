@@ -13,6 +13,8 @@ export interface Transacao {
   card_id?: string;
   recorrente_id?: string;
   num_parcelas?: number;
+  status: 'previsto' | 'pago';
+  valor_previsto?: number;
   criado_em: string;
   atualizado_em: string;
   cards?: {
@@ -141,6 +143,8 @@ export function useTransacoes() {
     card_id?: string;
     recorrente_id?: string;
     num_parcelas?: number;
+    status?: 'previsto' | 'pago';
+    valor_previsto?: number;
   }) => {
     setLoading(true);
     setError(null);
@@ -157,7 +161,9 @@ export function useTransacoes() {
           forma_pagamento: dados.forma_pagamento,
           card_id: dados.card_id,
           recorrente_id: dados.recorrente_id,
-          num_parcelas: dados.num_parcelas
+          num_parcelas: dados.num_parcelas,
+          status: dados.status || 'pago',
+          valor_previsto: dados.valor_previsto !== undefined ? dados.valor_previsto : dados.valor
         })
         .select()
         .single();
@@ -186,6 +192,8 @@ export function useTransacoes() {
     card_id?: string | null;
     recorrente_id?: string | null;
     num_parcelas?: number | null;
+    status?: 'previsto' | 'pago';
+    valor_previsto?: number;
   }) => {
     setLoading(true);
     setError(null);
