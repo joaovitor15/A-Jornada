@@ -9,9 +9,10 @@ import { CardFaturaDashboard } from './CardFaturaDashboard';
 interface DashboardProps {
   activeProfileName: string;
   activeProfileId: string;
+  activeProfileType?: string;
 }
 
-export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps) => {
+export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileType }: DashboardProps) => {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   
   const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear());
@@ -73,31 +74,25 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
 
       const { data: antData } = await supabase
         .from('transacoes')
-        .select(`valor, tipo, status, tags ( categories!tags_category_id_fkey ( nome ) )`)
+        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, tags ( categories!tags_category_id_fkey ( nome ) )`)
         .eq('profile_id', activeProfileId)
         .is('card_id', null)
         .lt('data', `${an}-${mesStr}-01`);
 
-      let saldoAntCalc = 0;
-      if (antData) {
+      let saldoAntCalcAcumulado = 0;
+      if (activeProfileType !== 'empresa' && antData) {
           antData.forEach(t => {
-              if (t.status !== 'previsto') {
-                  const tagCat = t.tags?.categories?.nome?.toLowerCase();
-                  if (tagCat === 'investimentos') {
-                      // Investimentos pagos também reduzem o saldo se forma real (já tratado na lógica atual, ou os dois reduzem? Na vdd a gnt desconta depois, mas como as transações da base já definem tipo...)
-                      // The current logic considers all investments as positive values that are subtracted from the balance. Let's just follow the native tipo here. Wait, investments logic is complex. 
-                      // Se a transação original for tipo='despesa' e tiver tag 'investimento', vai subtrair do saldo (pq add como despesa e dps subtrai dnv se não tratarmos).
-                      // In the current month logic, `recsArr` and `dspsArr` EXCLUDE investments. And then `investimentosValor` is computed and SUBTRACTED.
-                      // So investments ALWAYS decrease the balance, regardless of `tipo`.
-                      saldoAntCalc -= (t.valor || 0);
-                  } else {
-                      if (t.tipo === 'receita') saldoAntCalc += (t.valor || 0);
-                      else if (t.tipo === 'despesa') saldoAntCalc -= (t.valor || 0);
-                  }
+              const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
+              const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
+              if (tagCat === 'investimentos') {
+                  saldoAntCalcAcumulado -= (vl || 0);
+              } else {
+                  if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                  else if (t.tipo === 'despesa') saldoAntCalcAcumulado -= (vl || 0);
               }
           });
       }
-      setSaldoAnterior(saldoAntCalc);
+      // setSaldoAnterior será chamado no final, após contabilizar faturas
 
       const { data: receitas } = await supabase
         .from('transacoes')
@@ -161,6 +156,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
 
       let sumDspsPrevRecorrente = 0;
       let sumRecsPrevRecorrente = 0;
+      let pastRecorrentesDebt = 0;
       if (recorrentesRaw) {
           recorrentesRaw.forEach(rec => {
               if (rec.lancamento_rapido) return;
@@ -198,6 +194,55 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
 
               const effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
               const effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
+              
+              for (let y = effStartYear; y <= targetYear; y++) {
+                  const mStart = (y === effStartYear) ? effStartMonth : 0;
+                  const mEnd = (y === targetYear) ? (monthIdx - 1) : 11;
+                  for (let m = mStart; m <= mEnd; m++) {
+                      let shouldExist = true;
+                      const diffM = (y - effStartYear) * 12 + (m - effStartMonth);
+                      if (rec.num_parcelas && rec.num_parcelas > 1) {
+                          if (diffM < 0 || diffM >= rec.num_parcelas) shouldExist = false;
+                      }
+                      if (rec.frequencia === 'anual') {
+                          const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+                          if (m !== tMonth) shouldExist = false;
+                      }
+                      if (!shouldExist) continue;
+
+                      const isMatchedInPast = antData?.find(t => {
+                          if (!t.data) return false;
+                          const tDate = new Date(t.data + 'T12:00:00Z');
+                          if (tDate.getFullYear() !== y || tDate.getMonth() !== m) return false;
+                          
+                          if (t.recorrente_id === rec.id) return true;
+                          
+                          const safeDesc = t.descricao || '';
+                          const cleanRecName = rec.nome || '';
+                          const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                            cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                          if (nameMatch) {
+                              const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                              if (diff <= 0.01) {
+                                  if (rec.dia_vencimento) {
+                                      try {
+                                          if (tDate.getUTCDate() === Number(rec.dia_vencimento)) return true;
+                                      } catch(e) {}
+                                  } else {
+                                      return true;
+                                  }
+                              }
+                          }
+                          return false;
+                      });
+
+                      if (!isMatchedInPast && activeProfileType !== 'empresa') {
+                          if (rec.tipo === 'despesa') pastRecorrentesDebt -= (Number(rec.valor) || 0);
+                          else if (rec.tipo === 'receita') pastRecorrentesDebt += (Number(rec.valor) || 0);
+                      }
+                  }
+              }
+
               const projectedTimeId = targetYear * 12 + monthIdx;
               const creationTimeId = effStartYear * 12 + effStartMonth;
 
@@ -271,7 +316,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
       setEconomiaDespesas(calcEconomia);
 
       // receitasValor e despesasValor representam o que de fato ocorreu para manter a integridade do saldo e graficos
-      setReceitasValor(sumRecsPago + saldoAntCalc);
+      // receitasValor será atualizado no final
       setDespesasValor(sumDspsPago);
       setInvestimentosValor(sumInvesPago);
 
@@ -331,11 +376,20 @@ export const Dashboard = ({ activeProfileName, activeProfileId }: DashboardProps
                     } else if (t.tipo === 'receita') {
                         faturaNoMesSoma -= (vl || 0);
                     }
+                } else if (activeProfileType !== 'empresa' && (anoVencimento < targetAnoVencimento || (anoVencimento === targetAnoVencimento && mesVencimento < targetMesVencimento))) {
+                    if (t.tipo === 'despesa') {
+                        saldoAntCalcAcumulado -= (vl || 0);
+                    } else if (t.tipo === 'receita') {
+                        saldoAntCalcAcumulado += (vl || 0);
+                    }
                 }
             }
           }
         });
       }
+
+      setSaldoAnterior(saldoAntCalcAcumulado + pastRecorrentesDebt);
+      setReceitasValor(sumRecsPago + saldoAntCalcAcumulado + pastRecorrentesDebt);
       setCartoesValor(faturaNoMesSoma > 0 ? faturaNoMesSoma : 0);
 
       setIsCardsLoading(false);

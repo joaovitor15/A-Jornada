@@ -165,7 +165,7 @@ export default function App() {
           activeProfile?.financeiro_show_dashboard !== false, 
           'Sistema Financeiro', 
           'Dashboard', 
-          <Dashboard activeProfileName={activeProfile?.name || 'Usuário'} activeProfileId={activeProfile?.id} />
+          <Dashboard activeProfileName={activeProfile?.name || 'Usuário'} activeProfileId={activeProfile?.id} activeProfileType={activeProfile?.tipo} />
         );
       case 'transactions':
         return renderContentWithGuard(
