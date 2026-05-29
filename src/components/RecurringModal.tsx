@@ -194,13 +194,13 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
     };
 
     if (recorrencia) {
-      const updateData = { ...dataObj, ultima_lancada: '2000-01-01T12:00:00.000Z' };
+      const updateData = { ...dataObj };
       const { error } = await supabase.from('transacoes_recorrentes').update(updateData).eq('id', recorrencia.id);
       if (error) console.error(error);
     } else {
       const todayIso = new Date().toISOString();
-      // Se for lançamento rápido e já tivermos o dia, podemos usar a data de hoje.
-      const insertData = { ...dataObj, data_criacao: todayIso, ultima_lancada: lancamentoRapido ? todayIso : null };
+      // Sempre lançar o modelo no dia da criação para que ele já entre na agenda
+      const insertData = { ...dataObj, data_criacao: todayIso, ultima_lancada: todayIso };
       
       const { data: novaRec, error } = await supabase.from('transacoes_recorrentes').insert([insertData]).select().single();
       

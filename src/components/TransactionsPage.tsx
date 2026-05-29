@@ -423,19 +423,7 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                               )}
 
                               {/* VARIância / RESULTADO DE COMPARAÇÃO */}
-                              {t.status === 'pago' && t.valor_previsto !== undefined && t.valor_previsto !== t.valor && (
-                                <span className={`inline-flex items-center gap-[4px] px-[6px] py-[1.5px] rounded-[100px] text-[10px] font-[700] uppercase tracking-wider ${
-                                  t.tipo === 'despesa'
-                                    ? t.valor > t.valor_previsto
-                                      ? 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/45 dark:text-rose-400 dark:border-rose-900'
-                                      : 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/45 dark:text-emerald-400 dark:border-emerald-900'
-                                    : t.valor > t.valor_previsto
-                                      ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/45 dark:text-emerald-400 dark:border-emerald-900'
-                                      : 'bg-rose-100 text-rose-700 border border-rose-200 dark:bg-rose-950/45 dark:text-rose-400 dark:border-rose-900'
-                                }`}>
-                                  Resultado: {t.valor > t.valor_previsto ? '+' : '-'}{formatarMoeda(Math.abs(t.valor - t.valor_previsto))}
-                                </span>
-                              )}
+
 
                               {/* FORMA DE PAGAMENTO */}
                               {t.tipo === 'despesa' && (

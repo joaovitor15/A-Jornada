@@ -31,7 +31,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   // Filters
   const [busca, setBusca] = useState('');
-  const [filtroTipo, setFiltroTipo] = useState<'todos' | 'receitas' | 'despesas'>('todos');
+  const [filtroTipo, setFiltroTipo] = useState<'pendentes' | 'lancadas'>('pendentes');
 
   // Core Data States
   const [loading, setLoading] = useState(true);
@@ -108,21 +108,22 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   // Custom Modal for individual provision exclusion
   const [ignoreProvisaoModal, setIgnoreProvisaoModal] = useState<{ isOpen: boolean; provisao: any } | null>(null);
 
-  // Custom Modal for reversing / deleting a paid realization
-  const [cancelRealizationModal, setCancelRealizationModal] = useState<{ isOpen: boolean; provisao: any } | null>(null);
-  const [cancelingRealization, setCancelingRealization] = useState(false);
   const [dashboardPeriodo, setDashboardPeriodo] = useState<'mensal' | 'anual'>('mensal');
 
   const handleIgnoreProvisao = (p: any) => {
     setIgnoreProvisaoModal({ isOpen: true, provisao: p });
   };
 
-  const executeIgnoreProvisao = () => {
+  const executeIgnoreProvisao = async () => {
     if (!ignoreProvisaoModal?.provisao) return;
     const p = ignoreProvisaoModal.provisao;
     const monthIndex = selectedDate.getMonth();
     const year = selectedDate.getFullYear();
     const key = `${p.id}_${year}_${monthIndex}`;
+
+    if (p.isPago && p.realizationId) {
+      await supabase.from('transacoes').delete().eq('id', p.realizationId);
+    }
 
     const newIgnored = [...ignoredProvisoes, key];
     setIgnoredProvisoes(newIgnored);
@@ -176,7 +177,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         .eq('profile_id', activeProfileId);
 
       if (recError) throw recError;
-      setProvisoesRaw((rawRecDocs || []).filter(r => r.frequencia !== 'diaria' && r.frequencia !== 'semanal'));
+      setProvisoesRaw(rawRecDocs || []);
 
       // 2. Fetch real transactions of the selected year
       const startYear = selectedDate.getFullYear();
@@ -337,6 +338,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       if (t.recorrente_id === rec.id) {
         return true;
       }
+      
+      if (t.recorrente_id) return false;
 
       const safeDesc = t.descricao || '';
       const cleanRecName = rec.nome || '';
@@ -346,11 +349,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       const tipoMatch = t.tipo === rec.tipo;
 
       if (nameMatch && tipoMatch) {
-        if (rec.valor === null || rec.valor === 0) {
-          return true;
+        if (rec.valor !== null && rec.valor !== 0) {
+          const diff = Math.abs(t.valor - Number(rec.valor));
+          if (diff > 0.01) return false;
         }
-        const diff = Math.abs(t.valor - Number(rec.valor));
-        if (diff > 0.01) return false;
 
         let dayMatches = true;
         if (rec.dia_vencimento) {
@@ -370,31 +372,39 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const getProcessedProvisoesForDate = (targetYear: number, targetMonth: number) => {
     return provisoesRaw.filter(rec => rec.lancamento_rapido !== true).map(rec => {
       // 1. Initial Creation bounds
-      // Determine the starting projection month based on creation date and dia_vencimento
-      const createdDateStr = rec.data_criacao || rec.created_at || rec.ultima_lancada;
-      const createdDate = createdDateStr ? new Date(createdDateStr) : new Date();
+      // Determine the starting projection month based EXACTLY on data_lancamento (ultima_lancada).
+      // Ignore data_criacao so we only rely on the explicit user action of launching it.
+      const launchDateStr = rec.ultima_lancada;
       
-      let startYear = createdDate.getFullYear();
-      let startMonth = createdDate.getMonth();
+      let startYear = new Date().getFullYear();
+      let startMonth = new Date().getMonth();
+      let shouldRender = true;
       
-      // If dia_vencimento exists, check if creation day is past the due day.
-      // If it is past the due day, the first occurrence is on the next month.
-      if (rec.dia_vencimento) {
-        const createdDay = createdDate.getDate();
-        if (createdDay > Number(rec.dia_vencimento)) {
-          startMonth += 1;
-          if (startMonth > 11) {
-            startMonth = 0;
-            startYear += 1;
+      if (!launchDateStr) {
+          shouldRender = false;
+      } else {
+        const launchDate = new Date(launchDateStr);
+        startYear = launchDate.getFullYear();
+        startMonth = launchDate.getMonth();
+        
+        // If the recurring transaction is launched AFTER its due day for the month, 
+        // the first occurrence will mathematically jump to the NEXT month.
+        if (rec.dia_vencimento) {
+          const launchDay = launchDate.getDate();
+          if (launchDay > Number(rec.dia_vencimento)) {
+            startMonth += 1;
+            if (startMonth > 11) {
+              startMonth = 0;
+              startYear += 1;
+            }
           }
         }
       }
 
       // 2. Active Year bound
-      // The active year is determined by when it was created OR last reactivated/paid (ultima_lancada).
-      // This allows the "Lançar para o ano" functionality to bump the active year forward.
-      const activeYearStr = rec.ultima_lancada || rec.data_criacao || rec.created_at;
-      const activeYear = activeYearStr ? new Date(activeYearStr).getFullYear() : startYear;
+      // The active year is determined by when it was launched.
+      // This ensures the projection only happens for the active year.
+      const activeYear = launchDateStr ? new Date(launchDateStr).getFullYear() : startYear;
 
       const selectedYear = targetYear;
       const selectedMonth = targetMonth;
@@ -403,12 +413,11 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     const monthDiff = (selectedYear - startYear) * 12 + (selectedMonth - startMonth);
 
     // Filter validation logic
-    let shouldRender = true;
     let parcelaTexto = '';
     let currentParcela = 1;
 
     // 1. Parcel options
-    if (rec.num_parcelas && rec.num_parcelas > 1) {
+    if (rec.num_parcelas && rec.num_parcelas > 0) {
       if (monthDiff < 0 || monthDiff >= rec.num_parcelas) {
         shouldRender = false;
       } else {
@@ -419,8 +428,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
     // 2. Annual options
     if (rec.frequencia === 'anual') {
-      const targetMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
-      if (selectedMonth !== targetMonth) {
+      const annualTarget = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+      if (selectedMonth !== annualTarget) {
         shouldRender = false;
       }
     }
@@ -429,15 +438,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     const realization = findRealizationForProvision(rec, realTransactions, selectedYear, selectedMonth);
 
     const isPago = !!realization;
+    if (isPago) shouldRender = true; // Always show if there is a physical transaction
 
     // 3. Past boundary and Year boundary
     
     // Explicit fail-safe: Ensure no projection exists before the actual creation bounding month
-    // We normalize both to YYYY-MM values for a strict numerical comparison.
     let effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
     let effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
     
-    // Note: startMonth is 0-indexed (0 = Jan, 11 = Dec)
     const projectedTimeId = selectedYear * 12 + selectedMonth;
     const creationTimeId = effStartYear * 12 + effStartMonth;
 
@@ -446,9 +454,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     }
 
     // "ao mudar o ano não deveria ter nada é até dezembro e pronto"
-    // Recurring templates only generate projected items within their active starting year (created_at or reactivated year)
-    else if (selectedYear !== activeYear && !isPago) {
-      shouldRender = false;
+    // However, if we correctly bumped it right across the year boundary, activeYear will just be the creation year.
+    // If they launch in late Dec 2026, it jumps to Jan 2027. activeYear = 2026. selectedYear = 2027.
+    // So we must check activeYear carefully. If target year is simply DIFFERENT from activeYear and it wasn't a valid projection bound, skip.
+    else if (!isPago && projectedTimeId >= creationTimeId && selectedYear > effStartYear) {
+      // If we crossed into a new year beyond effStartYear, and it wasn't an explicit parcel crossing, hide it based on user constraint: "ao mudar o ano não deveria ter nada"
+      if (!rec.num_parcelas) {
+         shouldRender = false;
+      }
     }
 
     // 4. Inactive/canceled check (ativa === false)
@@ -528,12 +541,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       if (!nomeMatch && !categoryMatch) return false;
     }
 
-    // 2. Tipo
-    if (filtroTipo === 'receitas' && p.tipo !== 'receita') return false;
-    if (filtroTipo === 'despesas' && p.tipo !== 'despesa') return false;
-
-    // 3. Status (Remove paid items from the visual agenda since they are in transacoes tab now)
-    if (p.isPago) return false;
+    // 2. Situação
+    if (filtroTipo === 'pendentes' && p.isPago) return false;
+    if (filtroTipo === 'lancadas' && !p.isPago) return false;
 
     return true;
   });
@@ -659,6 +669,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         descricao: descExibida,
         valor: valorNum,
         tipo: provisao.tipo,
+        status: 'pago',
         forma_pagamento: formaPgto,
         card_id: cardId,
         data: targetDate,
@@ -703,46 +714,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         if (insertTransError) throw insertTransError;
       }
 
-      // Update last launch date as ISO reference on the parent model to mark the physical payment date
-      // This also keeps the Active Year set to the current targetYear
-      const updateDateIso = new Date(`${targetDate}T12:00:00Z`).toISOString();
-      const updatePayload: any = { ultima_lancada: updateDateIso };
-
-      await supabase
-        .from('transacoes_recorrentes')
-        .update(updatePayload)
-        .eq('id', provisao.id);
+      // Do NOT update ultima_lancada on the parent model here. 
+      // ultima_lancada is strictly used as the projection generation anchor when creating or 'launching for the year'.
 
       setEfetivarModal(null);
       triggerRefresh();
     } catch (err) {
       console.error('Erro ao efetivar transacao:', err);
       alert('Falha ao efetivar provisão.');
-    }
-  };
-
-  const handleCancelRealization = (p: any) => {
-    setCancelRealizationModal({ isOpen: true, provisao: p });
-  };
-
-  const executeCancelRealization = async () => {
-    if (!cancelRealizationModal?.provisao?.realizationId) return;
-    const p = cancelRealizationModal.provisao;
-    setCancelingRealization(true);
-    try {
-      const { error } = await supabase
-        .from('transacoes')
-        .delete()
-        .eq('id', p.realizationId);
-
-      if (error) throw error;
-      setCancelRealizationModal(null);
-      triggerRefresh();
-    } catch (e) {
-      console.error(e);
-      alert('Falha ao cancelar efetivação.');
-    } finally {
-      setCancelingRealization(false);
     }
   };
 
@@ -759,10 +738,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
     setCancelingFuture(true);
     try {
-      // Update the recurrent template itself to set ativa = false so future occurrences are canceled but the model stays in the database and UI history.
+      // Update the recurrent template itself to set ativa = false and ultima_lancada = null so the model un-projects entirely
       const { error: updateRecError } = await supabase
         .from('transacoes_recorrentes')
-        .update({ ativa: false })
+        .update({ ativa: false, ultima_lancada: null })
         .eq('profile_id', activeProfileId)
         .eq('id', rec.id);
 
@@ -784,9 +763,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     const rec = reactivateModal.rec;
     setReactivating(true);
     try {
-      // Ajusta a marcação da agenda para o ano selecionado garantindo que a projeção se estenda neste novo ano
-      const yearToProject = selectedDate.getFullYear();
-      let newLastLaunched = new Date(yearToProject, 0, 1, 12, 0, 0).toISOString();
+      // O usuário solicitou salvar a data de lançamento na exata data de hoje.
+      // Isso se torna o âncora de data para a projeção no sistema.
+      const now = new Date();
+      let newLastLaunched = now.toISOString();
 
       const { error } = await supabase
         .from('transacoes_recorrentes')
@@ -1208,34 +1188,24 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
             
             <div className="flex gap-[6px] w-full lg:w-auto pb-1 lg:pb-0">
               <button
-                onClick={() => setFiltroTipo('todos')}
+                onClick={() => setFiltroTipo('pendentes')}
                 className={`flex-1 lg:flex-none rounded-[100px] py-[7px] px-[8px] sm:px-[16px] text-[11px] sm:text-[13px] font-[600] border-[1.5px] transition-colors ${
-                  filtroTipo === 'todos'
+                  filtroTipo === 'pendentes'
                     ? 'bg-[#0F172A] dark:bg-[#334155] text-[#FFFFFF] dark:text-white border-[#0F172A] dark:border-[#334155]'
                     : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569]'
                 }`}
               >
-                TODOS
+                NÃO LANÇADO
               </button>
               <button
-                onClick={() => setFiltroTipo('receitas')}
+                onClick={() => setFiltroTipo('lancadas')}
                 className={`flex-1 lg:flex-none rounded-[100px] py-[7px] px-[8px] sm:px-[16px] text-[11px] sm:text-[13px] font-[600] border-[1.5px] transition-colors ${
-                  filtroTipo === 'receitas'
+                  filtroTipo === 'lancadas'
                     ? 'bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] border-[#16A34A]'
                     : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569]'
                 }`}
               >
-                RECEITAS
-              </button>
-              <button
-                onClick={() => setFiltroTipo('despesas')}
-                className={`flex-1 lg:flex-none rounded-[100px] py-[7px] px-[8px] sm:px-[16px] text-[11px] sm:text-[13px] font-[600] border-[1.5px] transition-colors ${
-                  filtroTipo === 'despesas'
-                    ? 'bg-[#FEE2E2] dark:bg-red-900/30 text-[#EF4444] border-[#EF4444]'
-                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569]'
-                }`}
-              >
-                DESPESAS
+                LANÇADA
               </button>
             </div>
           </div>
@@ -1255,7 +1225,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
           ) : (
             <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#F1F5F9] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col">
               <div>
-                {(Object.entries(provisoesAgrupadas) as [string, any[]][]).sort((a, b) => b[0].localeCompare(a[0])).map(([dataStr, provisoesDia]) => {
+                {(Object.entries(provisoesAgrupadas) as [string, any[]][]).sort((a, b) => a[0].localeCompare(b[0])).map(([dataStr, provisoesDia]) => {
                   const totalDia = calcularTotalDiaRecorrente(provisoesDia);
                   return (
                     <div key={dataStr}>
@@ -1264,7 +1234,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                         <span className="text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-[0.05em]">
                           {formatarDataCabecalhoRecorrente(dataStr)}
                         </span>
-                        <span className={`text-[12px] font-[700] ${totalDia >= 0 ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
+                        <span className={`text-[12px] font-[700] ${totalDia === 0 ? 'text-[#64748B] dark:text-[#94A3B8]' : (totalDia > 0 ? 'text-[#16A34A]' : 'text-[#EF4444]')}`}>
                           {formatarMoedaSinal(totalDia, true)}
                         </span>
                       </div>
@@ -1321,14 +1291,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
                                     {/* DETALHES PLANO */}
                                     <div className="flex items-center gap-[6px] text-[11px] text-[#94A3B8] dark:text-[#64748B]">
-                                      <Calendar size={12} />
-                                      <span className="italic">
-                                        {p.frequencia === 'mensal' ? `Todo dia ${p.dia_vencimento || '?'}` : ''}
-                                        {p.frequencia === 'anual' ? `Todo dia ${p.dia_vencimento || '?'}/${p.mes_vencimento || '?'}` : ''}
-                                      </span>
-
-                                      <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 mx-0.5"></span>
-
                                       <Wallet size={12} />
                                       <span className="italic">
                                         {p.isPago ? (
@@ -1345,22 +1307,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                               {/* VALOR E AÇÕES */}
                               <div className="flex items-center gap-[12px] shrink-0">
                                 <div className={`text-[15px] font-[700] whitespace-nowrap text-right ${
-                                  p.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]'
+                                  !p.isPago && p.valorPrevisto === 0 ? 'text-slate-800 dark:text-white' : (p.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]')
                                 }`}>
-                                  {formatarMoedaSinal(p.tipo === 'receita' ? p.valorPrevisto : -p.valorPrevisto, true)}
+                                  {formatarMoedaSinal(p.tipo === 'receita' ? (p.isPago ? p.valorEfetivado : p.valorPrevisto) : -(p.isPago ? p.valorEfetivado : p.valorPrevisto), true)}
                                 </div>
                                 
                                 <div className="flex items-center gap-[4px] opacity-100 md:opacity-60 group-hover:opacity-100 transition-opacity">
-                                  {p.isPago ? (
-                                    <button
-                                      onClick={() => handleCancelRealization(p)}
-                                      className="flex items-center gap-1 p-[4px_10px] rounded-[8px] bg-red-50 hover:bg-red-100 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-[11px] font-[700] mr-1 border border-red-100 dark:border-red-900/40 transition-colors cursor-pointer"
-                                      title="Desfazer Lançamento (Voltar para Agendada)"
-                                    >
-                                      <RotateCcw size={11} strokeWidth={3} />
-                                      Desfazer
-                                    </button>
-                                  ) : (
                                     <button
                                       onClick={() => handleOpenEfetivarModal(p)}
                                       className="flex items-center gap-1 p-[4px_10px] rounded-[8px] bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#CA8A04] transition-colors cursor-pointer text-[11px] font-[700] mr-1"
@@ -1369,7 +1321,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                                       <Check size={11} strokeWidth={3} />
                                       Efetivar
                                     </button>
-                                  )}
                                   <button
                                     onClick={() => {
                                       setEditingRec(p);
@@ -1426,13 +1377,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
               const valorPrevisto = rec.valor !== null ? Number(rec.valor) : null;
               const cardName = rec.cards?.nome;
 
-              // On the Contas tab, "LANÇADO" badge means that the recurring model is currently scheduled in the agenda (LANÇAMENTOS tab) for the selected year.
-              const activeYearStr = rec.ultima_lancada || rec.data_criacao || rec.created_at;
-              const activeYear = activeYearStr ? new Date(activeYearStr).getFullYear() : (new Date()).getFullYear();
-              const isPago = selectedDate.getFullYear() === activeYear && rec.ativa !== false;
+              const launchDateStr = rec.ultima_lancada;
+              const isScheduledForYear = !!launchDateStr && new Date(launchDateStr).getFullYear() === selectedDate.getFullYear() && rec.ativa !== false;
 
               // Find calculated provision occurrence from processedProvisoes if any to support modals/actions
-              const matchingProvisao = processedProvisoes.find(p => p.id === rec.id);
+              const matchingProvisao = processedProvisoes.find(p => p.id === rec.id && p.shouldRender !== false);
+              
+              const isEfetivadoThisMonth = matchingProvisao ? matchingProvisao.isPago : false;
+              const isProjectedThisMonth = !!matchingProvisao;
 
               return (
                 <div
@@ -1446,13 +1398,17 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       <h4 className="text-base font-black text-slate-800 dark:text-white leading-tight tracking-tight max-w-[70%] truncate">
                         {rec.nome}
                       </h4>
-                      {isPago ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase select-none shrink-0">
+                      {isEfetivadoThisMonth ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase select-none shrink-0" title="Foi pago/efetivado neste mês">
                           LANÇADO
                         </span>
+                      ) : isProjectedThisMonth ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 uppercase select-none shrink-0" title="Aparece pendente na sua agenda deste mês">
+                          PENDENTE NO MÊS
+                        </span>
                       ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 uppercase select-none shrink-0">
-                          NÃO LANÇADO
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 uppercase select-none shrink-0" title="Não aparece na agenda selecionada">
+                          NÃO PROJETADO
                         </span>
                       )}
                     </div>
@@ -1460,8 +1416,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     {/* Value block */}
                     <div>
                       {valorPrevisto !== null ? (
-                        <p className={`text-xl font-black ${rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
-                          {rec.tipo === 'receita' ? '+' : '-'} {formatCurrency(valorPrevisto)}
+                        <p className={`text-xl font-black ${valorPrevisto === 0 ? 'text-slate-800 dark:text-white' : (rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]')}`}>
+                          {valorPrevisto === 0 ? '' : (rec.tipo === 'receita' ? '+' : '-')} {formatCurrency(Math.abs(valorPrevisto))}
                         </p>
                       ) : (
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-bold italic">
@@ -1493,7 +1449,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   {/* Hover action bar or footer buttons */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 mt-1 gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      {isPago ? (
+                      {isScheduledForYear ? (
                         <button
                           onClick={() => {
                             handleCancelFutureLaunches(rec);
@@ -1623,8 +1579,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
                     <div>
                       {valorPrevisto !== null ? (
-                        <p className={`text-xl font-black ${rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]'}`}>
-                          {rec.tipo === 'receita' ? '+' : '-'} {formatCurrency(valorPrevisto)}
+                        <p className={`text-xl font-black ${valorPrevisto === 0 ? 'text-slate-800 dark:text-white' : (rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]')}`}>
+                          {valorPrevisto === 0 ? '' : (rec.tipo === 'receita' ? '+' : '-')} {formatCurrency(Math.abs(valorPrevisto))}
                         </p>
                       ) : (
                         <p className="text-slate-500 dark:text-slate-400 text-sm font-bold italic">
@@ -2294,50 +2250,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         )}
       </AnimatePresence>
 
-      {/* CANCELAR REALIZAÇÃO (DESFAZER PAGAMENTO) */}
-      <AnimatePresence>
-        {cancelRealizationModal?.isOpen && (
-          <div className="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-4">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-[#334155] max-w-sm w-full p-6 space-y-4 shadow-2xl text-center"
-            >
-              <div className="mx-auto w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-950/40 text-orange-500 flex items-center justify-center">
-                <RotateCcw size={22} />
-              </div>
-              
-              <div>
-                <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight">Desfazer Efetivação?</h3>
-                <p className="text-xs text-slate-400 mt-2 font-medium">
-                  Deseja realmente desfazer o lançamento de <strong className="text-slate-700 dark:text-slate-200">"{cancelRealizationModal.provisao.nome}"</strong> e voltar para o status de provisionado (agendado)?
-                </p>
-                <p className="text-[11px] text-red-500 mt-1.5 font-bold">
-                  A transação financeira correspondente no extrato será excluída permanentemente.
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <button
-                  disabled={cancelingRealization}
-                  onClick={() => setCancelRealizationModal(null)}
-                  className="flex-1 px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl text-xs font-bold text-slate-500 dark:text-slate-300 hover:bg-slate-100 transition-colors"
-                >
-                  Manter Pago
-                </button>
-                <button
-                  disabled={cancelingRealization}
-                  onClick={executeCancelRealization}
-                  className="flex-1 px-4 py-2.5 bg-orange-600 hover:bg-orange-700 rounded-xl text-xs font-black text-white hover:scale-102 transition-all active:scale-95 flex items-center justify-center gap-1"
-                >
-                  {cancelingRealization ? 'Processando...' : 'Sim, Desfazer'}
-                </button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
     </div>
   );
 };
