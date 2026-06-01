@@ -400,14 +400,13 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         
         // If the recurring transaction is launched AFTER its due day for the month, 
         // the first occurrence will mathematically jump to the NEXT month.
-        if (rec.dia_vencimento) {
-          const launchDay = launchDate.getDate();
-          if (launchDay > Number(rec.dia_vencimento)) {
-            startMonth += 1;
-            if (startMonth > 11) {
-              startMonth = 0;
-              startYear += 1;
-            }
+        const shiftDay = isBusiness && rec.dia_emissao ? Number(rec.dia_emissao) : (rec.dia_vencimento ? Number(rec.dia_vencimento) : 1);
+        const launchDay = launchDate.getDate();
+        if (launchDay > shiftDay) {
+          startMonth += 1;
+          if (startMonth > 11) {
+            startMonth = 0;
+            startYear += 1;
           }
         }
       }
@@ -461,9 +460,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     const creationTimeId = effStartYear * 12 + effStartMonth;
 
     if (!isPago && projectedTimeId < creationTimeId) {
-      if (!isBusiness) {
-        shouldRender = false;
-      }
+      shouldRender = false;
     }
 
     // "ao mudar o ano não deveria ter nada é até dezembro e pronto"
@@ -645,7 +642,34 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     setEfetivarFormaPagamento(defaultForma);
     setEfetivarCartaoId(hasCards ? (p.card_id || userCards[0]?.id || null) : null);
     setEfetivarParcelas(1); // Default to 1
-    setEfetivarData(todayStr);
+    
+    let defaultData = todayStr;
+    if (isBusiness && p.dia_vencimento) {
+      let year = selectedDate.getFullYear();
+      let month = selectedDate.getMonth();
+      
+      if (p.frequencia === 'anual' && p.mes_vencimento) {
+        month = p.mes_vencimento - 1;
+      }
+      
+      let targetDay = Number(p.dia_vencimento);
+      
+      if (p.dia_emissao && targetDay < Number(p.dia_emissao)) {
+          month += 1;
+          if (month > 11) {
+              month = 0;
+              year += 1;
+          }
+      }
+      
+      const maxDayInMonth = new Date(year, month + 1, 0).getDate();
+      if (targetDay > maxDayInMonth) targetDay = maxDayInMonth;
+      if (targetDay < 1) targetDay = 1;
+      
+      defaultData = `${year}-${String(month + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+    }
+    
+    setEfetivarData(defaultData);
   };
 
   const handleExecuteEfetivacao = async () => {
@@ -1453,8 +1477,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       <div className="flex items-center gap-1.5 leading-none">
                         <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
                         <span>
-                          {rec.frequencia === 'mensal' ? `Dia ${isBusiness && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || '?')}` : ''}
-                          {rec.frequencia === 'anual' ? `Dia ${isBusiness && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || '?')}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : ''}
+                          {rec.frequencia === 'mensal' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: Dia ${rec.dia_vencimento || '?'}` : `Dia ${rec.dia_vencimento || '?'}`) : ''}
+                          {rec.frequencia === 'anual' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: Dia ${rec.dia_vencimento || '?'}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : `Dia ${rec.dia_vencimento || '?'}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}`) : ''}
                         </span>
                       </div>
 

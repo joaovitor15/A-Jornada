@@ -165,6 +165,24 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       const combinedPending: any[] = [];
       const lancamentosRapidos: any[] = [];
 
+      const calculatePaymentData = (rec: any, tDay: number) => {
+          let paymentData = `${anoSelecionado}-${mesStr}-${String(tDay).padStart(2, '0')}`;
+          if (activeProfileType === 'empresa' && rec.dia_vencimento) {
+              let pYear = anoSelecionado;
+              let pMonth = mesSelecionado - 1;
+              let dVenc = Number(rec.dia_vencimento);
+              if (rec.dia_emissao && dVenc < Number(rec.dia_emissao)) {
+                  pMonth += 1;
+                  if (pMonth > 11) { pMonth = 0; pYear += 1; }
+              }
+              const maxD = new Date(pYear, pMonth + 1, 0).getDate();
+              if (dVenc > maxD) dVenc = maxD;
+              if (dVenc < 1) dVenc = 1;
+              paymentData = `${pYear}-${String(pMonth + 1).padStart(2, '0')}-${String(dVenc).padStart(2, '0')}`;
+          }
+          return paymentData;
+      };
+
       if (recorrentesRaw) {
           recorrentesRaw.forEach(rec => {
               if (rec.lancamento_rapido) {
@@ -195,14 +213,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   startYear = launchDate.getFullYear();
                   startMonth = launchDate.getMonth();
 
-                  if (rec.dia_vencimento) {
-                      const launchDay = launchDate.getDate();
-                      if (launchDay > Number(rec.dia_vencimento)) {
-                          startMonth += 1;
-                          if (startMonth > 11) {
-                              startMonth = 0;
-                              startYear += 1;
-                          }
+                  const shiftDay = activeProfileType === 'empresa' && rec.dia_emissao ? Number(rec.dia_emissao) : (rec.dia_vencimento ? Number(rec.dia_vencimento) : 1);
+                  const launchDay = launchDate.getDate();
+                  if (launchDay > shiftDay) {
+                      startMonth += 1;
+                      if (startMonth > 11) {
+                          startMonth = 0;
+                          startYear += 1;
                       }
                   }
               }
@@ -287,7 +304,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               const creationTimeId = effStartYear * 12 + effStartMonth;
 
               if (projectedTimeId < creationTimeId) {
-                if (activeProfileType !== 'empresa') shouldRender = false;
+                shouldRender = false;
               }
               else if (targetYear !== activeYear && activeProfileType !== 'empresa') shouldRender = false;
 
@@ -336,9 +353,10 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
-                          descricao: rec.nome,
+                          descricao: activeProfileType === 'empresa' ? `${rec.nome} (Ref: ${mesStr}/${anoSelecionado})` : rec.nome,
                           valor: Number(rec.valor) || 0,
                           data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
+                          payment_data: calculatePaymentData(rec, targetDay),
                           tags: rec.tags,
                           categories: rec.categories,
                           isRecurrent: true,
@@ -386,9 +404,10 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
-                          descricao: rec.nome,
+                          descricao: activeProfileType === 'empresa' ? `${rec.nome} (Ref: ${mesStr}/${anoSelecionado})` : rec.nome,
                           valor: Number(rec.valor) || 0,
                           data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
+                          payment_data: calculatePaymentData(rec, targetDay),
                           tags: rec.tags,
                           categories: rec.categories,
                           isRecurrent: true,

@@ -54,20 +54,22 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
     try {
       setPagandoId(conta.id);
       
+      const insertData = conta.payment_data || conta.data;
+      
       if (conta.isRecurrent && conta.recurrentSource) {
         const { error } = await supabase.from('transacoes').insert([{
            profile_id: activeProfileId,
            tipo: conta.recurrentSource.tipo || 'despesa',
            valor: conta.valor === 0 ? finalValue : conta.valor,
            descricao: conta.descricao,
-           data: conta.data,
+           data: insertData,
            status: 'pago',
            recorrente_id: conta.recorrente_id,
            tag_id: conta.tags?.id || null
         }]);
         if (error) throw error;
       } else {
-        const payload: any = { status: 'pago' };
+        const payload: any = { status: 'pago', data: insertData };
         if (conta.valor === 0) payload.valor = finalValue;
         
         const { error } = await supabase
