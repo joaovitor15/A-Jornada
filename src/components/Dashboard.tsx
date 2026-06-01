@@ -240,6 +240,11 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       if (!shouldExist) continue;
 
                       const isMatchedInPast = antData?.find(t => {
+                          const refTag = `(Ref: ${String(m + 1).padStart(2, '0')}/${y})`;
+                          if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                            return true;
+                          }
+
                           if (!t.data) return false;
                           const tDate = new Date(t.data + 'T12:00:00Z');
                           if (tDate.getFullYear() !== y || tDate.getMonth() !== m) return false;
@@ -281,14 +286,20 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               const projectedTimeId = targetYear * 12 + monthIdx;
               const creationTimeId = effStartYear * 12 + effStartMonth;
 
-              if (projectedTimeId < creationTimeId) shouldRender = false;
-              else if (targetYear !== activeYear) shouldRender = false;
+              if (projectedTimeId < creationTimeId) {
+                if (activeProfileType !== 'empresa') shouldRender = false;
+              }
+              else if (targetYear !== activeYear && activeProfileType !== 'empresa') shouldRender = false;
 
               if (!shouldRender) return;
 
               if (rec.tipo === 'despesa') {
                   // Compare with existing dspsArr
                   const matched = dspsArr.find(t => {
+                       const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
+                       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                         return true;
+                       }
                        if (t.recorrente_id === rec.id) return true;
                        if (t.recorrente_id) return false;
                        
@@ -321,12 +332,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       if (recCatName.toLowerCase() !== 'investimentos') {
                           sumDspsPrevRecorrente += Number(rec.valor) || 0;
                       }
+                      const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
                           descricao: rec.nome,
                           valor: Number(rec.valor) || 0,
-                          data: `${anoSelecionado}-${mesStr}-${rec.dia_vencimento ? String(rec.dia_vencimento).padStart(2, '0') : '01'}`,
+                          data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
                           tags: rec.tags,
                           categories: rec.categories,
                           isRecurrent: true,
@@ -336,6 +348,10 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               } else if (rec.tipo === 'receita') {
                   // Compare with existing recsArr
                   const matched = recsArr.find(t => {
+                       const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
+                       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                         return true;
+                       }
                        if (t.recorrente_id === rec.id) return true;
                        if (t.recorrente_id) return false;
 
@@ -366,12 +382,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
                   if (!matched) {
                       sumRecsPrevRecorrente += Number(rec.valor) || 0;
+                      const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
                           descricao: rec.nome,
                           valor: Number(rec.valor) || 0,
-                          data: `${anoSelecionado}-${mesStr}-${rec.dia_vencimento ? String(rec.dia_vencimento).padStart(2, '0') : '01'}`,
+                          data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
                           tags: rec.tags,
                           categories: rec.categories,
                           isRecurrent: true,

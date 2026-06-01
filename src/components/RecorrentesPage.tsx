@@ -327,18 +327,29 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   // Helper helper to locate a realization transaction for any recurrent model (by FK or robust fallback details)
   const findRealizationForProvision = (rec: any, transactions: any[], year: number, month: number) => {
-    // Narrow down to transactions within the target month/year
-    const currentMonthTrans = transactions.filter(t => {
-      if (!t.data) return false;
-      const [y, m, d] = t.data.split('-');
-      return parseInt(y, 10) === year && parseInt(m, 10) === month + 1;
-    });
+    const monthStr = String(month + 1).padStart(2, '0');
+    const refTag = `(Ref: ${monthStr}/${year})`;
 
-    return currentMonthTrans.find(t => {
+    return transactions.find(t => {
+      // Prioritize explicit competence reference (if paid early/late in a different month)
+      if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+        return true;
+      }
+
+      const inTargetMonth = (() => {
+        if (!t.data) return false;
+        const [y, m, d] = t.data.split('-');
+        return parseInt(y, 10) === year && parseInt(m, 10) === month + 1;
+      })();
+
+      if (!inTargetMonth) return false;
+
+      // Primary strict FK match within the physical target month
       if (t.recorrente_id === rec.id) {
         return true;
       }
       
+      // Stop here if it maps to another recurring item
       if (t.recorrente_id) return false;
 
       const safeDesc = t.descricao || '';
@@ -450,7 +461,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     const creationTimeId = effStartYear * 12 + effStartMonth;
 
     if (!isPago && projectedTimeId < creationTimeId) {
-      shouldRender = false;
+      if (!isBusiness) {
+        shouldRender = false;
+      }
     }
 
     // "ao mudar o ano não deveria ter nada é até dezembro e pronto"
@@ -459,7 +472,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     // So we must check activeYear carefully. If target year is simply DIFFERENT from activeYear and it wasn't a valid projection bound, skip.
     else if (!isPago && projectedTimeId >= creationTimeId && selectedYear > effStartYear) {
       // If we crossed into a new year beyond effStartYear, and it wasn't an explicit parcel crossing, hide it based on user constraint: "ao mudar o ano não deveria ter nada"
-      if (!rec.num_parcelas) {
+      // Skipped for 'empresa' because they explicitly requested infinite recurrence preservation due to early invoice payments.
+      if (!rec.num_parcelas && !isBusiness) {
          shouldRender = false;
       }
     }
@@ -585,15 +599,16 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     let dataGroup = 'Sem Data';
     if (p.isPago && p.realizationData) {
       dataGroup = p.realizationData;
-    } else if (p.dia_vencimento) {
+    } else if (p.dia_vencimento || p.dia_emissao) {
+      const targetDay = isBusiness && p.dia_emissao ? p.dia_emissao : (p.dia_vencimento || 1);
       const year = selectedDate.getFullYear();
       const month = selectedDate.getMonth() + 1;
-      const day = p.dia_vencimento;
-      dataGroup = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      dataGroup = `${year}-${String(month).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
     } else {
-      if (p.frequencia === 'anual' && p.mes_vencimento && p.dia_vencimento) {
+      if (p.frequencia === 'anual' && p.mes_vencimento && (p.dia_vencimento || p.dia_emissao)) {
+         const targetDay = isBusiness && p.dia_emissao ? p.dia_emissao : (p.dia_vencimento || 1);
          const year = selectedDate.getFullYear();
-         dataGroup = `${year}-${String(p.mes_vencimento).padStart(2, '0')}-${String(p.dia_vencimento).padStart(2, '0')}`;
+         dataGroup = `${year}-${String(p.mes_vencimento).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
       } else {
          const year = selectedDate.getFullYear();
          const month = selectedDate.getMonth() + 1;
@@ -644,11 +659,18 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     }
 
     try {
-      const descExibida = parcelaNum && provisao.num_parcelas > 1 
+      const monthStr = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const yearStr = selectedDate.getFullYear();
+      
+      let baseDesc = parcelaNum && provisao.num_parcelas > 1 
         ? `${provisao.nome} (${parcelaNum}/${provisao.num_parcelas})`
         : provisao.nome;
+        
+      const isBusiness = activeProfileId && profiles.find(p => p.id === activeProfileId)?.tipo === 'empresa';
+      
+      const descExibida = isBusiness ? `${baseDesc} (Ref: ${monthStr}/${yearStr})` : baseDesc;
 
-      const targetDate = (() => {
+      const targetDate = isBusiness ? efetivarData : (() => {
         const year = selectedDate.getFullYear();
         const month = selectedDate.getMonth();
         let targetDay = provisao.dia_vencimento ? Number(provisao.dia_vencimento) : 1;
@@ -1431,8 +1453,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       <div className="flex items-center gap-1.5 leading-none">
                         <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
                         <span>
-                          {rec.frequencia === 'mensal' ? `Dia ${rec.dia_vencimento || '?'}` : ''}
-                          {rec.frequencia === 'anual' ? `Dia ${rec.dia_vencimento || '?'}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : ''}
+                          {rec.frequencia === 'mensal' ? `Dia ${isBusiness && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || '?')}` : ''}
+                          {rec.frequencia === 'anual' ? `Dia ${isBusiness && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || '?')}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : ''}
                         </span>
                       </div>
 
@@ -2003,6 +2025,19 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     {efetivarModal.provisao.valor !== null && ` - ${formatCurrency(efetivarModal.provisao.valor)}`}
                   </p>
                 </div>
+
+                {/* Data de Pagamento Input - Only for Empresa */}
+                {isBusiness && (
+                  <div>
+                    <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Data de Pagamento</label>
+                    <input
+                      type="date"
+                      value={efetivarData}
+                      onChange={e => setEfetivarData(e.target.value)}
+                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
+                    />
+                  </div>
+                )}
 
                 {/* Input Value - only shown if variable/null value */}
                 {efetivarModal.provisao.valor === null && (

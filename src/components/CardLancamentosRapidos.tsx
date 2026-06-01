@@ -14,6 +14,10 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
   const [pagandoId, setPagandoId] = useState<string | null>(null);
   const [efetivarModal, setEfetivarModal] = useState<{isOpen: boolean, conta: any | null}>({isOpen: false, conta: null});
   const [efetivarValorStr, setEfetivarValorStr] = useState<string>('0');
+  const [efetivarDataStr, setEfetivarDataStr] = useState<string>(() => {
+    const now = new Date();
+    return new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+  });
 
   const formatCentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     let val = e.target.value.replace(/\D/g, '');
@@ -42,6 +46,8 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
     setEfetivarModal({ isOpen: true, conta });
     const val = Number(conta.valor) || 0;
     setEfetivarValorStr((val * 100).toFixed(0));
+    const now = new Date();
+    setEfetivarDataStr(new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0]);
   };
 
   const handleConfirmarPagamento = async () => {
@@ -51,9 +57,6 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
 
     try {
       setPagandoId(conta.id);
-      
-      const now = new Date();
-      const localDateIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
 
       if (conta.isRecurrent && conta.recurrentSource) {
         const sourceData = conta.recurrentSource;
@@ -64,7 +67,7 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
         let transacoesToInsert = [];
 
         if (finalFormaPagamento === 'cartao_credito' && parcelasInt > 1) {
-            const tempDate = new Date();
+            const tempDate = new Date(`${efetivarDataStr}T12:00:00Z`);
             for (let i = 0; i < parcelasInt; i++) {
                 const dt = new Date(tempDate);
                 dt.setMonth(dt.getMonth() + i);
@@ -90,7 +93,7 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
                tipo: sourceData.tipo || 'despesa',
                valor: conta.valor === 0 ? finalValue : conta.valor,
                descricao: conta.descricao,
-               data: localDateIso,
+               data: efetivarDataStr,
                status: 'pago',
                recorrente_id: conta.recorrente_id,
                tag_id: conta.tags?.id || null,
@@ -230,6 +233,16 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
               </div>
 
               <div className="space-y-4">
+                <div>
+                  <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Data do Pagamento</label>
+                  <input
+                    type="date"
+                    value={efetivarDataStr}
+                    onChange={e => setEfetivarDataStr(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
+                  />
+                </div>
+
                 <div>
                   <span className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block">Descrição</span>
                   <p className="font-extrabold text-slate-750 dark:text-slate-200 text-sm">
