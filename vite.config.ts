@@ -28,10 +28,10 @@ export default defineConfig(({mode}) => {
               type: 'image/svg+xml'
             },
             {
-              src: '/logo-app.svg',
+              src: '/logo-app-monochrome.svg',
               sizes: 'any',
               type: 'image/svg+xml',
-              purpose: 'any monochrome'
+              purpose: 'monochrome'
             },
             {
               src: '/icon-192.png',
