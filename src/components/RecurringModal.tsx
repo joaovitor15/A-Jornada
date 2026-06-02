@@ -37,7 +37,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
   const activeProfile = profiles.find(p => p.id === activeProfileId);
   const isBusiness = activeProfile?.tipo === 'empresa';
 
-  const [formaPagamento, setFormaPagamento] = useState('Dinheiro');
+  const [formaPagamento, setFormaPagamento] = useState('dinheiro');
   const [cardId, setCardId] = useState<string | null>(null);
   const [numParcelas, setNumParcelas] = useState<number>(1);
   const [ativa, setAtiva] = useState(true);
@@ -173,7 +173,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
     const tagObj = tags.find(t => t.id === tagSelecionada.id);
 
     setSaving(true);
-    const isCard = tipo === 'despesa' && cards.length > 0 && formaPagamento !== 'Dinheiro';
+    const isCard = tipo === 'despesa' && cards.length > 0 && formaPagamento !== 'dinheiro';
 
     const dataObj = {
       profile_id: activeProfileId,

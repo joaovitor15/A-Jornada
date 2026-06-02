@@ -15,8 +15,11 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
   const [efetivarModal, setEfetivarModal] = useState<{isOpen: boolean, conta: any | null}>({isOpen: false, conta: null});
   const [efetivarValorStr, setEfetivarValorStr] = useState<string>('0');
   const [efetivarDataStr, setEfetivarDataStr] = useState<string>(() => {
-    const now = new Date();
-    return new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0];
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
   });
 
   const formatCentsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,8 +49,11 @@ export function CardLancamentosRapidos({ activeProfileId, contas = [], isLoading
     setEfetivarModal({ isOpen: true, conta });
     const val = Number(conta.valor) || 0;
     setEfetivarValorStr((val * 100).toFixed(0));
-    const now = new Date();
-    setEfetivarDataStr(new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().split('T')[0]);
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    setEfetivarDataStr(`${yyyy}-${mm}-${dd}`);
   };
 
   const handleConfirmarPagamento = async () => {

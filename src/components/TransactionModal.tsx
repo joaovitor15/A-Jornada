@@ -40,7 +40,13 @@ export function TransactionModal({
     id: string;
     nome: string;
   } | null>(null);
-  const [data, setData] = useState(new Date().toISOString().split("T")[0]);
+  const [data, setData] = useState(() => {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  });
   const [digitosValor, setDigitosValor] = useState("0");
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
   const [cardId, setCardId] = useState<string>("");
@@ -85,7 +91,11 @@ export function TransactionModal({
       setDescricao("");
       setTagBusca("");
       setTagSelecionada(null);
-      setData(new Date().toISOString().split("T")[0]);
+      const today = new Date();
+      const yyyy = today.getFullYear();
+      const mm = String(today.getMonth() + 1).padStart(2, '0');
+      const dd = String(today.getDate()).padStart(2, '0');
+      setData(`${yyyy}-${mm}-${dd}`);
       setDigitosValor("0");
       setFormaPagamento("dinheiro");
       setCardId("");

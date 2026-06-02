@@ -246,8 +246,16 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
   const pctAmarelo = Math.min((unpaidFuturo / _limiteBase) * 100, 100 - pctVerde - pctVermelho - pctAzul);
   const pctDisponivel = Math.max(0, 100 - pctVerde - pctVermelho - pctAzul - pctAmarelo);
 
-  const handlePaga = async (cardId: string, valor: number) => {
+      const handlePaga = async (cardId: string, valor: number) => {
     try {
+        const localToday = () => {
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, '0');
+          const dd = String(today.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        };
+
         const { tagPagamentoId } = await getOrCreateFaturaTags();
         const currentMonth = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
         const mesCapitalizado = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
@@ -256,7 +264,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
           profile_id: activeProfileId,
           tipo: 'despesa',
           descricao: `Pagamento da fatura (${mesCapitalizado})`,
-          data: new Date().toISOString().split('T')[0],
+          data: localToday(),
           valor: valor,
           forma_pagamento: 'conta',
           ...(tagPagamentoId && { tag_id: tagPagamentoId })
@@ -267,7 +275,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
           profile_id: activeProfileId,
           tipo: 'receita',
           descricao: `Pagamento da fatura (${mesCapitalizado})`,
-          data: new Date().toISOString().split('T')[0],
+          data: localToday(),
           valor: valor,
           forma_pagamento: 'conta',
           card_id: cardId,
@@ -293,6 +301,14 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
     }
 
     try {
+        const localToday = () => {
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, '0');
+          const dd = String(today.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        };
+
         const { tagAntecipacaoId } = await getOrCreateFaturaTags();
         const currentMonth = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date());
         const mesCapitalizado = currentMonth.charAt(0).toUpperCase() + currentMonth.slice(1);
@@ -301,7 +317,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
           profile_id: activeProfileId,
           tipo: 'despesa',
           descricao: `Antecipação Fatura (${mesCapitalizado})`,
-          data: new Date().toISOString().split('T')[0],
+          data: localToday(),
           valor: valorNum,
           forma_pagamento: 'conta',
           ...(tagAntecipacaoId && { tag_id: tagAntecipacaoId })
@@ -313,7 +329,7 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
           profile_id: activeProfileId,
           tipo: 'receita',
           descricao: `Antecipação Fatura (${mesCapitalizado})`,
-          data: new Date().toISOString().split('T')[0],
+          data: localToday(),
           valor: valorNum,
           forma_pagamento: 'conta',
           card_id: anteciparFaturaModal.id,
@@ -351,7 +367,14 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
     
     try {
         let remainingToAnticipate = valorPago;
-        const dataAtual = new Date().toISOString().split('T')[0];
+        const localToday = () => {
+          const today = new Date();
+          const yyyy = today.getFullYear();
+          const mm = String(today.getMonth() + 1).padStart(2, '0');
+          const dd = String(today.getDate()).padStart(2, '0');
+          return `${yyyy}-${mm}-${dd}`;
+        };
+        const dataAtual = localToday();
 
         for (let i = 0; i < parcelasSelecionadasFull.length; i++) {
             const t = parcelasSelecionadasFull[i];
