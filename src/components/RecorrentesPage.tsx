@@ -544,6 +544,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   // Filter dynamic list based on state
   const listagemFiltrada = processedProvisoes.filter(p => {
+    // Hide data_variavel from lancamento tab only in business profile
+    const isDataVariavel = !p.dia_vencimento && !p.dia_emissao && !p.lancamento_rapido && isBusiness;
+    if (isDataVariavel) return false;
+
     // 1. Busca
     if (busca) {
       const termo = busca.toLowerCase();
@@ -692,7 +696,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         
       const isBusiness = activeProfileId && profiles.find(p => p.id === activeProfileId)?.tipo === 'empresa';
       
-      const descExibida = isBusiness ? `${baseDesc} (Ref: ${monthStr}/${yearStr})` : baseDesc;
+      const descExibida = baseDesc;
 
       const targetDate = isBusiness ? efetivarData : (() => {
         const year = selectedDate.getFullYear();
@@ -1413,9 +1417,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
             </div>
           ) : (() => {
             const contasNormais = provisoesRaw.filter(r => r.lancamento_rapido !== true);
-            const mensais = contasNormais.filter(r => r.frequencia === 'mensal');
-            const anuais = contasNormais.filter(r => r.frequencia === 'anual');
-            const outrasFrequencias = contasNormais.filter(r => r.frequencia !== 'mensal' && r.frequencia !== 'anual');
+            const variaveis = contasNormais.filter(r => !r.dia_vencimento && !r.dia_emissao && isBusiness);
+            const mensais = contasNormais.filter(r => r.frequencia === 'mensal' && !(!r.dia_vencimento && !r.dia_emissao && isBusiness));
+            const anuais = contasNormais.filter(r => r.frequencia === 'anual' && !(!r.dia_vencimento && !r.dia_emissao && isBusiness));
+            const outrasFrequencias = contasNormais.filter(r => r.frequencia !== 'mensal' && r.frequencia !== 'anual' && !(!r.dia_vencimento && !r.dia_emissao && isBusiness));
 
             const renderCardModel = (rec: any) => {
               const cat = rec.categories;
@@ -1429,8 +1434,21 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
               // Find calculated provision occurrence from processedProvisoes if any to support modals/actions
               const matchingProvisao = processedProvisoes.find(p => p.id === rec.id && p.shouldRender !== false);
               
-              const isEfetivadoThisMonth = matchingProvisao ? matchingProvisao.isPago : false;
-              const isProjectedThisMonth = !!matchingProvisao;
+              let isEfetivadoThisMonth = matchingProvisao ? matchingProvisao.isPago : false;
+              const isDataVariavel = !rec.dia_vencimento && !rec.dia_emissao && !rec.lancamento_rapido && isBusiness;
+              
+              if (!matchingProvisao && isDataVariavel) {
+                 const paidThisMonth = realTransactions.some(t => 
+                     t.recorrente_id === rec.id && 
+                     t.status === 'pago' && 
+                     new Date(t.data).getFullYear() === selectedDate.getFullYear() && 
+                     new Date(t.data).getMonth() === selectedDate.getMonth()
+                 );
+                 isEfetivadoThisMonth = paidThisMonth;
+              }
+              
+              // If it's data_variavel, it's always pending unless paid.
+              const isProjectedThisMonth = !!matchingProvisao || isDataVariavel;
 
               return (
                 <div
@@ -1447,6 +1465,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       {isEfetivadoThisMonth ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase select-none shrink-0" title="Foi pago/efetivado neste mês">
                           LANÇADO
+                        </span>
+                      ) : isDataVariavel ? (
+                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 uppercase select-none shrink-0" title="Pendente de efetivação neste mês">
+                          PENDENTE NO MÊS
                         </span>
                       ) : isProjectedThisMonth ? (
                         <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 uppercase select-none shrink-0" title="Aparece pendente na sua agenda deste mês">
@@ -1477,8 +1499,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       <div className="flex items-center gap-1.5 leading-none">
                         <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
                         <span>
-                          {rec.frequencia === 'mensal' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: Dia ${rec.dia_vencimento || '?'}` : `Dia ${rec.dia_vencimento || '?'}`) : ''}
-                          {rec.frequencia === 'anual' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: Dia ${rec.dia_vencimento || '?'}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : `Dia ${rec.dia_vencimento || '?'}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}`) : ''}
+                          {rec.frequencia === 'mensal' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: ${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}` : `${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}`) : ''}
+                          {rec.frequencia === 'anual' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: ${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : `${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}`) : ''}
                         </span>
                       </div>
 
@@ -1495,7 +1517,20 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   {/* Hover action bar or footer buttons */}
                   <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 mt-1 gap-2">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      {isScheduledForYear ? (
+                      {isDataVariavel ? (
+                        <button
+                          onClick={() => {
+                            const mockProvisao = { ...rec, valorPrevisto: rec.valor !== null ? Number(rec.valor) : 0, isPago: false };
+                            handleOpenEfetivarModal(mockProvisao);
+                          }}
+                          disabled={isEfetivadoThisMonth}
+                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-extrabold transition-all text-center ${isEfetivadoThisMonth ? 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800' : 'bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#CA8A04] border border-[#FEF08A] cursor-pointer'}`}
+                          title={isEfetivadoThisMonth ? "Já efetivado neste mês" : "Efetivar Pagamento"}
+                        >
+                          <Check size={10} strokeWidth={3} />
+                          Efetivar
+                        </button>
+                      ) : isScheduledForYear ? (
                         <button
                           onClick={() => {
                             handleCancelFutureLaunches(rec);
@@ -1575,6 +1610,18 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                       {outrasFrequencias.map(renderCardModel)}
+                    </div>
+                  </div>
+                )}
+
+                {variaveis.length > 0 && (
+                  <div className="space-y-4 pt-4 mt-6 border-t border-slate-100 dark:border-slate-800">
+                    <h3 className="text-xs font-black tracking-widest text-slate-450 dark:text-slate-500 uppercase select-none flex items-center gap-2">
+                      <Calendar size={14} className="text-blue-500" />
+                      CONTAS COM DIA VARIÁVEL
+                    </h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                      {variaveis.map(renderCardModel)}
                     </div>
                   </div>
                 )}
@@ -1869,7 +1916,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       }}
                       className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-3 pr-10 text-sm font-semibold bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
                     >
-                      <option value="conta_corrente">Conta Corrente / Saldo</option>
+                      <option value="conta_corrente">{isBusiness ? 'Conta' : 'Conta Corrente / Saldo'}</option>
                       {userCards.length > 0 && <option value="cartao_credito">Cartão de Crédito</option>}
                     </select>
                     <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-450 pointer-events-none" />

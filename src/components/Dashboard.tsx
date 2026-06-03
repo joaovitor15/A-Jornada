@@ -353,7 +353,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
-                          descricao: activeProfileType === 'empresa' ? `${rec.nome} (Ref: ${mesStr}/${anoSelecionado})` : rec.nome,
+                          descricao: rec.nome,
                           valor: Number(rec.valor) || 0,
                           data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
                           payment_data: calculatePaymentData(rec, targetDay),
@@ -404,7 +404,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
-                          descricao: activeProfileType === 'empresa' ? `${rec.nome} (Ref: ${mesStr}/${anoSelecionado})` : rec.nome,
+                          descricao: rec.nome,
                           valor: Number(rec.valor) || 0,
                           data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
                           payment_data: calculatePaymentData(rec, targetDay),

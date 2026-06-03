@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Plus, ChevronLeft, ChevronRight, Search, TrendingUp, TrendingDown, CreditCard, Pencil, Trash2, AlertTriangle, ReceiptText, ChevronDown, Check, RotateCcw } from 'lucide-react';
 import { useTransacoes, Transacao } from '../hooks/useTransacoes';
+import { useProfiles } from '../hooks/useProfiles';
 import { TransactionModal } from './TransactionModal';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -12,6 +13,8 @@ const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'O
 const MESES_COMPLETOS = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
 export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
+  const { profiles } = useProfiles();
+  const isBusiness = activeProfileId && profiles.find(p => p.id === activeProfileId)?.tipo === 'empresa';
   const { transacoes, loading, carregarTransacoesMes, excluirTransacao, editarTransacao } = useTransacoes();
   const [dataAtual, setDataAtual] = useState(new Date());
   
@@ -398,7 +401,7 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                           {/* DESCRIÇÃO E DETALHES */}
                           <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
                             <div className="text-[14px] font-[600] text-[#0F172A] dark:text-white whitespace-nowrap overflow-hidden text-ellipsis">
-                              {t.descricao}
+                              {t.descricao.replace(/\s*\(Ref:\s*\d{2}\/\d{4}\)/g, '')}
                             </div>
                             
                             <div className="flex items-center gap-[8px] flex-wrap">
@@ -434,7 +437,8 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                                       t.forma_pagamento === 'cartao_credito' ? 'Crédito' :
                                       t.forma_pagamento === 'cartao_debito' ? 'Débito' :
                                       t.forma_pagamento === 'pix' ? 'Pix' :
-                                      t.forma_pagamento === 'dinheiro' ? 'Dinheiro' :
+                                      t.forma_pagamento === 'dinheiro' ? (isBusiness ? 'Conta' : 'Dinheiro') :
+                                      t.forma_pagamento === 'conta_corrente' ? (isBusiness ? 'Conta' : 'Conta Corrente / Saldo') :
                                       t.forma_pagamento || 'A definir'
                                     )}
                                     {t.num_parcelas && t.num_parcelas > 1 ? ` (${t.num_parcelas}ª parc.)` : ''}
@@ -511,7 +515,7 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
             </div>
 
             <div className="bg-[#F8FAFC] dark:bg-[#0F172A] rounded-xl p-3 border border-[#E2E8F0] dark:border-[#334155] mb-4 space-y-1.5">
-              <div className="text-[13px] font-[700] text-[#0F172A] dark:text-white line-clamp-1">{transacaoParaEfetivar.descricao}</div>
+              <div className="text-[13px] font-[700] text-[#0F172A] dark:text-white line-clamp-1">{transacaoParaEfetivar.descricao.replace(/\s*\(Ref:\s*\d{2}\/\d{4}\)/g, '')}</div>
               <div className="flex justify-between text-[11px] text-[#64748B] dark:text-[#94A3B8] font-bold">
                 <span>VALOR PREVISTO:</span>
                 <span>R$ {transacaoParaEfetivar.valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</span>

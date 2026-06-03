@@ -13,6 +13,7 @@ import {
 import { useTransacoes, Transacao } from "../hooks/useTransacoes";
 import { useCategories } from "../hooks/useCategories";
 import { useCards } from "../hooks/useCards";
+import { useProfiles } from "../hooks/useProfiles";
 
 import { AnimatePresence, motion } from "motion/react";
 
@@ -32,6 +33,8 @@ export function TransactionModal({
   const { criarTransacao, editarTransacao } = useTransacoes();
   const { categories, tags } = useCategories(perfilId);
   const { cards } = useCards(perfilId);
+  const { profiles } = useProfiles();
+  const isBusiness = profiles.find((p) => p.id === perfilId)?.tipo === "empresa";
 
   const [tipo, setTipo] = useState<"receita" | "despesa">("despesa");
   const [descricao, setDescricao] = useState("");
@@ -65,7 +68,7 @@ export function TransactionModal({
   useEffect(() => {
     if (isOpen && transacaoParaEditar) {
       setTipo(transacaoParaEditar.tipo);
-      setDescricao(transacaoParaEditar.descricao);
+      setDescricao(transacaoParaEditar.descricao.replace(/\s*\(Ref:\s*\d{2}\/\d{4}\)/g, ''));
       setData(transacaoParaEditar.data);
       const fpOriginal = transacaoParaEditar.forma_pagamento?.toLowerCase() || "";
       const isCardOriginal = fpOriginal.includes("cartao") || !!transacaoParaEditar.card_id;
@@ -528,7 +531,7 @@ export function TransactionModal({
                   }}
                   className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_12px_10px_34px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
                 >
-                  <option value="dinheiro">Dinheiro</option>
+                  <option value="dinheiro">{isBusiness ? 'Conta' : 'Dinheiro'}</option>
                   {cards.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nome}

@@ -181,7 +181,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       tipo,
       valor: valorVariavel ? null : valorNumerico,
       frequencia,
-      dia_vencimento: frequencia !== 'diaria' ? (diaVencimento === '' ? null : Number(diaVencimento)) : null,
+      dia_vencimento: frequencia !== 'diaria' ? (diaVencimento === '' || diaVencimento === null ? null : Number(diaVencimento)) : null,
       dia_emissao: isBusiness && diaEmissao !== '' ? Number(diaEmissao) : null,
       mes_vencimento: frequencia === 'anual' ? (mesVencimento === '' ? null : Number(mesVencimento)) : null,
       categoria_id: tagObj ? tagObj.category_id : null,
@@ -307,7 +307,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     onFocus={handleInputFocus}
                     onClick={handleInputFocus}
                     disabled={valorVariavel}
-                    className={`w-full text-right border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${!valorVariavel && tipo === 'receita' ? 'text-[#16A34A]' : ''} ${!valorVariavel && tipo === 'despesa' ? 'text-[#EF4444]' : ''}`} 
+                    className={`w-full text-center border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${!valorVariavel && tipo === 'receita' ? 'text-[#16A34A]' : ''} ${!valorVariavel && tipo === 'despesa' ? 'text-[#EF4444]' : ''}`} 
                   />
                 </div>
                 <div className="pb-3 flex flex-col items-start justify-end space-y-[10px]">
@@ -317,6 +317,14 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     </div>
                     <input type="checkbox" checked={valorVariavel} onChange={e => setValorVariavel(e.target.checked)} className="hidden" />
                     <span className="text-[13px] font-[600] text-[#475569] select-none">Valor Variável</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 cursor-pointer group">
+                    <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${diaVencimento === null ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
+                      {diaVencimento === null && <Check size={14} className="text-white" />}
+                    </div>
+                    <input type="checkbox" checked={diaVencimento === null} onChange={e => setDiaVencimento(e.target.checked ? null : 1)} className="hidden" />
+                    <span className="text-[13px] font-[600] text-[#475569] select-none">Dia Variável</span>
                   </label>
 
                   <label className="flex items-center gap-2 cursor-pointer group">
@@ -342,7 +350,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                       </div>
                       
                       {/* Dia/Mês de Vencimento */}
-                      {frequencia === 'mensal' && (
+                      {frequencia === 'mensal' && diaVencimento !== null && (
                         <div className="flex gap-[12px]">
                           <div className="flex-1">
                             <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
@@ -394,7 +402,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     }} 
                     className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
                   >
-                    <option value="dinheiro">Dinheiro</option>
+                    <option value="dinheiro">{isBusiness ? 'Conta' : 'Dinheiro'}</option>
                     {cards.map(c => (
                       <option key={c.id} value={c.id}>{c.nome}</option>
                     ))}
