@@ -3,8 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#f8fafc" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#1c1b1f" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="Jornada" />
@@ -14,8 +13,7 @@
     <script>
       (function() {
         try {
-          var isDark = localStorage.getItem('darkMode') === 'true' || 
-                      (!('darkMode' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+          var isDark = localStorage.getItem('darkMode') !== 'false';
           if (isDark) {
             document.documentElement.classList.add('dark');
           }

@@ -22,12 +22,11 @@ import {
   Coffee, Rocket, Award, Target, Zap, Globe, Landmark, PiggyBank,
   DollarSign, GraduationCap, Baby, Dog, Car, Plane, Gamepad2,
   Camera, Gift, Music, Book, Repeat, Banknote, CreditCard,
-  LineChart, PieChart, Activity, Menu, X, Sun, Moon, Download
+  LineChart, PieChart, Activity, Menu, X, Sun, Moon
 } from 'lucide-react';
 import { Page } from '../types';
 import { SupabaseProfile } from '../hooks/useProfiles';
 import { motion, AnimatePresence } from 'motion/react';
-import { usePWAInstall } from '../hooks/usePWAInstall';
 
 import JornadaLogo from './JornadaLogo';
 
@@ -64,7 +63,6 @@ export default function AppLayout({
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   
   const [isDarkMode, setIsDarkMode] = React.useState(false);
-  const { isInstallable, promptInstall } = usePWAInstall();
 
   React.useEffect(() => {
     // Check initial preference from localStorage or system
@@ -444,25 +442,6 @@ export default function AppLayout({
                 </div>
               </div>
             ))}
-            
-            <AnimatePresence>
-              {isInstallable && (
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  className="mt-6 w-full px-4 mb-2"
-                >
-                  <button
-                    onClick={promptInstall}
-                    className="w-full flex items-center justify-center gap-2 bg-[#2563EB] text-white py-2.5 px-3 rounded-xl font-bold hover:bg-[#1D4ED8] transition-colors shadow-sm"
-                  >
-                    <Download size={18} />
-                    <span className="text-[13px]">Instalar App</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
           </div>
         </aside>
 

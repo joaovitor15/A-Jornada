@@ -12,76 +12,36 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
+        injectRegister: 'auto',
+        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg', 'icon-192.png', 'icon-512.png'],
         manifest: {
-          name: 'Jornada - Gestão e Games',
+          name: 'Jornada',
           short_name: 'Jornada',
-          description: 'Acompanhe seu progresso, investimentos e games em um só lugar.',
-          theme_color: '#3b82f6',
-          background_color: '#ffffff',
+          description: 'Acompanhe sua jornada com facilidade',
+          theme_color: '#1c1b1f',
+          background_color: '#1c1b1f',
           display: 'standalone',
-          start_url: '/',
-          orientation: 'portrait',
           icons: [
             {
-              src: '/logo-app.svg',
-              sizes: 'any',
-              type: 'image/svg+xml'
-            },
-            {
-              src: '/logo-app-monochrome.svg',
-              sizes: 'any',
-              type: 'image/svg+xml',
-              purpose: 'monochrome'
-            },
-            {
-              src: '/icon-192.png',
+              src: 'icon-192.png',
               sizes: '192x192',
-              type: 'image/png'
+              type: 'image/png',
             },
             {
-              src: '/icon-512.png',
-              sizes: '512x512',
-              type: 'image/png'
-            },
-            {
-              src: '/icon-512.png',
+              src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'maskable'
-            }
-          ],
-          screenshots: [
-            {
-              src: '/screenshot-desktop.png',
-              sizes: '1280x720',
-              type: 'image/png',
-              form_factor: 'wide',
-              label: 'Dashboard Desktop'
             },
             {
-              src: '/screenshot-mobile.png',
-              sizes: '720x1280',
+              src: 'icon-512.png',
+              sizes: '512x512',
               type: 'image/png',
-              label: 'Dashboard Mobile'
+              purpose: 'any maskable',
             }
           ]
-        },
-        devOptions: {
-          enabled: false,
-          type: 'module',
-          navigateFallback: 'index.html'
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}'],
-          maximumFileSizeToCacheInBytes: 4000000,
-          navigateFallback: '/index.html',
-          navigateFallbackDenylist: [/^\/api/],
-          runtimeCaching: [
-            {
-              urlPattern: /^\/api\//,
-              handler: 'NetworkOnly',
-            }
-          ]
+          maximumFileSizeToCacheInBytes: 5000000,
         }
       })
     ],
