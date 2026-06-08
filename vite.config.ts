@@ -13,14 +13,18 @@ export default defineConfig(({mode}) => {
       VitePWA({
         registerType: 'autoUpdate',
         injectRegister: 'auto',
-        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg', 'icon-192.png', 'icon-512.png'],
+        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg', 'icon-192.png', 'icon-512.png', 'screenshot-desktop.png', 'screenshot-mobile.png'],
         manifest: {
+          id: '/',
           name: 'Jornada',
           short_name: 'Jornada',
           description: 'Acompanhe sua jornada com facilidade',
           theme_color: '#1c1b1f',
           background_color: '#1c1b1f',
           display: 'standalone',
+          orientation: 'portrait',
+          start_url: '/',
+          scope: '/',
           icons: [
             {
               src: 'icon-192.png',
@@ -36,7 +40,20 @@ export default defineConfig(({mode}) => {
               src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable',
+              purpose: 'maskable',
+            }
+          ],
+          screenshots: [
+            {
+              src: 'screenshot-desktop.png',
+              sizes: '1920x1080',
+              type: 'image/png',
+              form_factor: 'wide',
+            },
+            {
+              src: 'screenshot-mobile.png',
+              sizes: '1080x1920',
+              type: 'image/png',
             }
           ]
         },

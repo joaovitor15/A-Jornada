@@ -1,7 +1,8 @@
-import { Bell, ChevronDown, User } from 'lucide-react';
+import { Bell, ChevronDown, User, Download } from 'lucide-react';
 import { Profile } from '../types';
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { usePWA } from '../hooks/usePWA';
 
 interface HeaderProps {
   activeProfile: Profile;
@@ -11,6 +12,7 @@ interface HeaderProps {
 
 export const Header = ({ activeProfile, profiles, onProfileChange }: HeaderProps) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const { isInstallable, installPWA } = usePWA();
 
   return (
     <header className="h-16 md:h-20 bg-white border-b border-[--color-brand-light] flex items-center justify-between px-6 md:px-10 sticky top-0 z-10">
@@ -20,6 +22,17 @@ export const Header = ({ activeProfile, profiles, onProfileChange }: HeaderProps
       </div>
 
       <div className="flex items-center gap-4">
+        {isInstallable && (
+          <button 
+            onClick={installPWA}
+            className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold py-1.5 px-3 rounded-full transition-colors shadow-sm"
+            id="install-pwa-btn"
+          >
+            <Download size={14} />
+            <span className="hidden sm:inline">Instalar App</span>
+          </button>
+        )}
+
         <button className="p-2 text-slate-400 hover:text-[--color-brand-primary] transition-colors relative" id="notif-btn">
           <Bell size={20} />
           <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
