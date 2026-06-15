@@ -64,55 +64,6 @@ export default function AppLayout({
   
   const [isDarkMode, setIsDarkMode] = React.useState(false);
 
-  // States to handle PWA installation correctly across devices
-  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
-  const [showInstallBtn, setShowInstallBtn] = React.useState(false);
-
-  React.useEffect(() => {
-    // 1. Manually register ServiceWorker as a robust fallback
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/sw.js')
-        .then((reg) => console.log('ServiceWorker registrado:', reg.scope))
-        .catch((err) => console.error('Falha no SW:', err));
-    }
-
-    // 2. Catch the beforeinstallprompt event
-    const handleBeforeInstall = (e: any) => {
-      console.log('beforeinstallprompt capturado!');
-      e.preventDefault();
-      setDeferredPrompt(e);
-      // Check if user dismissed for this tab session
-      const dismissed = sessionStorage.getItem('pwa_dismissed') === 'true';
-      if (!dismissed) {
-        setShowInstallBtn(true);
-      }
-    };
-
-    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
-
-    // If app is already standalone, hide button
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      setShowInstallBtn(false);
-    }
-
-    return () => {
-      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
-    };
-  }, []);
-
-  const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log('Resultado do install:', outcome);
-    setDeferredPrompt(null);
-    setShowInstallBtn(false);
-  };
-
-  const handleDismissInstall = () => {
-    setShowInstallBtn(false);
-    sessionStorage.setItem('pwa_dismissed', 'true');
-  };
 
   React.useEffect(() => {
     // Check initial preference from localStorage or system
@@ -389,18 +340,7 @@ export default function AppLayout({
                 </div>
               </div>
             ))}
-            {showInstallBtn && (
-              <div className="mt-auto px-4 w-full pt-4 pb-2 border-t border-[#E5E7EB] dark:border-[#334155] shrink-0">
-                <button
-                  type="button"
-                  onClick={handleInstallClick}
-                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-[11px] font-bold shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.02] cursor-pointer"
-                >
-                  <Rocket size={14} className="animate-pulse" />
-                  Instalar App (PWA)
-                </button>
-              </div>
-            )}
+
           </div>
         </aside>
 
@@ -411,34 +351,7 @@ export default function AppLayout({
         </main>
       </div>
 
-      {/* Floating PWA Installer prompt notice */}
-      {showInstallBtn && (
-        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-2xl p-4 shadow-2xl z-[99999] flex items-center gap-3 md:gap-4">
-          <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
-            <Rocket size={20} className="animate-bounce" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h4 className="text-[13px] font-bold text-[#0F172A] dark:text-white leading-tight">Instalar Jornada</h4>
-            <p className="text-[10px] text-[#64748B] dark:text-[#94A3B8] leading-tight mt-1">
-              Acesse mais rápido e com melhor desempenho direto da sua tela inicial!
-            </p>
-          </div>
-          <div className="flex gap-1 shrink-0">
-            <button
-              onClick={handleDismissInstall}
-              className="px-2 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors"
-            >
-              Depois
-            </button>
-            <button
-              onClick={handleInstallClick}
-              className="px-3 py-1.5 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg shadow-sm cursor-pointer transition-all hover:scale-[1.02]"
-            >
-              Instalar
-            </button>
-          </div>
-        </div>
-      )}
+
     </div>
   );
 }

@@ -212,90 +212,6 @@ async function startServer() {
     }
   });
 
-  // Intercept PWA files in development to avoid caching problems and MIME-type errors, while allowing real service worker in production
-  app.get("/sw.js", (req, res, next) => {
-    if (process.env.NODE_ENV !== "production") {
-      res.setHeader("Content-Type", "application/javascript");
-      return res.send(`
-        // Dummy Service Worker for development to prevent caching issues in the dev container
-        self.addEventListener('install', (e) => {
-          self.skipWaiting();
-        });
-        self.addEventListener('activate', (e) => {
-          e.waitUntil(self.clients.claim());
-        });
-        self.addEventListener('fetch', (e) => {
-          // Pass-through
-        });
-      `);
-    }
-    next();
-  });
-
-  app.get("/registerSW.js", (req, res, next) => {
-    if (process.env.NODE_ENV !== "production") {
-      res.setHeader("Content-Type", "application/javascript");
-      return res.send(`console.log("Service Worker registration skipped in development.");`);
-    }
-    next();
-  });
-
-  app.get(["/manifest.webmanifest", "/manifest.json"], (req, res, next) => {
-    if (process.env.NODE_ENV !== "production") {
-      res.setHeader("Content-Type", "application/manifest+json");
-      return res.json({
-        id: "/",
-        name: "Jornada",
-        short_name: "Jornada",
-        description: "Acompanhe sua jornada com facilidade",
-        theme_color: "#1c1b1f",
-        background_color: "#1c1b1f",
-        display: "standalone",
-        orientation: "portrait",
-        start_url: "/",
-        scope: "/",
-        icons: [
-          {
-            src: "/icon-192.png",
-            sizes: "192x192",
-            type: "image/png"
-          },
-          {
-            src: "/icon-512.png",
-            sizes: "512x512",
-            type: "image/png"
-          },
-          {
-            src: "/icon-512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "maskable"
-          },
-          {
-            src: "/logo-app-monochrome.svg",
-            sizes: "192x192 512x512",
-            type: "image/svg+xml",
-            purpose: "monochrome"
-          }
-        ],
-        screenshots: [
-          {
-            src: "/screenshot-desktop.png",
-            sizes: "1920x1080",
-            type: "image/png",
-            form_factor: "wide"
-          },
-          {
-            src: "/screenshot-mobile.png",
-            sizes: "1080x1920",
-            type: "image/png"
-          }
-        ]
-      });
-    }
-    next();
-  });
-
   // Serve Vite static files
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
@@ -305,14 +221,6 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(process.cwd(), 'dist');
-    
-    // Explicitly set MIME type for webmanifest and manifest.json just in case
-    app.get(['/manifest.webmanifest', '/manifest.json'], (req, res) => {
-      res.setHeader('Content-Type', 'application/manifest+json');
-      // Serve manifest.webmanifest as the canonical source
-      res.sendFile(path.join(distPath, 'manifest.webmanifest'));
-    });
-    
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));

@@ -12,59 +12,47 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: 'auto',
-        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg', 'icon-192.png', 'icon-512.png', 'screenshot-desktop.png', 'screenshot-mobile.png'],
+        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg'],
         manifest: {
-          id: '/',
           name: 'Jornada',
           short_name: 'Jornada',
           description: 'Acompanhe sua jornada com facilidade',
           theme_color: '#1c1b1f',
           background_color: '#1c1b1f',
           display: 'standalone',
-          orientation: 'portrait',
-          start_url: '/',
-          scope: '/',
           icons: [
             {
-              src: '/icon-192.png',
+              src: 'icon-192.png',
               sizes: '192x192',
               type: 'image/png',
             },
             {
-              src: '/icon-512.png',
+              src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
             },
             {
-              src: '/icon-512.png',
+              src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
             },
             {
-              src: '/logo-app-monochrome.svg',
+              src: 'logo-app.svg',
+              sizes: '192x192 512x512',
+              type: 'image/svg+xml',
+              purpose: 'any maskable',
+            },
+            {
+              src: 'logo-app-monochrome.svg',
               sizes: '192x192 512x512',
               type: 'image/svg+xml',
               purpose: 'monochrome',
             }
-          ],
-          screenshots: [
-            {
-              src: '/screenshot-desktop.png',
-              sizes: '1920x1080',
-              type: 'image/png',
-              form_factor: 'wide',
-            },
-            {
-              src: '/screenshot-mobile.png',
-              sizes: '1080x1920',
-              type: 'image/png',
-            }
           ]
         },
         workbox: {
-          maximumFileSizeToCacheInBytes: 5000000,
+          maximumFileSizeToCacheInBytes: 4000000,
         }
       })
     ],
@@ -78,7 +66,7 @@ export default defineConfig(({mode}) => {
     },
     server: {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
-      // Do not modifyâfile watching is disabled to prevent flickering during agent edits.
+      // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
     },
   };
