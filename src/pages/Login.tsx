@@ -80,9 +80,7 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
 
         {/* TOPO DO CARD */}
         <div className="flex flex-col items-center mb-8">
-          <div className="w-16 h-16 bg-[#2563EB]/5 dark:bg-[#2563EB]/10 border border-[#2563EB]/10 rounded-2xl flex items-center justify-center mb-4 p-3 shadow-sm">
-            <img src="/logo-app.svg" alt="Jornada" className="w-full h-full object-contain" />
-          </div>
+          <img src="/logo-app.svg" alt="Jornada" className="w-16 h-16 mb-4 object-contain" />
           <h1 className="text-[22px] font-bold text-[#0F172A] dark:text-white mb-1">Jornada</h1>
           <p className="text-[13px] text-[#64748B] dark:text-[#94A3B8]">Gerencie suas finanças com facilidade</p>
         </div>
