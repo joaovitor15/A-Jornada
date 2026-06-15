@@ -17,8 +17,8 @@ export default defineConfig(({mode}) => {
           name: 'Jornada',
           short_name: 'Jornada',
           description: 'Acompanhe sua jornada com facilidade',
-          theme_color: '#1f2937',
-          background_color: '#111827',
+          theme_color: '#1c1b1f',
+          background_color: '#1c1b1f',
           display: 'standalone',
           icons: [
             {
