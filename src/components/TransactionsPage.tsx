@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { Plus, ChevronLeft, ChevronRight, Search, TrendingUp, TrendingDown, CreditCard, Pencil, Trash2, AlertTriangle, ReceiptText, ChevronDown, Check, RotateCcw } from 'lucide-react';
+import { Plus, ChevronLeft, ChevronRight, Search, TrendingUp, TrendingDown, CreditCard, Pencil, Trash2, AlertTriangle, ReceiptText, ChevronDown, Check, RotateCcw, ArrowLeftRight } from 'lucide-react';
 import { useTransacoes, Transacao } from '../hooks/useTransacoes';
 import { useProfiles } from '../hooks/useProfiles';
 import { TransactionModal } from './TransactionModal';
@@ -182,8 +182,11 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
       {/* 1. CABEÇALHO */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-[22px] font-[800] text-[#0F172A] dark:text-white">Transações</h1>
-          <p className="text-[13px] text-[#94A3B8] dark:text-[#64748B] capitalize">
+          <h1 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
+            <ArrowLeftRight size={28} className="text-[#3B82F6]" /> 
+            Transações
+          </h1>
+          <p className="text-[13px] text-[#94A3B8] dark:text-[#64748B] capitalize mt-1">
             {dataAtual.toLocaleString('pt-BR', { month: 'long' })} de {anoAtual}
           </p>
         </div>
@@ -437,7 +440,7 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
                                       t.forma_pagamento === 'cartao_credito' ? 'Crédito' :
                                       t.forma_pagamento === 'cartao_debito' ? 'Débito' :
                                       t.forma_pagamento === 'pix' ? 'Pix' :
-                                      t.forma_pagamento === 'dinheiro' ? (isBusiness ? 'Conta' : 'Dinheiro') :
+                                      t.forma_pagamento === 'dinheiro' ? 'Conta' :
                                       t.forma_pagamento === 'conta_corrente' ? (isBusiness ? 'Conta' : 'Conta Corrente / Saldo') :
                                       t.forma_pagamento || 'A definir'
                                     )}

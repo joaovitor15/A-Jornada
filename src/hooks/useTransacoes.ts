@@ -260,7 +260,25 @@ export function useTransacoes() {
           .order('data', { ascending: false })
           .limit(1);
 
-        const newLastDate = lastTx && lastTx.length > 0 ? `${lastTx[0].data}T12:00:00Z` : null;
+        let newLastDate = lastTx && lastTx.length > 0 ? `${lastTx[0].data}T12:00:00Z` : null;
+
+        if (!newLastDate) {
+          try {
+            const { data: recData } = await supabase
+              .from('transacoes_recorrentes')
+              .select('data_criacao')
+              .eq('id', tx.recorrente_id)
+              .single();
+            if (recData?.data_criacao) {
+              newLastDate = recData.data_criacao;
+            } else {
+              newLastDate = new Date().toISOString();
+            }
+          } catch (e) {
+            console.error('Erro ao obter data_criacao para fallback:', e);
+            newLastDate = new Date().toISOString();
+          }
+        }
 
         await supabase
           .from('transacoes_recorrentes')

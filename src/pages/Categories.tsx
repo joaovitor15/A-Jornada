@@ -503,7 +503,10 @@ export default function Categories({ activeProfile }: CategoriesProps) {
       <div className="w-full">
         {/* CABEÇALHO CENTRALIZADO */}
       <div className="text-center mb-[28px] flex flex-col items-center">
-        <h1 className="text-[24px] font-[800] text-[#0F172A] dark:text-white mb-4">Categorias & Tags</h1>
+        <h1 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4 flex items-center gap-3">
+          <Tag size={28} className="text-[#3B82F6]" />
+          Categorias & Tags
+        </h1>
 
         <div className="relative new-category-dropdown-container mb-[14px]">
           <button 

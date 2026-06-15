@@ -64,6 +64,56 @@ export default function AppLayout({
   
   const [isDarkMode, setIsDarkMode] = React.useState(false);
 
+  // States to handle PWA installation correctly across devices
+  const [deferredPrompt, setDeferredPrompt] = React.useState<any>(null);
+  const [showInstallBtn, setShowInstallBtn] = React.useState(false);
+
+  React.useEffect(() => {
+    // 1. Manually register ServiceWorker as a robust fallback
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => console.log('ServiceWorker registrado:', reg.scope))
+        .catch((err) => console.error('Falha no SW:', err));
+    }
+
+    // 2. Catch the beforeinstallprompt event
+    const handleBeforeInstall = (e: any) => {
+      console.log('beforeinstallprompt capturado!');
+      e.preventDefault();
+      setDeferredPrompt(e);
+      // Check if user dismissed for this tab session
+      const dismissed = sessionStorage.getItem('pwa_dismissed') === 'true';
+      if (!dismissed) {
+        setShowInstallBtn(true);
+      }
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+
+    // If app is already standalone, hide button
+    if (window.matchMedia('(display-mode: standalone)').matches) {
+      setShowInstallBtn(false);
+    }
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+    };
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('Resultado do install:', outcome);
+    setDeferredPrompt(null);
+    setShowInstallBtn(false);
+  };
+
+  const handleDismissInstall = () => {
+    setShowInstallBtn(false);
+    sessionStorage.setItem('pwa_dismissed', 'true');
+  };
+
   React.useEffect(() => {
     // Check initial preference from localStorage or system
     const isDark = localStorage.getItem('darkMode') === 'true' || 
@@ -88,111 +138,6 @@ export default function AppLayout({
   };
   const dropdownRef = React.useRef<HTMLDivElement>(null);
   
-  const [pendingRecorrentesCount, setPendingRecorrentesCount] = useState(0);
-
-  useEffect(() => {
-    if (!activeProfile?.id) return;
-    
-    // Using onSnapshot for real-time badge updates
-    const unsubscribe = supabase
-      .channel('recorrentes_badge')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'transacoes_recorrentes', filter: `profile_id=eq.${activeProfile.id}` },
-        () => fetchPendingCount()
-      )
-      .subscribe();
-
-    const fetchPendingCount = async () => {
-      const { data, error } = await supabase
-        .from('transacoes_recorrentes')
-        .select('*')
-        .eq('profile_id', activeProfile.id)
-        .eq('ativa', true);
-
-      if (error) {
-        console.error('Error fetching recurring transactions:', error);
-        return;
-      }
-      
-      const now = new Date();
-      let pendingCount = 0;
-
-      data?.forEach(rec => {
-        const lastDate = rec.ultima_lancada ? new Date(rec.ultima_lancada) : null;
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth();
-        const currentDay = now.getDate();
-        const currentDayOfWeek = now.getDay() === 0 ? 7 : now.getDay(); // 1 = Seg, 7 = Dom
-
-        let isPending = false;
-
-        if (rec.frequencia === 'diaria') {
-          if (!lastDate || (lastDate.getDate() !== currentDay || lastDate.getMonth() !== currentMonth || lastDate.getFullYear() !== currentYear)) {
-            isPending = true;
-          }
-        } else if (rec.frequencia === 'semanal') {
-          const startOfWeek = new Date(now);
-          startOfWeek.setDate(now.getDate() - currentDayOfWeek + 1);
-          if (!lastDate || lastDate < startOfWeek) {
-            if (rec.dia_vencimento <= currentDayOfWeek) {
-              isPending = true;
-            }
-          }
-        } else if (rec.frequencia === 'mensal') {
-          const lastMonth = lastDate ? lastDate.getMonth() : -1;
-          const lastYear = lastDate ? lastDate.getFullYear() : -1;
-          
-          let targetMonth = currentMonth;
-          let targetYear = currentYear;
-          
-          const isPastEmission = rec.dia_emissao && currentDay >= rec.dia_emissao;
-          
-          if (isPastEmission) {
-            targetMonth++;
-            if (targetMonth > 11) {
-              targetMonth = 0;
-              targetYear++;
-            }
-          }
-
-          const isPaidForTarget = lastDate && (lastYear > targetYear || (lastYear === targetYear && lastMonth >= targetMonth));
-          
-          if (!isPaidForTarget) {
-            if (rec.dia_vencimento && currentDay >= rec.dia_vencimento) {
-              isPending = true;
-            } else if (isPastEmission) {
-              isPending = true;
-            }
-          }
-        } else if (rec.frequencia === 'anual') {
-          if (!lastDate || lastDate.getFullYear() !== currentYear) {
-            if (rec.mes_vencimento && rec.dia_vencimento) {
-              const vencimento = new Date(currentYear, rec.mes_vencimento - 1, rec.dia_vencimento);
-              const diffTime = vencimento.getTime() - now.getTime();
-              const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-              if (diffDays <= 30 && diffDays >= 0) {
-                isPending = true;
-              } else if (diffDays < 0) {
-                 isPending = true;
-              }
-            }
-          }
-        }
-
-        if (isPending) pendingCount++;
-      });
-      
-      setPendingRecorrentesCount(pendingCount);
-    };
-
-    fetchPendingCount();
-    
-    return () => {
-      unsubscribe.unsubscribe();
-    };
-  }, [activeProfile?.id]);
-
   // Fechar dropdowns ao clicar fora
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -215,7 +160,7 @@ export default function AppLayout({
     ...(activeProfile?.financeiro_show_dashboard !== false ? [{ id: 'dashboard' as Page, icon: LayoutDashboard, title: 'Dashboard' }] : []),
     ...(activeProfile?.financeiro_show_transacoes !== false ? [{ id: 'transactions' as Page, icon: Wallet, title: 'Transações' }] : []),
     ...(activeProfile?.financeiro_show_cartoes !== false ? [{ id: 'cartoes' as Page, icon: CreditCard, title: 'Cartões' }] : []),
-    ...(activeProfile?.financeiro_show_transacoes_recorrentes !== false ? [{ id: 'recorrentes' as Page, icon: Calendar, badge: pendingRecorrentesCount, title: 'Provisões' }] : []),
+    ...(activeProfile?.financeiro_show_transacoes_recorrentes !== false ? [{ id: 'recorrentes' as Page, icon: Calendar, title: 'Provisões' }] : []),
     ...(activeProfile?.financeiro_show_relatorios !== false ? [{ id: 'relatorios' as Page, icon: BarChart2, title: 'Relatórios' }] : []),
     ...(activeProfile?.financeiro_show_categorias !== false ? [{ id: 'categories' as Page, icon: Tag, title: 'Categorias' }] : []),
   ] : [];
@@ -277,7 +222,9 @@ export default function AppLayout({
                  })()}
               </div>
               <div className="flex flex-col items-start leading-tight">
-                <span className="text-[13px] font-bold text-[#0F172A] dark:text-white">{activeProfile?.name || 'Selecione'}</span>
+                <span className="text-[13px] font-bold text-[#0F172A] dark:text-white truncate max-w-[80px] sm:max-w-[150px] md:max-w-[200px]" title={activeProfile?.name || 'Selecione'}>
+                  {activeProfile?.name || 'Selecione'}
+                </span>
               </div>
               <ChevronDown size={14} className={`text-[#6B7280] dark:text-[#94A3B8] transition-transform ${isProfileOpen ? 'rotate-180' : ''}`} />
             </button>
@@ -442,6 +389,18 @@ export default function AppLayout({
                 </div>
               </div>
             ))}
+            {showInstallBtn && (
+              <div className="mt-auto px-4 w-full pt-4 pb-2 border-t border-[#E5E7EB] dark:border-[#334155] shrink-0">
+                <button
+                  type="button"
+                  onClick={handleInstallClick}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-[11px] font-bold shadow-md hover:from-blue-700 hover:to-indigo-700 transition-all hover:scale-[1.02] cursor-pointer"
+                >
+                  <Rocket size={14} className="animate-pulse" />
+                  Instalar App (PWA)
+                </button>
+              </div>
+            )}
           </div>
         </aside>
 
@@ -451,6 +410,35 @@ export default function AppLayout({
           </div>
         </main>
       </div>
+
+      {/* Floating PWA Installer prompt notice */}
+      {showInstallBtn && (
+        <div className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-4 sm:max-w-md bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-2xl p-4 shadow-2xl z-[99999] flex items-center gap-3 md:gap-4">
+          <div className="w-10 h-10 bg-blue-50 dark:bg-blue-950/40 rounded-full flex items-center justify-center text-blue-600 dark:text-blue-400 shrink-0">
+            <Rocket size={20} className="animate-bounce" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h4 className="text-[13px] font-bold text-[#0F172A] dark:text-white leading-tight">Instalar Jornada</h4>
+            <p className="text-[10px] text-[#64748B] dark:text-[#94A3B8] leading-tight mt-1">
+              Acesse mais rápido e com melhor desempenho direto da sua tela inicial!
+            </p>
+          </div>
+          <div className="flex gap-1 shrink-0">
+            <button
+              onClick={handleDismissInstall}
+              className="px-2 py-1.5 text-[10px] font-semibold text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white bg-transparent hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg cursor-pointer transition-colors"
+            >
+              Depois
+            </button>
+            <button
+              onClick={handleInstallClick}
+              className="px-3 py-1.5 text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 rounded-lg shadow-sm cursor-pointer transition-all hover:scale-[1.02]"
+            >
+              Instalar
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

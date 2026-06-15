@@ -165,7 +165,7 @@ export default function App() {
           activeProfile?.financeiro_show_dashboard !== false, 
           'Sistema Financeiro', 
           'Dashboard', 
-          <Dashboard activeProfileName={activeProfile?.name || 'Usuário'} activeProfileId={activeProfile?.id} activeProfileType={activeProfile?.tipo} />
+          <Dashboard activeProfileName={activeProfile?.name || 'Usuário'} activeProfileId={activeProfile?.id} activeProfileType={activeProfile?.tipo} setActivePage={setActivePage} />
         );
       case 'transactions':
         return renderContentWithGuard(
@@ -230,7 +230,7 @@ export default function App() {
           activeProfile?.investimentos_ativo === true,
           activeProfile?.investimentos_show_operacoes !== false,
           'Sistema de Investimentos',
-          'Cofres & Metas',
+          'Reservas',
           <InvestimentosCofres activeProfileId={activeProfile?.id} />
         );
       case 'investimentos_metas':

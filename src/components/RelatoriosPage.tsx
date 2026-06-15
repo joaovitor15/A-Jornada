@@ -17,6 +17,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
   const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
   const [periodoTipo, setPeriodoTipo] = useState<'mensal' | 'anual'>('mensal');
+  const [dropdownMesAberto, setDropdownMesAberto] = useState(false);
   
   const [graficoDespesasAgrupamento, setGraficoDespesasAgrupamento] = useState<'categoria' | 'tag'>('categoria');
   const [graficoReceitasAgrupamento, setGraficoReceitasAgrupamento] = useState<'categoria' | 'tag'>('categoria');
@@ -300,8 +301,11 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
   return (
     <div className="p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[24px] pb-24">
       {/* HEADER */}
-      <div className="flex flex-col items-center text-center gap-2">
-        <h2 className="text-[22px] font-[800] text-[#0F172A] dark:text-white">Relatórios</h2>
+      <div className="flex flex-col items-start gap-2">
+        <h2 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
+          <BarChart2 size={28} className="text-[#3B82F6]" /> 
+          Relatórios
+        </h2>
       </div>
 
       {/* FILTER & ADD BUTTON */}
@@ -348,54 +352,114 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                </div>
             </div>
 
-            {/* FILTROS DE PERÍODO */}
-            <div className="order-2 md:order-none flex flex-col md:flex-row gap-[12px] w-full md:w-auto">
-               {/* ANO SELECTOR */}
-               <div className="order-1 md:order-2 flex justify-between md:justify-center items-center gap-[10px] bg-white dark:bg-[#1E293B] rounded-[100px] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] px-[16px] py-[8px] shadow-sm">
-                  <button onClick={() => setSelectedYear(y => y - 1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:bg-[#334155] transition-colors cursor-pointer"><ChevronLeft size={14} /></button>
-                  <span className="text-[14px] font-[600] text-[#0F172A] dark:text-white min-w-[60px] text-center">{selectedYear}</span>
-                  <button onClick={() => setSelectedYear(y => y + 1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:bg-[#334155] transition-colors cursor-pointer"><ChevronRight size={14} /></button>
-               </div>
+            {/* DATE & PERIOD SELECTOR */}
+            {/* LADO CENTRO - DATE & PERIOD SELECTOR */}
+            <div className="flex flex-col gap-[12px] w-full md:w-auto flex-1 justify-center items-center shrink-0 order-2 md:order-none">
+              <div className="flex flex-col md:flex-row items-center gap-[12px] w-full md:w-auto justify-center">
 
-               {/* MÊS SELECTOR (Somente se mensal) */}
-               {periodoTipo === 'mensal' && (
-                 <div className="order-2 md:order-1 relative w-full md:w-auto bg-white dark:bg-[#1E293B] rounded-[100px] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] px-[20px] py-[8px] shadow-sm flex items-center justify-between md:justify-center cursor-pointer hover:bg-[#F8FAFC] dark:bg-[#0F172A] transition-colors">
-                    <select 
-                       value={selectedMonth} 
-                       onChange={e => setSelectedMonth(Number(e.target.value))}
-                       className="w-full bg-transparent border-none text-[14px] font-[600] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none md:pr-6 md:min-w-[100px]"
+                <div className="order-2 md:order-1 flex items-center justify-center w-full md:w-auto">
+                  {/* Mês Dropdown */}
+                  {periodoTipo === 'mensal' && (
+                    <div className="relative w-full md:w-auto flex-shrink-0">
+                        <button 
+                          onClick={() => setDropdownMesAberto(!dropdownMesAberto)}
+                          className="w-full md:w-auto flex justify-between md:justify-center items-center gap-[8px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[20px] py-[8px] text-[14px] font-[600] text-[#0F172A] dark:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#334155] transition-colors cursor-pointer"
+                        >
+                          {MESES[selectedMonth]}
+                          <ChevronDown size={14} className={`text-[#64748B] dark:text-[#94A3B8] transition-transform ${dropdownMesAberto ? 'rotate-180' : ''}`} />
+                        </button>
+
+                        <AnimatePresence>
+                          {dropdownMesAberto && (
+                            <>
+                              <div className="fixed inset-0 z-20" onClick={() => setDropdownMesAberto(false)}></div>
+                              <motion.div 
+                                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                className="absolute left-0 right-0 md:right-auto mt-2 min-w-[200px] md:w-auto bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-[#E2E8F0] dark:border-[#334155] p-2 z-30"
+                              >
+                                <p className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Selecionar Mês</p>
+                                <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-1">
+                                  {MESES.map((nome, i) => {
+                                    const isActive = selectedMonth === i;
+                                    return (
+                                      <button 
+                                        key={nome}
+                                        onClick={() => {
+                                          setSelectedMonth(i);
+                                          setDropdownMesAberto(false);
+                                        }}
+                                        className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors cursor-pointer ${
+                                          isActive 
+                                            ? 'bg-slate-100 dark:bg-slate-800 text-[#0F172A] dark:text-white font-bold' 
+                                            : 'text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                        }`}
+                                      >
+                                        <span className="flex-1 text-left">{nome}</span>
+                                        {isActive && <div className="w-2 h-2 bg-[#2563EB] rounded-full"></div>}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </motion.div>
+                            </>
+                          )}
+                        </AnimatePresence>
+                      </div>
+                  )}
+                </div>
+                
+                <div className="order-1 md:order-2 flex items-center justify-center w-full md:w-auto">
+                  {/* Ano Selector */}
+                  <div className="flex justify-between md:justify-center items-center gap-[10px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[16px] py-[8px] w-full md:w-auto">
+                    <button 
+                      onClick={() => setSelectedYear(y => y - 1)} 
+                      className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer"
                     >
-                       {MESES.map((m, i) => <option key={i} value={i}>{m}</option>)}
-                    </select>
-                    <ChevronDown size={14} className="text-[#64748B] dark:text-[#94A3B8] pointer-events-none absolute right-[20px] md:static md:translate-x-0 md:-ml-4" />
-                 </div>
-               )}
-            </div>
-         </div>
+                      <ChevronLeft size={14} />
+                    </button>
+                    <span className="text-[14px] font-[600] text-[#0F172A] dark:text-white min-w-[60px] text-center">
+                      {selectedYear}
+                    </span>
+                    <button 
+                      onClick={() => setSelectedYear(y => y + 1)} 
+                      className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer"
+                    >
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </div>
 
-         {/* RADIO TIPO PERÍODO */}
-         <div className="flex items-center justify-center gap-[12px]">
-            <button 
-              onClick={() => setPeriodoTipo('mensal')} 
-              className={`flex items-center justify-center rounded-[100px] py-[8px] px-[24px] text-[14px] font-[700] transition-all duration-200 ${
-                  periodoTipo === 'mensal' 
-                    ? 'bg-[#EFF6FF] text-[#2563EB] border-[1.5px] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
-                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:bg-[#334155]'
-              }`}
-            >
-              Mensal
-            </button>
-            <button 
-              onClick={() => setPeriodoTipo('anual')} 
-              className={`flex items-center justify-center rounded-[100px] py-[8px] px-[24px] text-[14px] font-[700] transition-all duration-200 ${
-                  periodoTipo === 'anual' 
-                    ? 'bg-[#EFF6FF] text-[#2563EB] border-[1.5px] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
-                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:bg-[#334155]'
-              }`}
-            >
-              Anual
-            </button>
-         </div>
+              </div>
+
+              <div className="flex items-center justify-center w-full md:w-auto">
+                {/* Toggle Mensal/Anual */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#1E293B] p-1 rounded-[100px] border border-slate-200 dark:border-[#334155] shrink-0 w-full sm:w-auto">
+                  <button 
+                    onClick={() => setPeriodoTipo('mensal')} 
+                    className={`flex-1 sm:flex-none px-[16px] py-[6px] rounded-full text-[13px] font-[700] transition-all cursor-pointer ${
+                      periodoTipo === 'mensal' 
+                        ? 'bg-white dark:bg-[#334155] text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]' 
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Mensal
+                  </button>
+                  <button 
+                    onClick={() => setPeriodoTipo('anual')} 
+                    className={`flex-1 sm:flex-none px-[16px] py-[6px] rounded-full text-[13px] font-[700] transition-all cursor-pointer ${
+                      periodoTipo === 'anual' 
+                        ? 'bg-white dark:bg-[#334155] text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]' 
+                        : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                    }`}
+                  >
+                    Anual
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
       </div>
 
       {/* SUMMARY CARDS */}

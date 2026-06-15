@@ -7,9 +7,10 @@ import { calcularPeriodoFatura, helperCalcularPeriodo } from '../utils/faturaUti
 
 interface CardFaturaDashboardProps {
   activeProfileId: string;
+  setActivePage?: (page: string) => void;
 }
 
-export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProps) {
+export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFaturaDashboardProps) {
   const { cards, loading, refresh: refreshCards } = useCards(activeProfileId);
   const [transacoesCard, setTransacoesCard] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -594,6 +595,15 @@ export function CardFaturaDashboard({ activeProfileId }: CardFaturaDashboardProp
                  Voltar à Fatura Aberta
                </button>
             )}
+          </div>
+          <div className="flex mt-6">
+             <button
+               onClick={() => setActivePage?.('cartoes')}
+               className="w-full py-3 bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-700/50 rounded-xl text-slate-600 dark:text-slate-300 font-bold text-[12px] tracking-wide hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 transition-all flex items-center justify-center gap-2 group shadow-sm"
+             >
+               Gerenciar Cartões
+               <LucideIcons.ChevronRight size={16} className="text-slate-400 group-hover:text-blue-500 transition-colors" />
+             </button>
           </div>
         </div>
       </div>

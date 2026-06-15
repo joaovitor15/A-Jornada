@@ -518,8 +518,8 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
         {/* SAÚDE PROGRESS */}
         <div>
            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-extrabold text-slate-600">Saúde do Cofre</span>
-              <span className="text-[11px] font-bold text-slate-800">{percent.toFixed(1)}%</span>
+              <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-400">Progresso</span>
+              <span className="text-[11px] font-bold text-slate-800 dark:text-slate-300">{percent.toFixed(1)}%</span>
            </div>
            {/* Progress Line */}
            <div className="w-full bg-[#F1F5F9] dark:bg-[#334155] rounded-full h-2 mb-2 overflow-hidden flex">
@@ -549,11 +549,12 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
       {/* HEADER */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Shield size={24} className="text-[#10B981]" />
-            <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">Cofres & Metas</h2>
+          <div className="flex flex-col">
+            <h2 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
+              <Shield size={28} className="text-[#3B82F6]" /> Reservas
+            </h2>
+            <p className="text-[#64748B] dark:text-[#94A3B8] text-sm font-medium mt-1">Guarde Dinheiro.</p>
           </div>
-          <p className="text-[#64748B] dark:text-[#94A3B8] text-sm font-medium">Guarde Dinheiro.</p>
         </div>
         
         <div className="relative new-cofre-dropdown-container w-full md:w-auto">
@@ -680,7 +681,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                  <span className="text-[#94A3B8] dark:text-[#94A3B8] text-sm font-medium"> / {formatCurrency(totalReservaObjetivo)}</span>
               </div>
            </div>
-           <div className="p-6 bg-[#F8FAFC] dark:bg-[#020817]/40 rounded-b-[24px]">
+           <div className="p-6 bg-[#F8FAFC] dark:bg-transparent rounded-b-[24px]">
               {reservas.length === 0 ? (
                   <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-8">
                     Nenhum cofre de emergência criado ainda.
@@ -707,7 +708,7 @@ export function InvestimentosCofres({ activeProfileId }: InvestimentosCofresProp
                  <span className="text-[#94A3B8] dark:text-[#94A3B8] text-sm font-medium"> / {formatCurrency(totalMetaObjetivo)}</span>
               </div>
            </div>
-           <div className="p-6 bg-[#F8FAFC] dark:bg-[#020817]/40 rounded-b-[24px]">
+           <div className="p-6 bg-[#F8FAFC] dark:bg-transparent rounded-b-[24px]">
               {metas.length === 0 ? (
                   <div className="text-center text-[#94A3B8] dark:text-[#94A3B8] font-bold py-8">
                     Nenhuma meta detalhada ainda.

@@ -423,8 +423,8 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-[#0F172A] dark:text-white tracking-tight">
-            Meus Cartões
+          <h2 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
+            <CreditCard size={28} className="text-[#3B82F6]" /> Meus Cartões
           </h2>
           <p className="text-[#64748B] dark:text-[#94A3B8] mt-1">
             Gerencie seus cartões.

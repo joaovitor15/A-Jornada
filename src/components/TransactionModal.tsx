@@ -531,7 +531,7 @@ export function TransactionModal({
                   }}
                   className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_12px_10px_34px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
                 >
-                  <option value="dinheiro">{isBusiness ? 'Conta' : 'Dinheiro'}</option>
+                  <option value="dinheiro">Conta</option>
                   {cards.map((c) => (
                     <option key={c.id} value={c.id}>
                       {c.nome}

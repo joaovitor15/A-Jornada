@@ -27,31 +27,37 @@ export default defineConfig(({mode}) => {
           scope: '/',
           icons: [
             {
-              src: 'icon-192.png',
+              src: '/icon-192.png',
               sizes: '192x192',
               type: 'image/png',
             },
             {
-              src: 'icon-512.png',
+              src: '/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
             },
             {
-              src: 'icon-512.png',
+              src: '/icon-512.png',
               sizes: '512x512',
               type: 'image/png',
               purpose: 'maskable',
+            },
+            {
+              src: '/logo-app-monochrome.svg',
+              sizes: '192x192 512x512',
+              type: 'image/svg+xml',
+              purpose: 'monochrome',
             }
           ],
           screenshots: [
             {
-              src: 'screenshot-desktop.png',
+              src: '/screenshot-desktop.png',
               sizes: '1920x1080',
               type: 'image/png',
               form_factor: 'wide',
             },
             {
-              src: 'screenshot-mobile.png',
+              src: '/screenshot-mobile.png',
               sizes: '1080x1920',
               type: 'image/png',
             }

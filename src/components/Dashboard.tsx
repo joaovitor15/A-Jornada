@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard, LayoutDashboard } from 'lucide-react';
 import { TransactionModal } from './TransactionModal';
 import { supabase } from '../supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardFaturaDashboard } from './CardFaturaDashboard';
-import { CardProximasContas } from './CardProximasContas';
-import { CardLancamentosRapidos } from './CardLancamentosRapidos';
+import { CardProvisoesDashboard } from './CardProvisoesDashboard';
 
 interface DashboardProps {
   activeProfileName: string;
   activeProfileId: string;
   activeProfileType?: string;
+  setActivePage?: (page: any) => void;
 }
 
-export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileType }: DashboardProps) => {
+export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileType, setActivePage }: DashboardProps) => {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   
@@ -212,16 +212,6 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   const launchDate = new Date(launchDateStr);
                   startYear = launchDate.getFullYear();
                   startMonth = launchDate.getMonth();
-
-                  const shiftDay = activeProfileType === 'empresa' && rec.dia_emissao ? Number(rec.dia_emissao) : (rec.dia_vencimento ? Number(rec.dia_vencimento) : 1);
-                  const launchDay = launchDate.getDate();
-                  if (launchDay > shiftDay) {
-                      startMonth += 1;
-                      if (startMonth > 11) {
-                          startMonth = 0;
-                          startYear += 1;
-                      }
-                  }
               }
 
               const activeYear = launchDateStr ? new Date(launchDateStr).getFullYear() : startYear;
@@ -310,6 +300,20 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
               if (!shouldRender) return;
 
+              const isIgnored = (rec.exclusoes_pontuais || []).includes(`${anoSelecionado}_${mesSelecionado - 1}`);
+              if (isIgnored) return;
+
+              let valorPrevisto = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+              if (rec.valor === null || rec.valor <= 0) {
+                const realizadosAnteriores = (antData || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                if (realizadosAnteriores.length > 0) {
+                  const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+                  valorPrevisto = soma / realizadosAnteriores.length;
+                } else {
+                  valorPrevisto = Math.abs(Number(rec.valor)) || 0;
+                }
+              }
+
               if (rec.tipo === 'despesa') {
                   // Compare with existing dspsArr
                   const matched = dspsArr.find(t => {
@@ -347,14 +351,14 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
                   if (!matched) {
                       if (recCatName.toLowerCase() !== 'investimentos') {
-                          sumDspsPrevRecorrente += Number(rec.valor) || 0;
+                          sumDspsPrevRecorrente += valorPrevisto;
                       }
                       const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
                           descricao: rec.nome,
-                          valor: Number(rec.valor) || 0,
+                          valor: valorPrevisto,
                           data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
                           payment_data: calculatePaymentData(rec, targetDay),
                           tags: rec.tags,
@@ -399,13 +403,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   });
 
                   if (!matched) {
-                      sumRecsPrevRecorrente += Number(rec.valor) || 0;
+                      sumRecsPrevRecorrente += valorPrevisto;
                       const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
                       combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
                           descricao: rec.nome,
-                          valor: Number(rec.valor) || 0,
+                          valor: valorPrevisto,
                           data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
                           payment_data: calculatePaymentData(rec, targetDay),
                           tags: rec.tags,
@@ -646,22 +650,17 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
   return (
     <div className="p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[24px] bg-[#F8FAFC] dark:bg-[#0F172A] min-h-screen">
       {/* 1. CABEÇALHO DA PÁGINA */}
-      <div className="flex flex-col md:flex-row items-center md:justify-center gap-[12px] md:relative mb-[24px]">
-        
-        {/* Nova Transação - mobile: order 1, desktop: absolute right */}
-        <div className="order-1 md:order-none md:absolute md:right-0 w-full md:w-auto">
-          <button 
-            onClick={() => setIsTransactionModalOpen(true)}
-            className="w-full md:w-auto flex justify-center items-center gap-[6px] rounded-[100px] px-[22px] py-[10px] text-white font-[700] text-[14px] shadow-[0_4px_14px_rgba(37,99,235,0.35)] hover:-translate-y-[1px] transition-transform cursor-pointer"
-            style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)' }}
-          >
-            <Plus size={15} />
-            Nova Transação
-          </button>
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-[24px]">
+        {/* Título */}
+        <div className="flex flex-col gap-3 w-full md:w-auto">
+          <h2 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
+            <LayoutDashboard size={28} className="text-[#3B82F6]" />
+            Dashboard
+          </h2>
         </div>
 
         {/* LADO CENTRO - Filtros de período - mobile: order 2, desktop: center */}
-        <div className="order-2 md:order-none flex flex-col md:flex-row gap-[12px] w-full md:w-auto">
+        <div className="flex flex-col md:flex-row gap-[12px] w-full md:w-auto flex-1 justify-center shrink-0">
           {/* Ano - mobile: order 1, desktop: order 2 */}
           <div className="order-1 md:order-2 flex justify-between md:justify-center items-center gap-[10px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[16px] py-[8px]">
             <button onClick={() => setAnoSelecionado(prev => prev - 1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer">
@@ -676,7 +675,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
           </div>
 
           {/* Dropdown de Mês - mobile: order 2, desktop: order 1 */}
-          <div className="relative order-2 md:order-1 w-full md:w-auto" ref={dropdownRef}>
+          <div className="relative order-2 md:order-1 w-full md:w-auto flex-shrink-0" ref={dropdownRef}>
             <button 
               onClick={() => setDropdownMesAberto(!dropdownMesAberto)}
               className="w-full md:w-auto flex justify-between md:justify-center items-center gap-[8px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[20px] py-[8px] text-[14px] font-[600] text-[#0F172A] dark:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#334155] transition-colors cursor-pointer"
@@ -720,6 +719,18 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               )}
             </AnimatePresence>
           </div>
+        </div>
+
+        {/* Nova Transação */}
+        <div className="w-full md:w-auto">
+          <button 
+            onClick={() => setIsTransactionModalOpen(true)}
+            className="w-full md:w-auto flex justify-center items-center gap-[6px] rounded-[100px] px-[22px] py-[10px] text-white font-[700] text-[14px] shadow-[0_4px_14px_rgba(37,99,235,0.35)] hover:-translate-y-[1px] transition-transform cursor-pointer"
+            style={{ background: 'linear-gradient(135deg, #2563EB, #1D4ED8)' }}
+          >
+            <Plus size={15} />
+            Nova Transação
+          </button>
         </div>
       </div>
 
@@ -848,10 +859,9 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-        <CardFaturaDashboard activeProfileId={activeProfileId} />
-        <CardProximasContas activeProfileId={activeProfileId} ano={anoSelecionado} mes={mesSelecionado} contas={pendingProvisions} isLoading={isCardsLoading} onUpdate={() => setRefreshTrigger(prev => prev + 1)} />
-        <CardLancamentosRapidos activeProfileId={activeProfileId} contas={lancamentosRapidos} isLoading={isCardsLoading} onUpdate={() => setRefreshTrigger(prev => prev + 1)} />
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 items-stretch pt-2">
+        <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} />
+        <CardProvisoesDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} refreshTrigger={refreshTrigger} />
       </div>
 
       {/* 3. GRÁFICO ANUAL */}

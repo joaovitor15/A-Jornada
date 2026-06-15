@@ -4,12 +4,13 @@ import {
   Calendar, Check, Edit, Trash2, CreditCard, Tag as TagIcon, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Sparkles, 
   RefreshCw, AlertCircle, Plus, ChevronDown, CheckCircle2, RotateCcw,
-  Play, Pause, Info, Wallet, Pencil, Search, XCircle
+  Play, Pause, Info, Wallet, Pencil, Search, XCircle, Landmark, Library, Tag
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RecurringModal } from './RecurringModal';
 import { useCategories } from '../hooks/useCategories';
 import { useProfiles } from '../hooks/useProfiles';
+import { ICONS } from '../pages/Categories';
 
 interface RecorrentesPageProps {
   activeProfileId?: string;
@@ -28,10 +29,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const [dropdownMesAberto, setDropdownMesAberto] = useState(false);
   const anoAtual = selectedDate.getFullYear();
   const mesAtual = selectedDate.getMonth() + 1;
+  const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   // Filters
   const [busca, setBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<'pendentes' | 'lancadas'>('pendentes');
+  const [filtroNatureza, setFiltroNatureza] = useState<'despesa' | 'receita'>('despesa');
 
   // Core Data States
   const [loading, setLoading] = useState(true);
@@ -55,6 +58,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const [efetivarFormaPagamento, setEfetivarFormaPagamento] = useState('conta_corrente');
   const [efetivarCartaoId, setEfetivarCartaoId] = useState<string | null>(null);
   const [efetivarParcelas, setEfetivarParcelas] = useState(1);
+  const [efetivarMostrarOpcoes, setEfetivarMostrarOpcoes] = useState(false);
   const [efetivarData, setEfetivarData] = useState('');
 
 
@@ -95,16 +99,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   } | null>(null);
   const [reactivating, setReactivating] = useState(false);
 
-  // Exclusoes/Ignorados de provisoes por mes especifico
-  const [ignoredProvisoes, setIgnoredProvisoes] = useState<string[]>(() => {
-    try {
-      const stored = localStorage.getItem('provisoes_ignoradas');
-      return stored ? JSON.parse(stored) : [];
-    } catch (e) {
-      return [];
-    }
-  });
-
   // Custom Modal for individual provision exclusion
   const [ignoreProvisaoModal, setIgnoreProvisaoModal] = useState<{ isOpen: boolean; provisao: any } | null>(null);
 
@@ -119,17 +113,48 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     const p = ignoreProvisaoModal.provisao;
     const monthIndex = selectedDate.getMonth();
     const year = selectedDate.getFullYear();
-    const key = `${p.id}_${year}_${monthIndex}`;
+    const excludeTag = `${year}_${monthIndex}`;
+
+    // Update locally first for immediate UI response
+    const pIndex = provisoesRaw.findIndex(r => r.id === p.id);
+    if (pIndex !== -1) {
+      const updatedProvisoes = [...provisoesRaw];
+      const currentExclusoes = updatedProvisoes[pIndex].exclusoes_pontuais || [];
+      updatedProvisoes[pIndex] = { ...updatedProvisoes[pIndex], exclusoes_pontuais: [...currentExclusoes, excludeTag] };
+      setProvisoesRaw(updatedProvisoes);
+    }
+    setIgnoreProvisaoModal(null);
 
     if (p.isPago && p.realizationId) {
       await supabase.from('transacoes').delete().eq('id', p.realizationId);
     }
 
-    const newIgnored = [...ignoredProvisoes, key];
-    setIgnoredProvisoes(newIgnored);
-    localStorage.setItem('provisoes_ignoradas', JSON.stringify(newIgnored));
+    const currentExclusoes = p.exclusoes_pontuais || [];
+    if (!currentExclusoes.includes(excludeTag)) {
+      const newExclusoes = [...currentExclusoes, excludeTag];
+      await supabase.from('transacoes_recorrentes').update({ exclusoes_pontuais: newExclusoes }).eq('id', p.id);
+    }
     
-    setIgnoreProvisaoModal(null);
+    triggerRefresh();
+  };
+
+  const handleUndoIgnoreProvisao = async (p: any) => {
+    const monthIndex = selectedDate.getMonth();
+    const year = selectedDate.getFullYear();
+    const excludeTag = `${year}_${monthIndex}`;
+    
+    const pIndex = provisoesRaw.findIndex(r => r.id === p.id);
+    if (pIndex !== -1) {
+      const updatedProvisoes = [...provisoesRaw];
+      const currentExclusoes = updatedProvisoes[pIndex].exclusoes_pontuais || [];
+      updatedProvisoes[pIndex] = { ...updatedProvisoes[pIndex], exclusoes_pontuais: currentExclusoes.filter((t: string) => t !== excludeTag) };
+      setProvisoesRaw(updatedProvisoes);
+    }
+
+    const currentExclusoes = p.exclusoes_pontuais || [];
+    const newExclusoes = currentExclusoes.filter((t: string) => t !== excludeTag);
+    await supabase.from('transacoes_recorrentes').update({ exclusoes_pontuais: newExclusoes }).eq('id', p.id);
+    
     triggerRefresh();
   };
 
@@ -182,8 +207,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       // 2. Fetch real transactions of the selected year
       const startYear = selectedDate.getFullYear();
       
-      const startStr = `${startYear}-01-01`;
-      const endStr = `${startYear}-12-31`;
+      const startStr = `${startYear - 1}-12-01`;
+      const endStr = `${startYear + 1}-01-31`;
 
       const { data: realTransDocs, error: transError } = await supabase
         .from('transacoes')
@@ -326,7 +351,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   };
 
   // Helper helper to locate a realization transaction for any recurrent model (by FK or robust fallback details)
-  const findRealizationForProvision = (rec: any, transactions: any[], year: number, month: number) => {
+  const findRealizationForProvision = (rec: any, transactions: any[], year: number, month: number, currentParcela: number) => {
     const monthStr = String(month + 1).padStart(2, '0');
     const refTag = `(Ref: ${monthStr}/${year})`;
 
@@ -334,6 +359,11 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       // Prioritize explicit competence reference (if paid early/late in a different month)
       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
         return true;
+      }
+      
+      // If it has A reference tag but it's NOT the current target's tag, it belongs to another month.
+      if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+        return false;
       }
 
       const inTargetMonth = (() => {
@@ -346,6 +376,13 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       // Primary strict FK match within the physical target month
       if (t.recorrente_id === rec.id) {
+        // Strict match of parcel parity to allow independent tracks (overlapping) when properly launched.
+        // For finite provisions, currentParcela increments per month limit.
+        // For infinite provisions, currentParcela is ALWAYS 1, meaning secondary parcels of old tracks 
+        // DO NOT satisfy this month's core demand.
+        if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+          return false;
+        }
         return true;
       }
       
@@ -361,7 +398,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       if (nameMatch && tipoMatch) {
         if (rec.valor !== null && rec.valor !== 0) {
-          const diff = Math.abs(t.valor - Number(rec.valor));
+          const diff = Math.abs(t.valor - Math.abs(Number(rec.valor)));
           if (diff > 0.01) return false;
         }
 
@@ -398,17 +435,17 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         startYear = launchDate.getFullYear();
         startMonth = launchDate.getMonth();
         
-        // If the recurring transaction is launched AFTER its due day for the month, 
-        // the first occurrence will mathematically jump to the NEXT month.
-        const shiftDay = isBusiness && rec.dia_emissao ? Number(rec.dia_emissao) : (rec.dia_vencimento ? Number(rec.dia_vencimento) : 1);
-        const launchDay = launchDate.getDate();
-        if (launchDay > shiftDay) {
-          startMonth += 1;
-          if (startMonth > 11) {
-            startMonth = 0;
-            startYear += 1;
-          }
-        }
+        // We no longer mathematically jump to the NEXT month if created after its due day.
+        // It's better to show it in the current month so the user can see it right after creation.
+        // const shiftDay = isBusiness && rec.dia_emissao ? Number(rec.dia_emissao) : (rec.dia_vencimento ? Number(rec.dia_vencimento) : 1);
+        // const launchDay = launchDate.getDate();
+        // if (launchDay > shiftDay) {
+        //   startMonth += 1;
+        //   if (startMonth > 11) {
+        //     startMonth = 0;
+        //     startYear += 1;
+        //   }
+        // }
       }
 
       // 2. Active Year bound
@@ -425,7 +462,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     // Filter validation logic
     let parcelaTexto = '';
     let currentParcela = 1;
-
+    
     // 1. Parcel options
     if (rec.num_parcelas && rec.num_parcelas > 0) {
       if (monthDiff < 0 || monthDiff >= rec.num_parcelas) {
@@ -436,43 +473,43 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       }
     }
 
+    let effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
+    let effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
+
     // 2. Annual options
+    let isOffMonth = false;
     if (rec.frequencia === 'anual') {
-      const annualTarget = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+      const annualTarget = rec.mes_vencimento ? (rec.mes_vencimento - 1) : effStartMonth;
       if (selectedMonth !== annualTarget) {
-        shouldRender = false;
+        if (dashboardPeriodo === 'anual') {
+          shouldRender = false;
+        } else {
+          isOffMonth = true;
+        }
       }
     }
 
     // Check if there is an authorization trigger / realization for this month
-    const realization = findRealizationForProvision(rec, realTransactions, selectedYear, selectedMonth);
+    const realization = findRealizationForProvision(rec, realTransactions, selectedYear, selectedMonth, currentParcela);
 
-    const isPago = !!realization;
+    const fazerProjecao = rec.frequencia === 'diaria' ? rec.dia_vencimento === 1 : true;
+    
+    let isPago = !!realization;
+    // Para diárias sem projeção, o card atua como template e nunca fica bloqueado como "Já pago neste mês"
+    if (rec.frequencia === 'diaria' && !fazerProjecao) {
+      isPago = false;
+    }
+
     if (isPago) shouldRender = true; // Always show if there is a physical transaction
 
     // 3. Past boundary and Year boundary
     
     // Explicit fail-safe: Ensure no projection exists before the actual creation bounding month
-    let effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
-    let effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
-    
     const projectedTimeId = selectedYear * 12 + selectedMonth;
     const creationTimeId = effStartYear * 12 + effStartMonth;
 
     if (!isPago && projectedTimeId < creationTimeId) {
       shouldRender = false;
-    }
-
-    // "ao mudar o ano não deveria ter nada é até dezembro e pronto"
-    // However, if we correctly bumped it right across the year boundary, activeYear will just be the creation year.
-    // If they launch in late Dec 2026, it jumps to Jan 2027. activeYear = 2026. selectedYear = 2027.
-    // So we must check activeYear carefully. If target year is simply DIFFERENT from activeYear and it wasn't a valid projection bound, skip.
-    else if (!isPago && projectedTimeId >= creationTimeId && selectedYear > effStartYear) {
-      // If we crossed into a new year beyond effStartYear, and it wasn't an explicit parcel crossing, hide it based on user constraint: "ao mudar o ano não deveria ter nada"
-      // Skipped for 'empresa' because they explicitly requested infinite recurrence preservation due to early invoice payments.
-      if (!rec.num_parcelas && !isBusiness) {
-         shouldRender = false;
-      }
     }
 
     // 4. Inactive/canceled check (ativa === false)
@@ -481,18 +518,29 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     }
 
     // 5. Ignored/excluded specific occurrence check
-    const isIgnored = ignoredProvisoes.includes(`${rec.id}_${selectedYear}_${selectedMonth}`);
-    if (isIgnored && !isPago) {
-      shouldRender = false;
+    const isIgnored = (rec.exclusoes_pontuais || []).includes(`${selectedYear}_${selectedMonth}`);
+
+    let valorPrevisto = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+    
+    // Estimativa técnica dinâmica para valores variáveis
+    if ((rec.valor === null || rec.valor <= 0) && fazerProjecao) {
+      const realizadosAnteriores = realTransactions.filter(t => t.recorrente_id === rec.id);
+      if (realizadosAnteriores.length > 0) {
+        const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+        valorPrevisto = soma / realizadosAnteriores.length;
+      } else {
+        valorPrevisto = Math.abs(Number(rec.valor)) || 0;
+      }
     }
 
-    const valorPrevisto = rec.valor !== null ? Number(rec.valor) : 0;
     const valorEfetivado = isPago ? Number(realization.valor) : 0;
 
     return {
       ...rec,
       shouldRender,
       isPago,
+      isIgnored,
+      isOffMonth,
       parcelaTexto,
       currentParcela,
       realizationId: realization?.id || null,
@@ -510,7 +558,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   // Dashboard Stats logic (can expand to entire year if "anual")
   let targetProvisoesToComputeStats = processedProvisoes;
 
-  if (activeTab === 'dashboard' && dashboardPeriodo === 'anual') {
+  if (dashboardPeriodo === 'anual') {
      targetProvisoesToComputeStats = [];
      for (let m = 0; m < 12; m++) {
         targetProvisoesToComputeStats.push(...getProcessedProvisoesForDate(selectedDate.getFullYear(), m));
@@ -519,34 +567,40 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   // Statistics calculation
   const statDespesasPrevistas = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'despesa' && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => p.tipo === 'despesa' && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
     .reduce((sum, p) => sum + p.valorPrevisto, 0);
 
   const statDespesasPagas = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'despesa' && p.isPago && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => p.tipo === 'despesa' && p.isPago && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
     .reduce((sum, p) => sum + p.valorEfetivado, 0);
 
   const statDespesasPendentes = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'despesa' && !p.isPago && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => p.tipo === 'despesa' && !p.isPago && !p.isIgnored && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
     .reduce((sum, p) => sum + p.valorPrevisto, 0);
 
   const statReceitasPrevistas = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'receita' && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => p.tipo === 'receita' && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .reduce((sum, p) => sum + p.valorPrevisto, 0);
+
+  const statReceitasPendentes = targetProvisoesToComputeStats
+    .filter(p => p.tipo === 'receita' && !p.isPago && !p.isIgnored && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
     .reduce((sum, p) => sum + p.valorPrevisto, 0);
 
   const statReceitasRecebidas = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'receita' && p.isPago && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => p.tipo === 'receita' && p.isPago && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
     .reduce((sum, p) => sum + p.valorEfetivado, 0);
 
   // Accomplished progress
-  const despesasCount = targetProvisoesToComputeStats.filter(p => p.tipo === 'despesa' && p.categories?.nome?.toLowerCase() !== 'investimentos').length;
-  const despesasPagasCount = targetProvisoesToComputeStats.filter(p => p.tipo === 'despesa' && p.isPago && p.categories?.nome?.toLowerCase() !== 'investimentos').length;
+  const despesasCount = targetProvisoesToComputeStats.filter(p => p.tipo === 'despesa' && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos').length;
+  const despesasPagasCount = targetProvisoesToComputeStats.filter(p => p.tipo === 'despesa' && p.isPago && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos').length;
 
   // Filter dynamic list based on state
-  const listagemFiltrada = processedProvisoes.filter(p => {
+  let listagemFiltrada = targetProvisoesToComputeStats.filter(p => {
     // Hide data_variavel from lancamento tab only in business profile
     const isDataVariavel = !p.dia_vencimento && !p.dia_emissao && !p.lancamento_rapido && isBusiness;
     if (isDataVariavel) return false;
+
+    if (p.tipo !== filtroNatureza) return false;
 
     // 1. Busca
     if (busca) {
@@ -556,15 +610,40 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       if (!nomeMatch && !categoryMatch) return false;
     }
 
-    // 2. Situação
-    if (filtroTipo === 'pendentes' && p.isPago) return false;
-    if (filtroTipo === 'lancadas' && !p.isPago) return false;
-
     return true;
   });
 
+  // Remove duplicates if viewing anual, so we don't display 12 cards the same
+  if (dashboardPeriodo === 'anual') {
+    const seenIds = new Set();
+    listagemFiltrada = listagemFiltrada.filter(item => {
+      if (seenIds.has(item.id)) return false;
+      seenIds.add(item.id);
+      return true;
+    });
+  }
+
+  // Sort: Pending items first, then by Day. Paid or Ignored goes to the bottom.
+  listagemFiltrada.sort((a, b) => {
+    const getStatusRank = (item: any) => {
+      if (item.isPago) return 3;
+      if (item.isIgnored) return 2;
+      if (item.isOffMonth) return 2;
+      return 1; // Pending
+    };
+
+    const rankA = getStatusRank(a);
+    const rankB = getStatusRank(b);
+
+    if (rankA !== rankB) return rankA - rankB;
+
+    const diaA = a.dia_vencimento || a.dia_emissao || 999;
+    const diaB = b.dia_vencimento || b.dia_emissao || 999;
+    return diaA - diaB;
+  });
+
   const formatarDataCabecalhoRecorrente = (dataStr: string) => {
-    if (dataStr === 'Sem Data') return 'AGENDAMENTOS GERAIS DO MÊS';
+    if (dataStr === 'Sem Data') return dashboardPeriodo === 'anual' ? 'AGENDAMENTOS GERAIS DO ANO' : 'AGENDAMENTOS GERAIS DO MÊS';
     const parts = dataStr.split('-');
     if (parts.length !== 3) return dataStr;
     const [ano, mes, dia] = parts;
@@ -633,7 +712,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       parcelaNum: p.currentParcela
     });
 
-    const valorCentavos = p.valorPrevisto ? Math.round(p.valorPrevisto * 100).toString() : '0';
+    setEfetivarMostrarOpcoes(false);
+
+    const valorCentavos = (p.valor === null || p.valor <= 0) ? '' : (p.valorPrevisto ? Math.round(p.valorPrevisto * 100).toString() : '');
     setEfetivarValorStr(valorCentavos);
     
     // Check if there are credit cards registered
@@ -696,7 +777,11 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         
       const isBusiness = activeProfileId && profiles.find(p => p.id === activeProfileId)?.tipo === 'empresa';
       
-      const descExibida = baseDesc;
+      let descExibida = baseDesc;
+      
+      if (isBusiness) {
+        descExibida = `${baseDesc} (Ref: ${monthStr}/${yearStr})`;
+      }
 
       const targetDate = isBusiness ? efetivarData : (() => {
         const year = selectedDate.getFullYear();
@@ -711,22 +796,17 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         return `${year}-${String(month + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
       })();
 
-      const formaPgto = provisao.forma_pagamento === 'cartao_credito' ? 'cartao_credito' : 'conta_corrente';
-      const cardId = formaPgto === 'cartao_credito' ? provisao.card_id : null;
-
-      const novaTransacao = {
-        profile_id: activeProfileId,
-        descricao: descExibida,
-        valor: valorNum,
-        tipo: provisao.tipo,
-        status: 'pago',
-        forma_pagamento: formaPgto,
-        card_id: cardId,
-        data: targetDate,
-        recorrente_id: provisao.id,
-        num_parcelas: parcelaNum || null,
-        tag_id: provisao.tag_id
-      };
+      const formaPgto = efetivarFormaPagamento;
+      const cardId = formaPgto === 'cartao_credito' ? efetivarCartaoId : null;
+      let usedParcelas = 1;
+      
+      // Se não é a primeira vez que algo é lançado para o ano e o model não tinha parcelas e o user quer parcelar AGORA...
+      if (formaPgto === 'cartao_credito' && efetivarParcelas > 1) {
+        usedParcelas = efetivarParcelas;
+      } else if (formaPgto === 'cartao_credito' && provisao.num_parcelas > 1) {
+        // Fallback for when they just click 'launch' and it was a registered installment plan in the provision
+        usedParcelas = provisao.num_parcelas;
+      }
 
       // Check if there is already an existing transaction linked to this recurrent model in the target month (to update instead of duplicating)
       const targetYear = selectedDate.getFullYear();
@@ -735,33 +815,134 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       const maxDay = new Date(targetYear, targetMonth + 1, 0).getDate();
       const monthEnd = `${targetYear}-${String(targetMonth + 1).padStart(2, '0')}-${String(maxDay).padStart(2, '0')}`;
 
-      const { data: existingTrans, error: checkError } = await supabase
+      let checkQuery = supabase
         .from('transacoes')
-        .select('id')
+        .select('id, data, num_parcelas, descricao')
         .eq('profile_id', activeProfileId)
-        .eq('recorrente_id', provisao.id)
-        .gte('data', monthStart)
-        .lte('data', monthEnd)
-        .limit(1)
-        .maybeSingle();
+        .eq('recorrente_id', provisao.id);
+
+      if (isBusiness) {
+        // Broaden search to find the explicit reference tag across boundary months
+        const targetYearPrev = targetMonth === 0 ? targetYear - 1 : targetYear;
+        const targetMonthPrev = targetMonth === 0 ? 12 : targetMonth;
+        const targetYearNext = targetMonth === 11 ? targetYear + 1 : targetYear;
+        const targetMonthNext = targetMonth === 11 ? 1 : targetMonth + 2;
+        
+        const broadStart = `${targetYearPrev}-${String(targetMonthPrev).padStart(2, '0')}-01`;
+        const nextMaxDay = new Date(targetYearNext, targetMonthNext, 0).getDate();
+        const broadEnd = `${targetYearNext}-${String(targetMonthNext).padStart(2, '0')}-${String(nextMaxDay).padStart(2, '0')}`;
+        
+        checkQuery = checkQuery.gte('data', broadStart).lte('data', broadEnd);
+      } else {
+        checkQuery = checkQuery.gte('data', monthStart).lte('data', monthEnd);
+      }
+
+      const { data: existingTransArr, error: checkError } = await checkQuery;
 
       if (checkError) throw checkError;
 
-      if (existingTrans) {
-        // Update the existing transaction instead of duplicating!
-        const { error: updateTransError } = await supabase
-          .from('transacoes')
-          .update(novaTransacao)
-          .eq('id', existingTrans.id);
-
-        if (updateTransError) throw updateTransError;
+      const pNumToMatch = parcelaNum || 1;
+      let existingTrans = null;
+      
+      if (isBusiness) {
+         const refTag = `(Ref: ${String(targetMonth + 1).padStart(2, '0')}/${targetYear})`;
+         existingTrans = existingTransArr?.find(t => 
+           (t.descricao && t.descricao.includes(refTag)) &&
+           (t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1))
+         ) || existingTransArr?.find(t => 
+           // fallback to strict month boundary if refTag is somehow missing
+           (t.data && t.data >= monthStart && t.data <= monthEnd) &&
+           (t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1))
+         ) || null;
       } else {
-        // Insert a new transaction
-        const { error: insertTransError } = await supabase
-          .from('transacoes')
-          .insert([novaTransacao]);
+         existingTrans = existingTransArr?.find(t => t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1)) || null;
+      }
 
-        if (insertTransError) throw insertTransError;
+      if (formaPgto === 'cartao_credito' && usedParcelas > 1) {
+        // Handle full auto-launch for credit card installments to reflect completely in the user's extract
+        const isFirstParcel = parcelaNum === 1;
+        const totalParcelas = usedParcelas;
+        
+        let transacoesToInsert = [];
+        
+        // We always start mapping from the first parcel to the end, relying on targetDate as base if it's the first
+        // If it's not the first, we just map the specific one they are trying to pay.
+        if (isFirstParcel && !existingTrans) {
+            const tempDate = new Date(`${targetDate}T12:00:00Z`);
+            for (let i = 0; i < totalParcelas; i++) {
+                const dt = new Date(tempDate);
+                dt.setMonth(dt.getMonth() + i);
+                const dataFormatada = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+                
+                transacoesToInsert.push({
+                   profile_id: activeProfileId,
+                   tipo: provisao.tipo,
+                   valor: valorNum / totalParcelas,
+                   descricao: `${provisao.nome} (${i + 1}/${totalParcelas})`,
+                   data: dataFormatada,
+                   status: 'pago',
+                   recorrente_id: provisao.id,
+                   tag_id: provisao.tag_id,
+                   forma_pagamento: formaPgto,
+                   card_id: cardId,
+                   num_parcelas: i + 1
+                });
+            }
+            
+            const { error: insertAllError } = await supabase.from('transacoes').insert(transacoesToInsert);
+            if (insertAllError) throw insertAllError;
+        } else {
+            // Regular update or insert for specific parcel if > 1 or already exists
+            const novaTransacao = {
+              profile_id: activeProfileId,
+              descricao: descExibida,
+              valor: valorNum / totalParcelas,
+              tipo: provisao.tipo,
+              status: 'pago',
+              forma_pagamento: formaPgto,
+              card_id: cardId,
+              data: targetDate,
+              recorrente_id: provisao.id,
+              num_parcelas: parcelaNum || null,
+              tag_id: provisao.tag_id
+            };
+            if (existingTrans) {
+              const { error } = await supabase.from('transacoes').update(novaTransacao).eq('id', existingTrans.id);
+              if (error) throw error;
+            } else {
+              const { error } = await supabase.from('transacoes').insert([novaTransacao]);
+              if (error) throw error;
+            }
+        }
+      } else {
+        const novaTransacao = {
+          profile_id: activeProfileId,
+          descricao: descExibida,
+          valor: valorNum,
+          tipo: provisao.tipo,
+          status: 'pago',
+          forma_pagamento: formaPgto,
+          card_id: cardId,
+          data: targetDate,
+          recorrente_id: provisao.id,
+          num_parcelas: parcelaNum || null,
+          tag_id: provisao.tag_id
+        };
+
+        if (existingTrans) {
+          const { error: updateTransError } = await supabase
+            .from('transacoes')
+            .update(novaTransacao)
+            .eq('id', existingTrans.id);
+
+          if (updateTransError) throw updateTransError;
+        } else {
+          const { error: insertTransError } = await supabase
+            .from('transacoes')
+            .insert([novaTransacao]);
+
+          if (insertTransError) throw insertTransError;
+        }
       }
 
       // Do NOT update ultima_lancada on the parent model here. 
@@ -880,75 +1061,114 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         <div className="flex flex-col gap-3 w-full md:w-auto">
           <h2 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
             <Calendar size={28} className="text-[#3B82F6]" />
-            Lançamentos Futuros
+            Provisão
           </h2>
+        </div>
 
-          {/* TABS DE SELEÇÃO: LANÇAMENTO | CONTAS | DASHBOARD */}
-          <div className="flex gap-4 sm:gap-6 border-b-0 pb-1">
-            <button
-              onClick={() => setActiveTab('lancamento')}
-              className={`pb-1 text-xs font-black tracking-wider transition-all relative cursor-pointer ${
-                activeTab === 'lancamento'
-                  ? 'text-[#3B82F6] dark:text-[#60A5FA]'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 font-bold'
-              }`}
-            >
-              LANÇAMENTO
-              {activeTab === 'lancamento' && (
-                <motion.div 
-                  layoutId="activeRecurringTabLine"
-                  className="absolute bottom-[-4px] left-0 right-0 h-[2.5px] bg-[#3B82F6] rounded-full" 
-                />
+        {/* LADO CENTRO - DATE & PERIOD SELECTOR */}
+        <div className="flex flex-col gap-[12px] w-full md:w-auto flex-1 justify-center items-center shrink-0">
+          <div className="flex flex-col md:flex-row items-center gap-[12px] w-full md:w-auto justify-center">
+            
+            <div className="order-2 md:order-1 flex items-center justify-center w-full md:w-auto">
+              {/* Mês Dropdown */}
+              {dashboardPeriodo === 'mensal' && (
+                <div className="relative w-full md:w-auto flex-shrink-0">
+                    <button 
+                      onClick={() => setDropdownMesAberto(!dropdownMesAberto)}
+                      className="w-full md:w-auto flex justify-between md:justify-center items-center gap-[8px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[20px] py-[8px] text-[14px] font-[600] text-[#0F172A] dark:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#334155] transition-colors cursor-pointer"
+                    >
+                      {nomesMeses[mesAtual - 1]}
+                      <ChevronDown size={14} className={`text-[#64748B] dark:text-[#94A3B8] transition-transform ${dropdownMesAberto ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    <AnimatePresence>
+                      {dropdownMesAberto && (
+                        <>
+                          <div className="fixed inset-0 z-20" onClick={() => setDropdownMesAberto(false)}></div>
+                          <motion.div 
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            className="absolute left-0 right-0 md:right-auto mt-2 min-w-[200px] md:w-auto bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-[#E2E8F0] dark:border-[#334155] p-2 z-30"
+                          >
+                            <p className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Selecionar Mês</p>
+                            <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-1">
+                              {nomesMeses.map((nome, i) => {
+                                const isActive = mesAtual === i + 1;
+                                return (
+                                  <button 
+                                    key={nome}
+                                    onClick={() => {
+                                      handleMudarMes(i);
+                                      setDropdownMesAberto(false);
+                                    }}
+                                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors cursor-pointer ${
+                                      isActive 
+                                        ? 'bg-slate-100 dark:bg-slate-800 text-[#0F172A] dark:text-white font-bold' 
+                                        : 'text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                                    }`}
+                                  >
+                                    <span className="flex-1 text-left">{nome}</span>
+                                    {isActive && <div className="w-2 h-2 bg-[#2563EB] rounded-full"></div>}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </motion.div>
+                        </>
+                      )}
+                    </AnimatePresence>
+                  </div>
               )}
-            </button>
-            <button
-              onClick={() => setActiveTab('modelos')}
-              className={`pb-1 text-xs font-black tracking-wider transition-all relative cursor-pointer ${
-                activeTab === 'modelos'
-                  ? 'text-[#3B82F6] dark:text-[#60A5FA]'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 font-bold'
-              }`}
-            >
-              CONTAS
-              {activeTab === 'modelos' && (
-                <motion.div 
-                  layoutId="activeRecurringTabLine"
-                  className="absolute bottom-[-4px] left-0 right-0 h-[2.5px] bg-[#3B82F6] rounded-full" 
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('direto')}
-              className={`pb-1 text-xs font-black tracking-wider transition-all relative cursor-pointer ${
-                activeTab === 'direto'
-                  ? 'text-[#3B82F6] dark:text-[#60A5FA]'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 font-bold'
-              }`}
-            >
-              LANÇAMENTO RÁPIDO
-              {activeTab === 'direto' && (
-                <motion.div 
-                  layoutId="activeRecurringTabLine"
-                  className="absolute bottom-[-4px] left-0 right-0 h-[2.5px] bg-[#3B82F6] rounded-full" 
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setActiveTab('dashboard')}
-              className={`pb-1 text-xs font-black tracking-wider transition-all relative cursor-pointer ${
-                activeTab === 'dashboard'
-                  ? 'text-[#3B82F6] dark:text-[#60A5FA]'
-                  : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400 font-bold'
-              }`}
-            >
-              DASHBOARD
-              {activeTab === 'dashboard' && (
-                <motion.div 
-                  layoutId="activeRecurringTabLine"
-                  className="absolute bottom-[-4px] left-0 right-0 h-[2.5px] bg-[#3B82F6] rounded-full" 
-                />
-              )}
-            </button>
+            </div>
+
+            <div className="order-1 md:order-2 flex items-center justify-center w-full md:w-auto">
+              {/* Ano Selector */}
+              <div className="flex justify-between md:justify-center items-center gap-[10px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[16px] py-[8px] w-full md:w-auto">
+                <button 
+                  onClick={() => handleMudarAno(-1)} 
+                  className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer"
+                >
+                  <ChevronLeft size={14} />
+                </button>
+                <span className="text-[14px] font-[600] text-[#0F172A] dark:text-white min-w-[60px] text-center">
+                  {anoAtual}
+                </span>
+                <button 
+                  onClick={() => handleMudarAno(1)} 
+                  className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer"
+                >
+                  <ChevronRight size={14} />
+                </button>
+              </div>
+            </div>
+
+          </div>
+
+          <div className="flex items-center justify-center w-full md:w-auto">
+            {/* Toggle Mensal/Anual */}
+            <div className="flex items-center gap-1 bg-slate-100 dark:bg-[#1E293B] p-1 rounded-[100px] border border-slate-200 dark:border-[#334155] shrink-0 w-full sm:w-auto">
+              <button 
+                onClick={() => setDashboardPeriodo('mensal')} 
+                className={`flex-1 sm:flex-none px-[16px] py-[6px] rounded-full text-[13px] font-[700] transition-all cursor-pointer ${
+                  dashboardPeriodo === 'mensal' 
+                    ? 'bg-white dark:bg-[#334155] text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                Mensal
+              </button>
+              <button 
+                onClick={() => setDashboardPeriodo('anual')} 
+                className={`flex-1 sm:flex-none px-[16px] py-[6px] rounded-full text-[13px] font-[700] transition-all cursor-pointer ${
+                  dashboardPeriodo === 'anual' 
+                    ? 'bg-white dark:bg-[#334155] text-slate-900 dark:text-white shadow-[0_2px_8px_rgba(0,0,0,0.08)]' 
+                    : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'
+                }`}
+              >
+                Anual
+              </button>
+            </div>
           </div>
         </div>
 
@@ -1001,1059 +1221,283 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         </div>
       </div>
 
-      {/* 2. NAVEGAÇÃO TEMPORAL TABULAR DE MESES */}
-      {activeTab === 'lancamento' && (
-        <div className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[16px] p-[16px_20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          {/* MOBILE: Dropdown + Ano */}
-          <div className="flex md:hidden flex-col gap-[12px] w-full items-center justify-center">
-            {/* Ano */}
-            <div className="flex justify-between items-center gap-[10px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[16px] py-[8px] w-full">
-              <button onClick={() => handleMudarAno(-1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A]  border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] transition-colors cursor-pointer">
-                <ChevronLeft size={14} />
-              </button>
-              <span className="text-[14px] font-[600] text-[#0F172A] dark:text-white min-w-[60px] text-center">
-                {anoAtual}
-              </span>
-              <button onClick={() => handleMudarAno(1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A]  border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] transition-colors cursor-pointer">
-                <ChevronRight size={14} />
-              </button>
-            </div>
+      {/* SUMMARY DISPLAYS */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 md:mt-2">
+        <div className="bg-white dark:bg-[#1E293B] border border-emerald-500/20 shadow-[0_2px_12px_rgba(16,185,129,0.06)] p-5 rounded-3xl flex flex-col justify-center items-center h-full">
+          <span className="text-emerald-600/70 dark:text-emerald-500/70 text-[11px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1.5 w-full justify-center text-center">
+            {dashboardPeriodo === 'anual' ? `A Receber em ${anoAtual}` : `A Receber de ${nomesMeses[selectedDate.getMonth()]}`}
+          </span>
+          <span className="text-emerald-600 dark:text-emerald-400 text-2xl font-black">
+            +R$ {statReceitasPendentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+        <div className="bg-white dark:bg-[#1E293B] border border-rose-500/20 shadow-[0_2px_12px_rgba(225,29,72,0.06)] p-5 rounded-3xl flex flex-col justify-center items-center h-full">
+          <span className="text-rose-500/70 text-[11px] font-black uppercase tracking-widest mb-1.5 flex items-center gap-1.5 w-full justify-center text-center">
+            {dashboardPeriodo === 'anual' ? `A Pagar em ${anoAtual}` : `A Pagar de ${nomesMeses[selectedDate.getMonth()]}`}
+          </span>
+          <span className="text-rose-600 dark:text-rose-400 text-2xl font-black">
+            -R$ {statDespesasPendentes.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+          </span>
+        </div>
+      </div>
 
-            {/* Dropdown de Mês */}
-            <div className="relative w-full">
-              <button 
-                onClick={() => setDropdownMesAberto(!dropdownMesAberto)}
-                className="w-full flex justify-between items-center gap-[8px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] px-[20px] py-[8px] text-[14px] font-[600] text-[#0F172A] dark:text-white hover:bg-[#F8FAFC] dark:hover:bg-[#334155] dark:bg-[#0F172A]  transition-colors cursor-pointer"
-              >
-                {MESES_COMPLETOS[mesAtual - 1]}
-                <ChevronDown size={14} className={`text-[#64748B] dark:text-[#94A3B8] transition-transform ${dropdownMesAberto ? 'rotate-180' : ''}`} />
-              </button>
+      {/* NATUREZA TABS */}
+      <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl w-full md:w-max mt-4">
+        <button
+          onClick={() => setFiltroNatureza('despesa')}
+          className={`flex-1 md:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 ${filtroNatureza === 'despesa' ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          Despesas
+        </button>
+        <button
+          onClick={() => setFiltroNatureza('receita')}
+          className={`flex-1 md:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 ${filtroNatureza === 'receita' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          Receitas
+        </button>
+      </div>
 
-              <AnimatePresence>
-                {dropdownMesAberto && (
-                  <>
-                    <div className="fixed inset-0 z-20" onClick={() => setDropdownMesAberto(false)}></div>
-                    <motion.div 
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute left-0 right-0 mt-2 min-w-[200px] bg-white dark:bg-[#1E293B] rounded-2xl shadow-xl border border-[#E2E8F0] dark:border-[#334155] p-2 z-30"
-                    >
-                      <p className="px-3 py-2 text-xs font-bold text-slate-400 uppercase tracking-widest">Selecionar Mês</p>
-                      <div className="max-h-[300px] overflow-y-auto custom-scrollbar space-y-1">
-                        {MESES_COMPLETOS.map((nome, i) => {
-                          const isActive = mesAtual === i + 1;
-                          return (
-                            <button 
-                              key={nome}
-                              onClick={() => {
-                                handleMudarMes(i);
-                                setDropdownMesAberto(false);
-                              }}
-                              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-sm transition-colors cursor-pointer ${
-                                isActive 
-                                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white font-bold' 
-                                  : 'text-slate-600 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800/50'
+      {/* FREQUENCY GROUPED LIST */}
+      <div className="space-y-8 mt-8">
+        {listagemFiltrada.length === 0 ? (
+          <div className="text-center py-12 bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-800">
+            <Library size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
+            <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2">Nenhum registro encontrado</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Você ainda não tem lançamentos planejados nesta categoria.<br/>
+              Clique no botão "Planejar Conta" acima para começar.
+            </p>
+          </div>
+        ) : (
+          (['diaria', 'semanal', 'mensal', 'mensal_sem_data', 'anual', 'anual_sem_data'] as const).map(freqKey => {
+            const items = listagemFiltrada.filter(p => {
+               const freq = p.frequencia || 'mensal';
+               const isSemData = !p.dia_vencimento && !p.dia_emissao;
+               if (freqKey === 'mensal_sem_data') return freq === 'mensal' && isSemData;
+               if (freqKey === 'mensal') return freq === 'mensal' && !isSemData;
+               if (freqKey === 'anual_sem_data') return freq === 'anual' && isSemData;
+               if (freqKey === 'anual') return freq === 'anual' && !isSemData;
+               return freq === freqKey;
+            });
+            
+            if (items.length === 0) return null;
+
+            const freqLabel = {
+              diaria: 'Frequência Diária',
+              semanal: 'Frequência Semanal',
+              mensal: 'Frequência Mensal',
+              mensal_sem_data: 'Frequência Mensal, Sem dia fixo',
+              anual: 'Frequência Anual',
+              anual_sem_data: 'Frequência Anual, Sem dia fixo'
+            }[freqKey];
+
+            return (
+              <div key={freqKey} className="space-y-4">
+                <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                  <h3 className="text-lg font-black text-slate-800 dark:text-white capitalize">
+                    {freqLabel}
+                  </h3>
+                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2">
+                    {items.length} {items.length === 1 ? 'item' : 'itens'}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {items.map((item) => {
+                  const IconComp = ICONS.find(i => i.name === item.categories?.icone)?.component || Landmark;
+                  
+                  // Calcular Custo para o restante do ano (a partir do mês selecionado)
+                  let custoAnual = item.valorPrevisto;
+                  let mesesRestantes = 12 - selectedDate.getMonth();
+                  
+                  let periodoTexto = '';
+                  
+                  const fazerProjecao = item.frequencia === 'diaria' ? item.dia_vencimento === 1 : true;
+
+                  if (item.frequencia === 'mensal') {
+                    let qtd = (item.isPago || item.isIgnored) ? Math.max(0, mesesRestantes - 1) : mesesRestantes;
+                    custoAnual = item.valorPrevisto * qtd;
+                    periodoTexto = `${qtd} ${qtd === 1 ? 'MÊS' : 'MESES'}`;
+                  } else if (item.frequencia === 'diaria') {
+                    if (fazerProjecao) {
+                      let dias = Math.round((new Date(anoAtual, 11, 31).getTime() - new Date(anoAtual, selectedDate.getMonth(), 1).getTime()) / (1000 * 3600 * 24)) + 1;
+                      let qtd = (item.isPago || item.isIgnored) ? Math.max(0, dias - 1) : dias;
+                      custoAnual = item.valorPrevisto * qtd;
+                      periodoTexto = `${qtd} DIAS`;
+                    } else {
+                      custoAnual = 0;
+                      periodoTexto = '';
+                    }
+                  } else if (item.frequencia === 'semanal') {
+                    let semanas = Math.round((new Date(anoAtual, 11, 31).getTime() - new Date(anoAtual, selectedDate.getMonth(), 1).getTime()) / (1000 * 3600 * 24) / 7);
+                    let qtd = (item.isPago || item.isIgnored) ? Math.max(0, semanas - 1) : semanas;
+                    custoAnual = item.valorPrevisto * qtd;
+                    periodoTexto = `${qtd} SEM.`;
+                  } else if (item.frequencia === 'anual') {
+                    let qtd = (item.isPago || item.isIgnored) ? 0 : 1;
+                    custoAnual = item.valorPrevisto * qtd;
+                    periodoTexto = '';
+                  }
+                  
+                  return (
+                  <div 
+                    key={item.id}
+                    className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative flex flex-col"
+                  >
+                    {/* Header */}
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Calendar size={18} className="text-[#8B5CF6]" />
+                          <h4 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-widest">
+                            {item.nome}
+                          </h4>
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5 text-[10px] font-bold uppercase tracking-widest leading-none">
+                          <span className="flex items-center gap-1 text-slate-500 dark:text-slate-400 whitespace-nowrap">
+                            <TagIcon size={12} /> {item.tags?.nome || item.categories?.nome || 'SEM TAG'}
+                          </span>
+                          <span className="text-slate-300 dark:text-slate-600">•</span>
+                          {item.frequencia === 'diaria' ? (
+                            <span className="text-[#8B5CF6] dark:text-[#A78BFA] whitespace-nowrap">{item.forma_pagamento === 'cartao_credito' ? `${item.cards?.nome || 'Cartão'}${item.num_parcelas > 1 ? ` (${item.num_parcelas}x)` : ''}` : 'CONTA'}</span>
+                          ) : item.dia_vencimento ? (
+                            <span className="text-[#8B5CF6] dark:text-[#A78BFA] flex items-center gap-1 whitespace-nowrap">
+                              <Calendar size={11} className="inline shrink-0" /> {isBusiness && item.dia_emissao ? `TIRAR DIA ${item.dia_emissao} • PAGAR DIA ${item.dia_vencimento}` : `DIA ${item.dia_vencimento}`} {item.frequencia === 'anual' && item.mes_vencimento ? `DE ${nomesMeses[item.mes_vencimento - 1].toUpperCase()}` : ''}
+                              <span className="text-slate-300 dark:text-slate-600 mx-1 inline-block">•</span>
+                              <span>{item.forma_pagamento === 'cartao_credito' ? `${item.cards?.nome || 'Cartão'}${item.num_parcelas > 1 ? ` (${item.num_parcelas}x)` : ''}` : 'CONTA'}</span>
+                            </span>
+                          ) : (
+                            <span className="text-amber-500 dark:text-amber-400 flex flex-wrap items-center gap-x-2 gap-y-1">
+                              <span className="whitespace-nowrap">{item.frequencia === 'anual' && item.mes_vencimento ? nomesMeses[item.mes_vencimento - 1].toUpperCase() : 'SEM DIA FIXO'}</span>
+                              <span className="text-slate-300 dark:text-slate-600">•</span>
+                              <span className="text-[#8B5CF6] dark:text-[#A78BFA] whitespace-nowrap">{item.forma_pagamento === 'cartao_credito' ? `${item.cards?.nome || 'Cartão'}${item.num_parcelas > 1 ? ` (${item.num_parcelas}x)` : ''}` : 'CONTA'}</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2">
+                        <button 
+                          className="flex items-center justify-center text-[#3B82F6] hover:opacity-80 transition-opacity"
+                          onClick={() => {
+                            setModalType(item.tipo);
+                            setEditingRec(item);
+                            setIsModalOpen(true);
+                          }}
+                          title="Editar"
+                        >
+                          <Pencil size={18} />
+                        </button>
+                        <button 
+                          className="flex items-center justify-center text-[#EF4444] hover:opacity-80 transition-opacity"
+                          onClick={() => setDeleteModal({ isOpen: true, id: item.id, nome: item.nome })}
+                          title="Excluir"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="w-full h-px bg-slate-200 dark:bg-slate-700/50 mb-5 border-t border-dashed border-slate-300 dark:border-slate-600 box-border"></div>
+
+                    {/* Stats Grid */}
+                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0 mt-2 mb-5 px-2">
+                      <div className="flex flex-col items-center w-full md:w-auto md:flex-1 order-1">
+                        <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">
+                        {item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA'))}
+                        </p>
+                        <div className={`flex flex-col items-center justify-center ${item.isIgnored ? 'opacity-50 line-through' : ''}`}>
+                          {item.valor === null && (!fazerProjecao || (item.valorPrevisto === 0 && !item.isPago)) ? (
+                            <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
+                          ) : (
+                            <p className="text-2xl font-black text-slate-800 dark:text-white">
+                              {formatarMoedaSinal(item.isPago ? item.valorEfetivado : item.valorPrevisto, true)}
+                            </p>
+                          )}
+                        </div>
+                        {(item.valor === null || item.valor < 0) && fazerProjecao && (
+                          <span className="text-[9px] font-black bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded-md mt-1 scale-95 uppercase tracking-wider whitespace-nowrap">
+                            Variável estim.
+                          </span>
+                        )}
+                      </div>
+
+                      {fazerProjecao && (
+                        <div className="flex flex-col items-center w-full md:w-auto md:flex-1 order-2">
+                          <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">CUSTO {anoAtual} {periodoTexto ? `(${periodoTexto})` : ''}</p>
+                          <div className="flex flex-col items-center justify-center">
+                            {item.valor === null && item.valorPrevisto === 0 && !item.isPago ? (
+                              <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
+                            ) : (
+                              <p className="text-2xl font-black text-slate-800 dark:text-white">
+                                {formatarMoedaSinal(item.tipo === 'despesa' ? -custoAnual : custoAnual, true)}
+                              </p>
+                            )}
+                          </div>
+                          {(item.valor === null || item.valor < 0) && (
+                            <span className="text-[9px] font-black bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded-md mt-1 scale-95 uppercase tracking-wider whitespace-nowrap">
+                              Variável estim.
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className="mt-auto space-y-2">
+                      {item.isIgnored ? (
+                        <button
+                          onClick={() => handleUndoIgnoreProvisao(item)} 
+                          className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
+                        >
+                          <RotateCcw size={18} />
+                          Desfazer "Não Lançado"
+                        </button>
+                      ) : item.isPago ? (
+                        <div className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2 cursor-not-allowed">
+                          <CheckCircle2 size={18} />
+                          {item.tipo === 'receita' ? 'Já recebido neste mês' : 'Já pago neste mês'}
+                        </div>
+                      ) : item.isOffMonth ? (
+                        <div className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2 cursor-not-allowed">
+                          <CheckCircle2 size={18} />
+                          {item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'Já recebido neste ano' : 'Já pago neste ano') : (item.tipo === 'receita' ? 'Fora do mês' : 'Fora do mês')}
+                        </div>
+                      ) : (
+                        <div className="flex flex-row gap-2">
+                          <button 
+                            onClick={async () => {
+                                handleIgnoreProvisao(item);
+                            }}
+                            className="flex-1 py-2.5 px-2 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          >
+                            <XCircle size={16} />
+                            Não Lançar
+                          </button>
+                          <button 
+                            onClick={() => handleOpenEfetivarModal(item)}
+                            className={`flex-[1.5] py-2.5 px-3 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                                item.tipo === 'receita' 
+                                  ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
+                                  : 'bg-[#3B82F6] hover:bg-blue-600 text-white'
                               }`}
-                            >
-                              <span className="flex-1 text-left">{nome}</span>
-                              {isActive && <div className="w-2 h-2 bg-[#2563EB] rounded-full"></div>}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </motion.div>
-                  </>
-                )}
-              </AnimatePresence>
-            </div>
-          </div>
-
-          {/* TABLET / DESKTOP: Ano centralizado e meses em linha */}
-          <div className="hidden md:block w-full">
-            <div className="flex justify-center items-center gap-[16px] mb-[14px]">
-              <button 
-                onClick={() => handleMudarAno(-1)}
-                className="p-[4px_8px] rounded-[8px] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] hover:text-[#0F172A] dark:text-white cursor-pointer transition-colors"
-              >
-                <ChevronLeft size={18} />
-              </button>
-              <span className="text-[16px] font-[800] text-[#0F172A] dark:text-white">
-                {anoAtual}
-              </span>
-              <button 
-                onClick={() => handleMudarAno(1)}
-                className="p-[4px_8px] rounded-[8px] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#475569] hover:text-[#0F172A] dark:text-white cursor-pointer transition-colors"
-              >
-                <ChevronRight size={18} />
-              </button>
-            </div>
-            
-            <div className="flex gap-[6px] justify-center w-full">
-              {MESES.map((nomeMes, index) => {
-                const ativo = index + 1 === mesAtual;
-                return (
-                  <button
-                    key={nomeMes}
-                    onClick={() => handleMudarMes(index)}
-                    className={`rounded-[100px] p-[6px_14px] text-[13px] font-[600] cursor-pointer transition-all border-[1.5px] ${
-                      ativo 
-                        ? 'bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.15)]'
-                        : 'bg-[#F8FAFC] dark:bg-[#0F172A]  text-[#64748B] dark:text-[#94A3B8] border-transparent dark:border-transparent hover:bg-[#F1F5F9] dark:hover:bg-[#475569] hover:text-[#0F172A] dark:text-white'
-                    }`}
-                  >
-                    {nomeMes}
-                  </button>
+                          >
+                            <CheckCircle2 size={16} />
+                            Lançar agora
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 );
-              })}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3. NAVEGAÇÃO TEMPORAL (DASHBOARD) - Idêntica à tela de Relatórios */}
-      {activeTab === 'dashboard' && (
-        <div className="flex flex-col items-center justify-center gap-[24px] mb-4">
-           <div className="flex flex-col md:flex-row items-center justify-center gap-[12px] w-full max-w-[600px]">
-               {/* ANO SELECTOR */}
-               <div className="order-1 md:order-2 flex justify-between items-center bg-white dark:bg-[#1E293B] rounded-[100px] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] px-[16px] py-[8px] min-w-[140px] shadow-sm">
-                  <button onClick={() => handleMudarAno(-1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer"><ChevronLeft size={14} /></button>
-                  <span className="text-[14px] font-[600] text-[#0F172A] dark:text-white min-w-[60px] text-center">{anoAtual}</span>
-                  <button onClick={() => handleMudarAno(1)} className="w-[28px] h-[28px] flex items-center justify-center rounded-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F1F5F9] dark:hover:bg-[#334155] transition-colors cursor-pointer"><ChevronRight size={14} /></button>
-               </div>
-
-               {/* MÊS SELECTOR (Somente se mensal) */}
-               {dashboardPeriodo === 'mensal' && (
-                 <div className="order-2 md:order-1 relative w-full md:w-auto bg-white dark:bg-[#1E293B] rounded-[100px] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] px-[20px] py-[8px] shadow-sm flex items-center justify-between md:justify-center cursor-pointer hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A] transition-colors">
-                    <select 
-                       value={mesAtual - 1} 
-                       onChange={e => handleMudarMes(Number(e.target.value))}
-                       className="w-full bg-transparent border-none text-[14px] font-[600] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none md:pr-6 md:min-w-[100px]"
-                       style={{ WebkitAppearance: 'none', MozAppearance: 'none' }}
-                    >
-                       {MESES_COMPLETOS.map((m, i) => <option key={m} value={i} className="text-[#0F172A] bg-white dark:bg-[#0F172A] dark:text-white">{m}</option>)}
-                    </select>
-                    <ChevronDown size={14} className="text-[#64748B] dark:text-[#94A3B8] absolute right-[16px] pointer-events-none" />
-                 </div>
-               )}
-           </div>
-
-           {/* RADIO TIPO PERÍODO */}
-           <div className="flex items-center justify-center gap-[12px]">
-              <button 
-                onClick={() => setDashboardPeriodo('mensal')} 
-                className={`flex items-center justify-center rounded-[100px] py-[8px] px-[24px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
-                    dashboardPeriodo === 'mensal' 
-                      ? 'bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] dark:text-[#60A5FA] border-[1.5px] border-[#2563EB] dark:border-[#3B82F6] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
-                      : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
-                }`}
-              >
-                Mensal
-              </button>
-              <button 
-                onClick={() => setDashboardPeriodo('anual')} 
-                className={`flex items-center justify-center rounded-[100px] py-[8px] px-[24px] text-[14px] font-[700] transition-all duration-200 cursor-pointer ${
-                    dashboardPeriodo === 'anual' 
-                      ? 'bg-[#EFF6FF] dark:bg-[#1E3A8A] text-[#2563EB] dark:text-[#60A5FA] border-[1.5px] border-[#2563EB] dark:border-[#3B82F6] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
-                      : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#334155]'
-                }`}
-              >
-                Anual
-              </button>
-           </div>
-        </div>
-      )}
-
-      {/* Month components separated */}
-
-      {activeTab === 'dashboard' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {/* Card 1: Previsto Despesas */}
-          <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-[#334155] shadow-sm flex flex-col justify-between">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2 select-none">
-                <TrendingDown size={14} className="text-red-400" />
-                Despesas Previstas
-              </span>
-              <span className="text-xl font-black text-slate-800 dark:text-white block">
-                {formatCurrency(statDespesasPrevistas)}
-              </span>
-            </div>
-            <div className="border-t border-dashed border-slate-100 dark:border-slate-800 pt-3.5 mt-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
-              <span>Contas mapeadas no mês</span>
-              <span className="font-bold text-slate-600 dark:text-slate-300">{despesasCount} itens</span>
-            </div>
-          </div>
-
-          {/* Card 2: Pago Despesas */}
-          <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-[#334155] shadow-sm flex flex-col justify-between">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2 select-none">
-                <CheckCircle2 size={11} className="text-emerald-500" />
-                Despesas Efetivadas
-              </span>
-              <span className="text-xl font-black text-emerald-600 dark:text-emerald-400 block">
-                {formatCurrency(statDespesasPagas)}
-              </span>
-            </div>
-            <div className="border-t border-dashed border-slate-100 dark:border-slate-800 pt-3.5 mt-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
-              <span>Saldo restante em aberto</span>
-              <span className="font-bold text-red-500">{formatCurrency(statDespesasPendentes)}</span>
-            </div>
-          </div>
-
-          {/* Card 3: Receitas Planejadas */}
-          <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-[#334155] shadow-sm flex flex-col justify-between">
-            <div>
-              <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center gap-1.5 mb-2 select-none">
-                <TrendingUp size={14} className="text-emerald-400" />
-                Receitas Planejadas
-              </span>
-              <span className="text-xl font-black text-indigo-500 dark:text-indigo-400 block">
-                {formatCurrency(statReceitasPrevistas)}
-              </span>
-            </div>
-            <div className="border-t border-dashed border-slate-100 dark:border-slate-800 pt-3.5 mt-4 flex items-center justify-between text-[11px] font-medium text-slate-400">
-              <span>Receitas Efetivadas</span>
-              <span className="font-bold text-emerald-500">{formatCurrency(statReceitasRecebidas)}</span>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {activeTab === 'lancamento' && (
-        <>
-          {/* FILTER & CONTROL BAR (TRANSACTIONS FORMAT) */}
-          <div className="bg-[#FFFFFF] dark:bg-[#1E293B] rounded-[16px] p-[14px_20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_8px_rgba(0,0,0,0.04)] flex flex-col lg:flex-row lg:items-center gap-[12px]">
-            <div className="relative w-full lg:flex-1">
-              <Search size={15} className="absolute left-[12px] top-1/2 -translate-y-1/2 text-[#94A3B8] dark:text-[#64748B]" />
-              <input
-                type="text"
-                value={busca}
-                onChange={(e) => setBusca(e.target.value)}
-                placeholder="Buscar por descrição, tag ou valor..."
-                className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] p-[9px_12px_9px_36px] text-[13px] outline-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.1)] text-[#0F172A] dark:text-white"
-              />
-            </div>
-            
-            <div className="flex gap-[6px] w-full lg:w-auto pb-1 lg:pb-0">
-              <button
-                onClick={() => setFiltroTipo('pendentes')}
-                className={`flex-1 lg:flex-none rounded-[100px] py-[7px] px-[8px] sm:px-[16px] text-[11px] sm:text-[13px] font-[600] border-[1.5px] transition-colors ${
-                  filtroTipo === 'pendentes'
-                    ? 'bg-[#0F172A] dark:bg-[#334155] text-[#FFFFFF] dark:text-white border-[#0F172A] dark:border-[#334155]'
-                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569]'
-                }`}
-              >
-                NÃO LANÇADO
-              </button>
-              <button
-                onClick={() => setFiltroTipo('lancadas')}
-                className={`flex-1 lg:flex-none rounded-[100px] py-[7px] px-[8px] sm:px-[16px] text-[11px] sm:text-[13px] font-[600] border-[1.5px] transition-colors ${
-                  filtroTipo === 'lancadas'
-                    ? 'bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] border-[#16A34A]'
-                    : 'bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] border-[#E2E8F0] dark:border-[#334155] hover:bg-[#F1F5F9] dark:hover:bg-[#475569]'
-                }`}
-              >
-                LANÇADA
-              </button>
-            </div>
-          </div>
-
-          {/* CORE LIST VIEW */}
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-100 dark:border-slate-800">
-              <RefreshCw size={36} className="text-[#3B82F6] animate-spin mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">Atualizando provisões...</p>
-            </div>
-          ) : listagemFiltrada.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-3xl border-2 border-dashed border-slate-200 dark:border-[#334155] p-6 text-center">
-              <Calendar size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-600 dark:text-slate-400 font-black text-sm mb-1">Nenhuma provisão encontrada</p>
-              <p className="text-slate-400 text-xs max-w-md">Não há planejamentos periódicos criados ou adequados aos filtros no mês de {MESES_COMPLETOS[selectedDate.getMonth()]} de {selectedDate.getFullYear()}. Defina suas contas no botão superior.</p>
-            </div>
-          ) : (
-            <div className="bg-white dark:bg-[#1E293B] rounded-2xl border border-[#F1F5F9] dark:border-[#334155] shadow-sm overflow-hidden flex flex-col">
-              <div>
-                {(Object.entries(provisoesAgrupadas) as [string, any[]][]).sort((a, b) => a[0].localeCompare(b[0])).map(([dataStr, provisoesDia]) => {
-                  const totalDia = calcularTotalDiaRecorrente(provisoesDia);
-                  return (
-                    <div key={dataStr}>
-                      {/* SEPARADOR DO DIA */}
-                      <div className="bg-[#F8FAFC] dark:bg-[#0F172A]  p-[8px_20px] flex justify-between items-center border-b-[1px] border-[#F1F5F9] dark:border-[#334155]">
-                        <span className="text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-[0.05em]">
-                          {formatarDataCabecalhoRecorrente(dataStr)}
-                        </span>
-                        <span className={`text-[12px] font-[700] ${totalDia === 0 ? 'text-[#64748B] dark:text-[#94A3B8]' : (totalDia > 0 ? 'text-[#16A34A]' : 'text-[#EF4444]')}`}>
-                          {formatarMoedaSinal(totalDia, true)}
-                        </span>
-                      </div>
-
-                      {/* LINHAS DE PROVISÃO */}
-                      <div>
-                        {provisoesDia.map((p) => {
-                          const cat = p.categories;
-                          const categoryColor = cat?.cor || '#64748B';
-                          
-                          return (
-                            <div 
-                              key={p.id} 
-                              className="p-[14px_20px] flex items-center justify-between gap-[14px] border-b-[1px] border-[#F8FAFC] dark:border-[#0F172A] transition-colors hover:bg-[#FAFAFA] dark:hover:bg-[#0F172A] group relative"
-                            >
-                              <div className="flex items-center gap-[14px] flex-1 min-w-0">
-                                {/* CÍRCULO TIPO */}
-                                <div className={`w-[36px] h-[36px] rounded-full shrink-0 flex items-center justify-center ${
-                                  p.tipo === 'receita' ? 'bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A]' : 'bg-[#FEE2E2] dark:bg-red-900/30 text-[#EF4444]'
-                                }`}>
-                                  {p.tipo === 'receita' ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
-                                </div>
-
-                                {/* DESCRIÇÃO E DETALHES */}
-                                <div className="flex-1 min-w-0 flex flex-col gap-[2px]">
-                                  <div className="text-[14px] font-[600] text-[#0F172A] dark:text-white whitespace-nowrap overflow-hidden text-ellipsis flex items-center gap-2">
-                                    {p.nome}
-                                  </div>
-                                  
-                                  <div className="flex items-center gap-[8px] flex-wrap">
-                                    {/* CATEGORIA */}
-                                    <span style={{
-                                      padding: '2px 8px',
-                                      borderRadius: '100px',
-                                      fontSize: '11px',
-                                      fontWeight: 600,
-                                      background: `${categoryColor}20`,
-                                      color: categoryColor,
-                                      border: `1px solid ${categoryColor}40`
-                                    }}>
-                                      {cat?.nome || 'Sem categoria'} {p.parcelaTexto}
-                                    </span>
-
-                                    {/* SITUAÇÃO BADGE */}
-                                    {p.isPago ? (
-                                      <span className="inline-flex items-center gap-[4px] px-[6px] py-[1.5px] rounded-[100px] text-[10px] font-[800] bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase tracking-wider select-none">
-                                        Lançada
-                                      </span>
-                                    ) : (
-                                      <span className="inline-flex items-center gap-[4px] px-[6px] py-[1.5px] rounded-[100px] text-[10px] font-[800] bg-[#FEF9C3] text-[#CA8A04] border border-[#FEF08A] uppercase tracking-wider dark:bg-yellow-950/40 dark:text-yellow-400 dark:border-yellow-900 select-none">
-                                        Agendada
-                                      </span>
-                                    )}
-
-                                    {/* DETALHES PLANO */}
-                                    <div className="flex items-center gap-[6px] text-[11px] text-[#94A3B8] dark:text-[#64748B]">
-                                      <Wallet size={12} />
-                                      <span className="italic">
-                                        {p.isPago ? (
-                                          p.formaPagamentoReal === 'cartao_credito' ? 'Crédito' : 'Conta'
-                                        ) : (
-                                          p.forma_pagamento === 'cartao_credito' ? 'Crédito' : 'Conta'
-                                        )}
-                                      </span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* VALOR E AÇÕES */}
-                              <div className="flex items-center gap-[12px] shrink-0">
-                                <div className={`text-[15px] font-[700] whitespace-nowrap text-right ${
-                                  !p.isPago && p.valorPrevisto === 0 ? 'text-slate-800 dark:text-white' : (p.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]')
-                                }`}>
-                                  {formatarMoedaSinal(p.tipo === 'receita' ? (p.isPago ? p.valorEfetivado : p.valorPrevisto) : -(p.isPago ? p.valorEfetivado : p.valorPrevisto), true)}
-                                </div>
-                                
-                                <div className="flex items-center gap-[4px] opacity-100 md:opacity-60 group-hover:opacity-100 transition-opacity">
-                                    <button
-                                      onClick={() => handleOpenEfetivarModal(p)}
-                                      className="flex items-center gap-1 p-[4px_10px] rounded-[8px] bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#CA8A04] transition-colors cursor-pointer text-[11px] font-[700] mr-1"
-                                      title="Efetivar Transação"
-                                    >
-                                      <Check size={11} strokeWidth={3} />
-                                      Efetivar
-                                    </button>
-                                  <button
-                                    onClick={() => {
-                                      setEditingRec(p);
-                                      setIsModalOpen(true);
-                                    }}
-                                    className="p-[6px] rounded-[8px] text-[#CBD5E1] dark:text-[#64748B] hover:text-[#2563EB] hover:bg-[#EFF6FF] dark:bg-[#1E3A8A] dark:hover:bg-[#1E3A8A] transition-colors"
-                                  >
-                                    <Pencil size={13} />
-                                  </button>
-                                  <button
-                                    onClick={() => handleIgnoreProvisao(p)}
-                                    className="p-[6px] rounded-[8px] text-[#CBD5E1] dark:text-[#64748B] hover:text-[#EF4444] hover:bg-[#FEF2F2] dark:hover:bg-[#7F1D1D] transition-colors"
-                                    title="Excluir este lançamento específico"
-                                  >
-                                    <Trash2 size={13} />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
                 })}
               </div>
             </div>
-          )}
-        </>
+          );
+        })
       )}
-
-      {activeTab === 'modelos' && (
-        <div className="space-y-8">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-100 dark:border-slate-800">
-              <RefreshCw size={36} className="text-[#3B82F6] animate-spin mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">Carregando contas...</p>
-            </div>
-          ) : provisoesRaw.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-3xl border-2 border-dashed border-slate-200 dark:border-[#334155] p-6 text-center">
-              <Calendar size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-600 dark:text-slate-400 font-black text-sm mb-1">Nenhuma conta cadastrada</p>
-              <p className="text-slate-400 text-xs max-w-md">Crie suas contas recorrentes clicando no botão "Planejar Conta" no topo.</p>
-            </div>
-          ) : (() => {
-            const contasNormais = provisoesRaw.filter(r => r.lancamento_rapido !== true);
-            const variaveis = contasNormais.filter(r => !r.dia_vencimento && !r.dia_emissao && isBusiness);
-            const mensais = contasNormais.filter(r => r.frequencia === 'mensal' && !(!r.dia_vencimento && !r.dia_emissao && isBusiness));
-            const anuais = contasNormais.filter(r => r.frequencia === 'anual' && !(!r.dia_vencimento && !r.dia_emissao && isBusiness));
-            const outrasFrequencias = contasNormais.filter(r => r.frequencia !== 'mensal' && r.frequencia !== 'anual' && !(!r.dia_vencimento && !r.dia_emissao && isBusiness));
-
-            const renderCardModel = (rec: any) => {
-              const cat = rec.categories;
-              const categoryColor = cat?.cor || '#64748B';
-              const valorPrevisto = rec.valor !== null ? Number(rec.valor) : null;
-              const cardName = rec.cards?.nome;
-
-              const launchDateStr = rec.ultima_lancada;
-              const isScheduledForYear = !!launchDateStr && new Date(launchDateStr).getFullYear() === selectedDate.getFullYear() && rec.ativa !== false;
-
-              // Find calculated provision occurrence from processedProvisoes if any to support modals/actions
-              const matchingProvisao = processedProvisoes.find(p => p.id === rec.id && p.shouldRender !== false);
-              
-              let isEfetivadoThisMonth = matchingProvisao ? matchingProvisao.isPago : false;
-              const isDataVariavel = !rec.dia_vencimento && !rec.dia_emissao && !rec.lancamento_rapido && isBusiness;
-              
-              if (!matchingProvisao && isDataVariavel) {
-                 const paidThisMonth = realTransactions.some(t => 
-                     t.recorrente_id === rec.id && 
-                     t.status === 'pago' && 
-                     new Date(t.data).getFullYear() === selectedDate.getFullYear() && 
-                     new Date(t.data).getMonth() === selectedDate.getMonth()
-                 );
-                 isEfetivadoThisMonth = paidThisMonth;
-              }
-              
-              // If it's data_variavel, it's always pending unless paid.
-              const isProjectedThisMonth = !!matchingProvisao || isDataVariavel;
-
-              return (
-                <div
-                  key={rec.id}
-                  id={`model-card-${rec.id}`}
-                  className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] hover:border-blue-200 dark:hover:border-blue-900 transition-all gap-5 min-h-[200px]"
-                >
-                  <div className="space-y-4">
-                    {/* Upper row: Title and Badge */}
-                    <div className="flex justify-between items-start gap-4">
-                      <h4 className="text-base font-black text-slate-800 dark:text-white leading-tight tracking-tight max-w-[70%] truncate">
-                        {rec.nome}
-                      </h4>
-                      {isEfetivadoThisMonth ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-900/50 uppercase select-none shrink-0" title="Foi pago/efetivado neste mês">
-                          LANÇADO
-                        </span>
-                      ) : isDataVariavel ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 uppercase select-none shrink-0" title="Pendente de efetivação neste mês">
-                          PENDENTE NO MÊS
-                        </span>
-                      ) : isProjectedThisMonth ? (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-900/50 uppercase select-none shrink-0" title="Aparece pendente na sua agenda deste mês">
-                          PENDENTE NO MÊS
-                        </span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full text-[10px] font-black tracking-wider bg-amber-50 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 border border-amber-100 dark:border-amber-900/50 uppercase select-none shrink-0" title="Não aparece na agenda selecionada">
-                          NÃO PROJETADO
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Value block */}
-                    <div>
-                      {valorPrevisto !== null ? (
-                        <p className={`text-xl font-black ${valorPrevisto === 0 ? 'text-slate-800 dark:text-white' : (rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]')}`}>
-                          {valorPrevisto === 0 ? '' : (rec.tipo === 'receita' ? '+' : '-')} {formatCurrency(Math.abs(valorPrevisto))}
-                        </p>
-                      ) : (
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-bold italic">
-                          Valor Variável
-                        </p>
-                      )}
-                    </div>
-
-                    {/* Meta Row: Day or frequency, and Account */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-550 font-bold">
-                      <div className="flex items-center gap-1.5 leading-none">
-                        <Calendar size={13} className="text-slate-400 dark:text-slate-500" />
-                        <span>
-                          {rec.frequencia === 'mensal' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: ${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}` : `${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}`) : ''}
-                          {rec.frequencia === 'anual' ? (isBusiness && rec.dia_emissao ? `Tirar: Dia ${rec.dia_emissao} • Pagar: ${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}` : `${!rec.dia_vencimento ? 'Dia Variável' : `Dia ${rec.dia_vencimento}`}/${rec.mes_vencimento ? MESES[rec.mes_vencimento - 1] : '?'}`) : ''}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-1.5 leading-none">
-                        <CreditCard size={13} className="text-slate-400 dark:text-slate-500" />
-                        <span className="truncate max-w-[140px]">
-                          {cardName || (rec.forma_pagamento === 'cartao_credito' ? 'Cartão' : 'Conta')}
-                          {rec.num_parcelas && rec.num_parcelas > 1 ? ` (${rec.num_parcelas}x)` : ''}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Hover action bar or footer buttons */}
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 mt-1 gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      {isDataVariavel ? (
-                        <button
-                          onClick={() => {
-                            const mockProvisao = { ...rec, valorPrevisto: rec.valor !== null ? Number(rec.valor) : 0, isPago: false };
-                            handleOpenEfetivarModal(mockProvisao);
-                          }}
-                          disabled={isEfetivadoThisMonth}
-                          className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-[11px] font-extrabold transition-all text-center ${isEfetivadoThisMonth ? 'bg-slate-100 text-slate-400 cursor-not-allowed dark:bg-slate-800' : 'bg-[#FEF9C3] hover:bg-[#FEF08A] text-[#CA8A04] border border-[#FEF08A] cursor-pointer'}`}
-                          title={isEfetivadoThisMonth ? "Já efetivado neste mês" : "Efetivar Pagamento"}
-                        >
-                          <Check size={10} strokeWidth={3} />
-                          Efetivar
-                        </button>
-                      ) : isScheduledForYear ? (
-                        <button
-                          onClick={() => {
-                            handleCancelFutureLaunches(rec);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-orange-50 hover:bg-orange-100 dark:bg-orange-950/40 text-orange-600 dark:text-orange-400 text-[11px] font-[800] border border-orange-100 dark:border-orange-900/40 transition-all text-center cursor-pointer"
-                          title="Cancelar agenda deste modelo"
-                        >
-                          <AlertCircle size={10} strokeWidth={3} />
-                          Cancelar
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setReactivateModal({ isOpen: true, rec });
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 text-[11px] font-extrabold border border-blue-100 dark:border-blue-900/45 transition-all text-center cursor-pointer"
-                          title="Lançar/Agendar para o ano selecionado"
-                        >
-                          <Play size={10} fill="currentColor" />
-                          Lançar
-                        </button>
-                      )}
-                    </div>
-
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingRec(rec);
-                          setIsModalOpen(true);
-                        }}
-                        className="p-2 rounded-xl text-slate-400 dark:text-slate-550 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
-                        title="Editar Modelo"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleExcluirModelo(rec)}
-                        className="p-2 rounded-xl text-slate-400 dark:text-slate-550 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-                        title="Excluir Modelo"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            };
-
-            return (
-              <div className="space-y-10">
-                {mensais.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black tracking-widest text-slate-450 dark:text-slate-500 uppercase select-none">
-                      MENSAIS
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {mensais.map(renderCardModel)}
-                    </div>
-                  </div>
-                )}
-
-                {anuais.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black tracking-widest text-slate-450 dark:text-slate-500 uppercase select-none">
-                      ANUAIS
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {anuais.map(renderCardModel)}
-                    </div>
-                  </div>
-                )}
-
-                {outrasFrequencias.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-black tracking-widest text-slate-450 dark:text-slate-500 uppercase select-none">
-                      OUTRAS CONTAS
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {outrasFrequencias.map(renderCardModel)}
-                    </div>
-                  </div>
-                )}
-
-                {variaveis.length > 0 && (
-                  <div className="space-y-4 pt-4 mt-6 border-t border-slate-100 dark:border-slate-800">
-                    <h3 className="text-xs font-black tracking-widest text-slate-450 dark:text-slate-500 uppercase select-none flex items-center gap-2">
-                      <Calendar size={14} className="text-blue-500" />
-                      CONTAS COM DIA VARIÁVEL
-                    </h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                      {variaveis.map(renderCardModel)}
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {activeTab === 'direto' && (
-        <div className="space-y-8">
-          {loading ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-100 dark:border-slate-800">
-              <RefreshCw size={36} className="text-[#3B82F6] animate-spin mb-3" />
-              <p className="text-slate-500 dark:text-slate-400 font-bold text-sm">Carregando lançamentos rápidos...</p>
-            </div>
-          ) : provisoesRaw.filter(r => r.lancamento_rapido === true).length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-[#1E293B] rounded-3xl border-2 border-dashed border-slate-200 dark:border-[#334155] p-6 text-center">
-              <Calendar size={48} className="text-slate-300 dark:text-slate-600 mb-4" />
-              <p className="text-slate-600 dark:text-slate-400 font-black text-sm mb-1">Nenhum lançamento rápido cadastrado</p>
-              <p className="text-slate-400 text-xs max-w-md">Crie suas contas com Lançamento Rápido ativado para ver aqui.</p>
-            </div>
-          ) : (() => {
-            const contasRapidas = provisoesRaw.filter(r => r.lancamento_rapido === true);
-            const mensais = contasRapidas.filter(r => r.frequencia === 'mensal');
-            const anuais = contasRapidas.filter(r => r.frequencia === 'anual');
-            const outrasFrequencias = contasRapidas.filter(r => r.frequencia !== 'mensal' && r.frequencia !== 'anual');
-
-            const renderCardModel = (rec: any) => {
-              const cat = rec.categories;
-              const categoryColor = cat?.cor || '#64748B';
-              const valorPrevisto = rec.valor !== null ? Number(rec.valor) : null;
-              const cardName = rec.cards?.nome;
-
-              return (
-                <div
-                  key={rec.id}
-                  id={`model-card-${rec.id}`}
-                  className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_4px_12px_rgba(0,0,0,0.03)] flex flex-col justify-between hover:shadow-[0_8px_20px_rgba(0,0,0,0.06)] hover:border-blue-200 dark:hover:border-blue-900 transition-all gap-5 min-h-[160px]"
-                >
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-start gap-4">
-                      <h4 className="text-base font-black text-slate-800 dark:text-white leading-tight tracking-tight max-w-[70%] truncate">
-                        {rec.nome}
-                      </h4>
-                      {/* Removing badge because "Lancamento Rapido" does not track past/future agendamento status */}
-                    </div>
-
-                    <div>
-                      {valorPrevisto !== null ? (
-                        <p className={`text-xl font-black ${valorPrevisto === 0 ? 'text-slate-800 dark:text-white' : (rec.tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]')}`}>
-                          {valorPrevisto === 0 ? '' : (rec.tipo === 'receita' ? '+' : '-')} {formatCurrency(Math.abs(valorPrevisto))}
-                        </p>
-                      ) : (
-                        <p className="text-slate-500 dark:text-slate-400 text-sm font-bold italic">
-                          Valor Variável
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex flex-wrap gap-x-4 gap-y-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs text-slate-400 dark:text-slate-550 font-bold">
-                      <div className="flex items-center gap-1.5 leading-none">
-                        <CreditCard size={13} className="text-slate-400 dark:text-slate-500" />
-                        <span className="truncate max-w-[140px]">
-                          {cardName || (rec.forma_pagamento === 'cartao_credito' ? 'Cartão' : 'Conta')}
-                          {rec.num_parcelas && rec.num_parcelas > 1 ? ` (${rec.num_parcelas}x)` : ''}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-4 mt-1 gap-2">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                        <button
-                          onClick={() => {
-                            const p = {
-                              ...rec,
-                              valorPrevisto: rec.valor || 0,
-                              currentParcela: null
-                            };
-                            handleOpenEfetivarModal(p);
-                          }}
-                          className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-black shadow-[0_4px_14px_rgba(59,130,246,0.25)] transition-all text-center cursor-pointer"
-                          title="Efetivar Lançamento"
-                        >
-                          <Check size={13} strokeWidth={3} />
-                          Efetivar
-                        </button>
-                    </div>
-
-                    <div className="flex items-center justify-end gap-1">
-                      <button
-                        onClick={() => {
-                          setEditingRec(rec);
-                          setIsModalOpen(true);
-                        }}
-                        className="p-2 rounded-xl text-slate-400 dark:text-slate-550 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-950/50 transition-colors cursor-pointer"
-                        title="Editar Modelo"
-                      >
-                        <Pencil size={13} />
-                      </button>
-                      <button
-                        onClick={() => handleExcluirModelo(rec)}
-                        className="p-2 rounded-xl text-slate-400 dark:text-slate-550 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/50 transition-colors cursor-pointer"
-                        title="Excluir Modelo"
-                      >
-                        <Trash2 size={13} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              );
-            };
-
-            return (
-              <div className="space-y-10">
-                {contasRapidas.length > 0 && (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {contasRapidas.map(renderCardModel)}
-                  </div>
-                )}
-              </div>
-            );
-          })()}
-        </div>
-      )}
-
-      {false && activeTab === 'direto' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* COLUNA ESQUERDA: FORMULÁRIO DE LANÇAMENTO (7 COLS) */}
-          <div className="lg:col-span-7 bg-white dark:bg-[#1E293B] rounded-[24px] p-6 md:p-8 border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_4px_16px_rgba(0,0,0,0.02)] space-y-6">
-            <div>
-              <h3 className="text-lg font-black text-[#0F172A] dark:text-white leading-tight flex items-center gap-2">
-                <Sparkles size={18} className="text-blue-500 animate-pulse" />
-                Lançamento Rápido no Extrato
-              </h3>
-              <p className="text-xs text-slate-400 dark:text-slate-500 font-bold">
-                Insira movimentações avulsas direto na conta corrente ou de crédito, ideal para rendimentos e consumos frequentes.
-              </p>
-            </div>
-
-            {/* FEEDBACK DE SUCESSO */}
-            <AnimatePresence>
-              {rapidoSucessoMsg && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-2xl p-4 flex items-start gap-3"
-                >
-                  <CheckCircle2 size={18} className="text-emerald-500 dark:text-emerald-400 shrink-0 mt-0.5" />
-                  <div>
-                    <h4 className="text-xs font-black text-emerald-800 dark:text-emerald-400 uppercase tracking-widest leading-none mb-1">
-                      Lançado no Extrato!
-                    </h4>
-                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-300">
-                      {rapidoSucessoMsg}
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* FORMULÁRIO */}
-            <div className="space-y-5">
-              
-              {/* TIPO */}
-              <div>
-                <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                  Tipo de Lançamento
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    onClick={() => setRapidoTipo('receita')}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-extrabold border-[1.5px] transition-all cursor-pointer ${
-                      rapidoTipo === 'receita'
-                        ? 'bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] border-[#16A34A] shadow-[0_2px_8px_rgba(22,163,74,0.1)]'
-                        : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <TrendingUp size={14} strokeWidth={2.5} />
-                    RECEITA (+)
-                  </button>
-                  <button
-                    onClick={() => setRapidoTipo('despesa')}
-                    className={`flex items-center justify-center gap-2 py-3 rounded-2xl text-xs font-extrabold border-[1.5px] transition-all cursor-pointer ${
-                      rapidoTipo === 'despesa'
-                        ? 'bg-[#FEE2E2] dark:bg-red-900/30 text-[#EF4444] border-[#EF4444] shadow-[0_2px_8px_rgba(239,68,68,0.1)]'
-                        : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-transparent text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/50'
-                    }`}
-                  >
-                    <TrendingDown size={14} strokeWidth={2.5} />
-                    DESPESA (-)
-                  </button>
-                </div>
-              </div>
-
-              {/* VALOR COPIADO DO TEMA */}
-              <div>
-                <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                  Valor em Reais (BRL)
-                </label>
-                <div className="relative">
-                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-lg font-black text-slate-400 dark:text-slate-500 select-none">
-                    R$
-                  </div>
-                  <input
-                    type="text"
-                    value={(() => {
-                      const centsNum = parseInt(rapidoValorStr) || 0;
-                      return (centsNum / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
-                    })()}
-                    onChange={handleRapidoValorChange}
-                    className="w-full text-2xl font-black pl-14 pr-4 py-4 rounded-[14px] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all font-mono tracking-tight animate-none"
-                    placeholder="0,00"
-                  />
-                </div>
-                <p className="text-[10px] text-slate-400 mt-1 italic">
-                  Digite os números continuamente. O sistema formatará as casas decimais.
-                </p>
-              </div>
-
-              {/* DETALHES COMPLEMENTARES */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                    Descrição do Item
-                  </label>
-                  <input
-                    type="text"
-                    value={rapidoDesc}
-                    onChange={(e) => setRapidoDesc(e.target.value)}
-                    placeholder="Ex: Rendimento MP"
-                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-3 text-sm font-semibold bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all"
-                  />
-                </div>
-
-                <div>
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                    Data do Lançamento
-                  </label>
-                  <input
-                    type="date"
-                    value={rapidoData}
-                    onChange={(e) => setRapidoData(e.target.value)}
-                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-3 text-sm font-semibold bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* TAG / CATEGORIA */}
-              <div>
-                <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                  Tag / Categoria Associada
-                </label>
-                <div className="relative">
-                  <select
-                    value={rapidoTagId}
-                    onChange={(e) => setRapidoTagId(e.target.value)}
-                    className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-3 pr-10 text-sm font-semibold bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                  >
-                    {!rapidoTagId && <option value="">Selecione uma tag...</option>}
-                    {tags.map((tag) => {
-                      const cat = categories.find(c => c.id === tag.category_id);
-                      if (!cat || cat.tipo !== rapidoTipo) return null;
-                      return (
-                        <option key={tag.id} value={tag.id}>
-                          {cat.nome} &rarr; {tag.nome}
-                        </option>
-                      );
-                    })}
-                  </select>
-                  <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-450 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* MEIO DE PAGAMENTO */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                    Forma de Pagamento
-                  </label>
-                  <div className="relative">
-                    <select
-                      value={rapidoFormaPgto}
-                      onChange={(e) => {
-                        const val = e.target.value as 'conta_corrente' | 'cartao_credito';
-                        setRapidoFormaPgto(val);
-                        if (val === 'cartao_credito' && userCards.length > 0 && !rapidoCardId) {
-                          setRapidoCardId(userCards[0].id);
-                        }
-                      }}
-                      className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-3 pr-10 text-sm font-semibold bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                    >
-                      <option value="conta_corrente">{isBusiness ? 'Conta' : 'Conta Corrente / Saldo'}</option>
-                      {userCards.length > 0 && <option value="cartao_credito">Cartão de Crédito</option>}
-                    </select>
-                    <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-450 pointer-events-none" />
-                  </div>
-                </div>
-
-                {rapidoFormaPgto === 'cartao_credito' && userCards.length > 0 && (
-                  <div>
-                    <label className="text-[10px] font-extrabold uppercase tracking-widest text-[#94A3B8] dark:text-[#64748B] block mb-2 select-none">
-                      Escolher Cartão
-                    </label>
-                    <div className="relative">
-                      <select
-                        value={rapidoCardId}
-                        onChange={(e) => setRapidoCardId(e.target.value)}
-                        className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-3 pr-10 text-sm font-semibold bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-                      >
-                        {userCards.map((card) => (
-                          <option key={card.id} value={card.id}>
-                            {card.nome}
-                          </option>
-                        ))}
-                      </select>
-                      <ChevronDown size={14} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-450 pointer-events-none" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* BOTÃO */}
-              <button
-                onClick={handleLancarDireto}
-                disabled={lancandoRapido}
-                className="w-full py-4 rounded-[16px] bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm shadow-[0_4px_14px_rgba(37,99,235,0.25)] flex items-center justify-center gap-2 cursor-pointer transition-all disabled:opacity-50 select-none border-none"
-              >
-                {lancandoRapido ? (
-                  <>
-                    <RefreshCw size={15} className="animate-spin" />
-                    Efetuando Lançamento Direto...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={15} strokeWidth={2.5} />
-                    Lançar no Extrato Agora
-                  </>
-                )}
-              </button>
-
-            </div>
-          </div>
-
-          {/* COLUNA DIREITA: MODELOS DE FREQUENTES */}
-          <div className="lg:col-span-5 space-y-6">
-            <div className="bg-white dark:bg-[#1E293B] rounded-[24px] p-6 border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
-              <h4 className="text-sm font-black text-[#0F172A] dark:text-white mb-2 uppercase tracking-wider flex items-center gap-1.5">
-                💡 Atalhos Diários
-              </h4>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 mb-5 font-bold leading-relaxed">
-                Clique nos atalhos rápidos abaixo para preencher o formulário instantaneamente e facilitar o seu lançamento.
-              </p>
-
-              <div className="grid grid-cols-1 gap-3">
-                {[
-                  { nome: 'Rendimento MP', tipo: 'receita', tagsBusca: ['Rendimento', 'Investimento', 'Outros'] },
-                  { nome: 'Rendimento Nubank', tipo: 'receita', tagsBusca: ['Rendimento', 'Investimento', 'Outros'] },
-                  { nome: 'Rendimento PicPay', tipo: 'receita', tagsBusca: ['Rendimento', 'Investimento', 'Outros'] },
-                  { nome: 'Pix Recebido', tipo: 'receita', tagsBusca: ['Vendas', 'Presta', 'Outros'] },
-                  { nome: 'Café / Padaria', tipo: 'despesa', tagsBusca: ['Alimentação', 'Consumo', 'Outros'] },
-                  { nome: 'Tarifa / Serviços', tipo: 'despesa', tagsBusca: ['Tarifas', 'Outros'] },
-                ].map((preset) => {
-                  const isRevenue = preset.tipo === 'receita';
-                  return (
-                    <div
-                      key={preset.nome}
-                      onClick={() => {
-                        setRapidoDesc(preset.nome);
-                        setRapidoTipo(preset.tipo as 'receita' | 'despesa');
-                        
-                        // Pick best matching tag for the preset
-                        const bestTag = (() => {
-                          for (const searchName of preset.tagsBusca) {
-                            const found = tags.find(t => {
-                              const c = categories.find(cat => cat.id === t.category_id);
-                              return c && c.tipo === preset.tipo && t.nome.toLowerCase().includes(searchName.toLowerCase());
-                            });
-                            if (found) return found.id;
-                          }
-                          const matchingTags = tags.filter(t => {
-                            const c = categories.find(cat => cat.id === t.category_id);
-                            return c && c.tipo === preset.tipo;
-                          });
-                          return matchingTags[0]?.id || '';
-                        })();
-
-                        if (bestTag) {
-                          setRapidoTagId(bestTag);
-                        }
-                      }}
-                      className="group flex items-center justify-between p-4 rounded-2xl border-[1.5px] border-slate-100 dark:border-slate-800 hover:border-blue-400/50 dark:hover:border-blue-700/50 hover:bg-[#F8FAFC] dark:hover:bg-[#000000]/10 transition-all cursor-pointer"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                          isRevenue ? 'bg-emerald-50 dark:bg-green-950/40 text-[#16A34A]' : 'bg-red-50 dark:bg-red-950/40 text-[#EF4444]'
-                        }`}>
-                          {isRevenue ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                        </div>
-                        <div>
-                          <p className="text-xs font-extrabold text-slate-800 dark:text-slate-200">
-                            {preset.nome}
-                          </p>
-                          <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                            {isRevenue ? 'Rendimento / Entrada' : 'Saída Direta'}
-                          </p>
-                        </div>
-                      </div>
-                      <span className="text-[11px] font-bold text-blue-500 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-wider">
-                        Usar &rarr;
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* CARD EXPLICATIVO */}
-            <div className="bg-blue-50/50 dark:bg-blue-950/10 border-dashed border-2 border-blue-100 dark:border-blue-900/50 rounded-[24px] p-6">
-              <h5 className="text-xs font-black text-blue-800 dark:text-blue-400 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
-                <Info size={13} className="text-blue-600 dark:text-blue-400" />
-                Como funciona o acúmulo?
-              </h5>
-              <p className="text-[11px] text-blue-700 dark:text-blue-300 leading-relaxed font-semibold">
-                Se você costuma acumular vários dias de rendimento (ex: Mercado Pago) antes de registrar, basta clicar no atalho <strong>Rendimento MP</strong>, ajustar a data se preferir e digitar o valor consolidado de todos os dias. Isso alimentará seu extrato de saldo real sem sujar seu cronograma de contas agendadas!
-              </p>
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* RECURRING MODAL COMPONENT */}
       <RecurringModal 
@@ -2069,6 +1513,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         categories={categories}
         tags={tags}
         initialType={modalType}
+        selectedDate={selectedDate}
       />
 
       {/* EFETIVAR / COMPROMISSO MODAL */}
@@ -2110,10 +1555,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   </div>
                 )}
 
-                {/* Input Value - only shown if variable/null value */}
-                {efetivarModal.provisao.valor === null && (
+                {/* Input Value - Always show if variable, OR if options are expanded */}
+                {(efetivarModal.provisao.valor === null || efetivarModal.provisao.valor < 0 || efetivarMostrarOpcoes) && (
                   <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Valor Efetivado (R$)</label>
+                    <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">
+                      Valor Efetivado (R$)
+                    </label>
                     <div className="relative">
                       <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">R$</span>
                       <input 
@@ -2123,6 +1570,79 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 pl-10 pr-4 text-base font-black text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
                       />
                     </div>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 font-semibold mt-1">
+                      Você pode alterar o valor exato no momento de lançar caso ele mude neste ciclo (ótimo para gastos variáveis ou reajustes).
+                    </p>
+                  </div>
+                )}
+
+                {/* Payment overrides - ONLY shown if explicitly expanded */}
+                {efetivarMostrarOpcoes && (
+                  <div className="grid grid-cols-2 gap-3 mt-4">
+                    <div>
+                      <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Pagamento</label>
+                      <select
+                        value={efetivarFormaPagamento}
+                        onChange={(e) => {
+                          const val = e.target.value as any;
+                          setEfetivarFormaPagamento(val);
+                          if (val === 'cartao_credito' && !efetivarCartaoId && userCards.length > 0) {
+                            setEfetivarCartaoId(userCards[0].id);
+                          } else if (val === 'conta_corrente') {
+                            setEfetivarParcelas(1);
+                          }
+                        }}
+                         className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-[9px] px-3 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
+                      >
+                        <option value="conta_corrente">Conta / Pix</option>
+                        {userCards.length > 0 && <option value="cartao_credito">Cartão de Crédito</option>}
+                      </select>
+                    </div>
+                    
+                    {efetivarFormaPagamento === 'cartao_credito' && (
+                      <div>
+                        <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Cartão</label>
+                        <select
+                          value={efetivarCartaoId || ''}
+                          onChange={(e) => setEfetivarCartaoId(e.target.value)}
+                           className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-[9px] px-3 text-xs font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
+                        >
+                          {userCards.map(c => (
+                            <option key={c.id} value={c.id}>{c.nome}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {efetivarFormaPagamento === 'cartao_credito' && (
+                      <div className="col-span-2 flex items-center gap-3 bg-[#F8FAFC] dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="w-[80px]">
+                          <label className="block text-[9px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">
+                            Parcelas
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            inputMode="numeric"
+                            placeholder="1"
+                            value={efetivarParcelas}
+                            onChange={(e) => setEfetivarParcelas(parseInt(e.target.value) || 1)}
+                            className="w-full bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-2 py-1.5 text-xs font-bold text-[#0F172A] dark:text-white outline-none focus:border-[#2563EB] transition-all"
+                          />
+                        </div>
+
+                        {efetivarParcelas > 1 && (
+                          <div className="flex-1">
+                            <label className="block text-[9px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">
+                              Valor p/ Parcela
+                            </label>
+                            <div className="w-full h-[28px] bg-slate-100/50 dark:bg-slate-900/50 border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-3 flex items-center text-xs font-bold text-[#2563EB] dark:text-blue-400">
+                              {formatCurrency((parseCentsToNumber(efetivarValorStr) / efetivarParcelas) || 0)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -2328,12 +1848,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
               </div>
               
               <div>
-                <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight">Excluir Lançamento?</h3>
+                <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight">Não Lançar neste mês?</h3>
                 <p className="text-xs text-slate-400 mt-2 font-medium">
-                  Deseja realmente ignorar/excluir o agendamento de <strong className="text-slate-700 dark:text-slate-200">"{ignoreProvisaoModal.provisao.nome}"</strong> para {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}?
+                  Deseja realmente ignorar o agendamento de <strong className="text-slate-700 dark:text-slate-200">"{ignoreProvisaoModal.provisao.nome}"</strong> para {selectedDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}?
                 </p>
                 <p className="text-[11px] text-slate-400 mt-1 italic">
-                  Esta ação excluirá apenas este lançamento específico deste mês.
+                  Ele ficará marcado como "Não Lançado", mas voltará a aparecer nos próximos meses.
                 </p>
               </div>
 
@@ -2348,7 +1868,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   onClick={executeIgnoreProvisao}
                   className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-xl text-xs font-black text-white hover:scale-102 transition-all active:scale-95"
                 >
-                  Sim, Excluir
+                  Sim, Não Lançar
                 </button>
               </div>
             </motion.div>

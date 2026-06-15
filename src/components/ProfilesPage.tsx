@@ -901,7 +901,7 @@ export default function ProfilesPage({
                               />
                               <div className="w-11 h-6 bg-gray-200 dark:bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white dark:border-[#334155] after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white dark:after:bg-gray-300 dark:bg-[#1E293B] after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#16A34A]"></div>
                             </div>
-                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Cofres & Provisões</span>
+                            <span className="text-sm font-medium text-[#374151] dark:text-[#94A3B8] group-hover:text-[#0F172A] dark:text-white">Reservas</span>
                           </label>
                         </motion.div>
                       )}

@@ -14,9 +14,10 @@ interface RecurringModalProps {
   categories: any[];
   tags: any[];
   initialType?: 'receita' | 'despesa';
+  selectedDate?: Date;
 }
 
-export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activeProfileId, categories, tags, initialType = 'despesa' }: RecurringModalProps) => {
+export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activeProfileId, categories, tags, initialType = 'despesa', selectedDate }: RecurringModalProps) => {
   const [nome, setNome] = useState('');
   const [tipo, setTipo] = useState<'receita' | 'despesa'>('despesa');
   const [valorStr, setValorStr] = useState('');
@@ -69,8 +70,18 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       if (recorrencia) {
         setNome(recorrencia.nome);
         setTipo(recorrencia.tipo);
-        setValorVariavel(recorrencia.valor === null);
-        setValorStr(recorrencia.valor !== null ? (Math.round(recorrencia.valor * 100).toString()) : '0'); // using string cents for standard mask 
+        
+        if (recorrencia.valor === null) {
+          setValorVariavel(true);
+          setValorStr('0');
+        } else if (recorrencia.valor < 0) {
+          setValorVariavel(true);
+          setValorStr(Math.round(Math.abs(recorrencia.valor) * 100).toString());
+        } else {
+          setValorVariavel(false);
+          setValorStr(Math.round(recorrencia.valor * 100).toString());
+        }
+        
         setFrequencia(recorrencia.frequencia);
         setDiaVencimento(recorrencia.dia_vencimento || '');
         setDiaEmissao(recorrencia.dia_emissao || '');
@@ -135,7 +146,6 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
   }, [mostrarDropdownTag, tagSelecionada]);
 
   const handleValorChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (valorVariavel) return;
     const value = e.target.value.replace(/\D/g, "");
     const cleanedValue = value.replace(/^0+/, "") || "0";
     if (cleanedValue.length > 10) return;
@@ -167,6 +177,14 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
     if (!nome.trim()) return alert('Por favor, informe a descrição.');
     if (!valorVariavel && valorNumerico <= 0) return alert('Por favor, informe um valor maior que zero.');
     if (!tagSelecionada) return alert('Por favor, selecione uma tag válida.');
+    
+    if (frequencia !== 'diaria' && diaVencimento !== null && (!diaVencimento || Number(diaVencimento) < 1 || Number(diaVencimento) > 31)) {
+        return alert('Por favor, informe um dia do mês válido (1 a 31) ou marque "Sem dia fixo".');
+    }
+    if (frequencia === 'anual' && !mesVencimento) {
+        return alert('Por favor, informe o mês.');
+    }
+
     if (!activeProfileId) return;
 
     // Achar Categoria ID da Tag selecionada para inserir (embora não tenhamos o input de categoria, a tabela transacoes_recorrentes requer category_id)
@@ -179,9 +197,9 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       profile_id: activeProfileId,
       nome,
       tipo,
-      valor: valorVariavel ? null : valorNumerico,
+      valor: valorVariavel ? null : (isCard && numParcelas > 1 ? valorNumerico / numParcelas : valorNumerico),
       frequencia,
-      dia_vencimento: frequencia !== 'diaria' ? (diaVencimento === '' || diaVencimento === null ? null : Number(diaVencimento)) : null,
+      dia_vencimento: frequencia !== 'diaria' ? (diaVencimento === '' || diaVencimento === null ? null : Number(diaVencimento)) : (diaVencimento === 1 ? 1 : null),
       dia_emissao: isBusiness && diaEmissao !== '' ? Number(diaEmissao) : null,
       mes_vencimento: frequencia === 'anual' ? (mesVencimento === '' ? null : Number(mesVencimento)) : null,
       categoria_id: tagObj ? tagObj.category_id : null,
@@ -190,7 +208,6 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
       card_id: isCard ? cardId : null,
       num_parcelas: isCard ? numParcelas : null,
       ativa,
-      lancamento_rapido: lancamentoRapido
     };
 
     if (recorrencia) {
@@ -245,10 +262,11 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                 />
               </div>
 
-              {/* Tag com Busca */}
-              <div className="relative" ref={containerTagRef}>
-                <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Tag</label>
-                <div className="relative">
+              {/* Tag e Frequência */}
+              <div className="grid grid-cols-2 gap-[12px] items-start">
+                <div className="relative" ref={containerTagRef}>
+                  <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Tag</label>
+                  <div className="relative">
                   {tagSelecionada ? (
                     <div className={`inline-flex items-center gap-[6px] rounded-[100px] p-[6px_12px] text-[13px] font-[600] border-[1.5px] w-fit shadow-sm ${tipo === 'receita' ? 'bg-[#DCFCE7] dark:bg-green-900/30 text-[#16A34A] border-[#16A34A]' : 'bg-[#FEE2E2] dark:bg-red-900/30 text-[#EF4444] border-[#EF4444]'}`}>
                       <span>{tagSelecionada.nome}</span>
@@ -293,22 +311,37 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                 )}
               </div>
 
+              <div>
+                <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Frequência</label>
+                <select value={frequencia} onChange={e => setFrequencia(e.target.value as any)} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]">
+                  <option value="diaria">Diária</option>
+                  <option value="mensal">Mensal</option>
+                  <option value="anual">Anual</option>
+                </select>
+              </div>
+            </div>
+
               {/* Valor */}
               <div className="grid grid-cols-2 gap-[12px] items-end">
-                <div>
+                <div className="w-full">
                   <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Valor</label>
-                  <input 
-                    ref={inputValorRef}
-                    type="text" 
-                    inputMode="numeric"
-                    value={valorVariavel ? 'Variável' : valorExibido} 
-                    onChange={handleValorChange}
-                    onKeyDown={handleValorKeyDown}
-                    onFocus={handleInputFocus}
-                    onClick={handleInputFocus}
-                    disabled={valorVariavel}
-                    className={`w-full text-center border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${!valorVariavel && tipo === 'receita' ? 'text-[#16A34A]' : ''} ${!valorVariavel && tipo === 'despesa' ? 'text-[#EF4444]' : ''}`} 
-                  />
+                  {!valorVariavel ? (
+                    <input 
+                      ref={inputValorRef}
+                      type="text" 
+                      inputMode="numeric"
+                      value={valorExibido} 
+                      onChange={handleValorChange}
+                      onKeyDown={handleValorKeyDown}
+                      onFocus={handleInputFocus}
+                      onClick={handleInputFocus}
+                      className={`w-full text-center border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[15px] font-[800] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB] disabled:bg-[#F1F5F9] dark:bg-[#334155] disabled:text-[#94A3B8] disabled:border-[#E2E8F0] dark:border-[#334155] ${tipo === 'receita' ? 'text-[#16A34A]' : 'text-[#EF4444]'}`} 
+                    />
+                  ) : (
+                    <div className="w-full flex items-center justify-center border-[1.5px] border-dashed border-blue-300 dark:border-blue-500/30 rounded-[14px] p-[10px_14px] bg-blue-50/50 dark:bg-blue-900/10 text-blue-600 dark:text-blue-400 h-[46px]">
+                      <span className="text-[13px] font-[700]">Cálculo Dinâmico</span>
+                    </div>
+                  )}
                 </div>
                 <div className="pb-3 flex flex-col items-start justify-end space-y-[10px]">
                   <label className="flex items-center gap-2 cursor-pointer group">
@@ -319,69 +352,64 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     <span className="text-[13px] font-[600] text-[#475569] select-none">Valor Variável</span>
                   </label>
 
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${diaVencimento === null ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
-                      {diaVencimento === null && <Check size={14} className="text-white" />}
-                    </div>
-                    <input type="checkbox" checked={diaVencimento === null} onChange={e => setDiaVencimento(e.target.checked ? null : 1)} className="hidden" />
-                    <span className="text-[13px] font-[600] text-[#475569] select-none">Dia Variável</span>
-                  </label>
+                  {frequencia === 'diaria' && (
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${diaVencimento === 1 ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
+                        {diaVencimento === 1 && <Check size={14} className="text-white" />}
+                      </div>
+                      <input type="checkbox" checked={diaVencimento === 1} onChange={e => {
+                          setDiaVencimento(e.target.checked ? 1 : null);
+                      }} className="hidden" />
+                      <span className="text-[13px] font-[600] text-[#475569] select-none">Fazer Projeção</span>
+                    </label>
+                  )}
 
-                  <label className="flex items-center gap-2 cursor-pointer group">
-                    <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${lancamentoRapido ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
-                      {lancamentoRapido && <Check size={14} className="text-white" />}
-                    </div>
-                    <input type="checkbox" checked={lancamentoRapido} onChange={e => setLancamentoRapido(e.target.checked)} className="hidden" />
-                    <span className="text-[13px] font-[600] text-[#475569] select-none">Lançamento Rápido</span>
-                  </label>
+                  {frequencia !== 'diaria' && (
+                    <label className="flex items-center gap-2 cursor-pointer group">
+                      <div className={`w-5 h-5 rounded-[6px] border-[1.5px] flex items-center justify-center transition-colors ${diaVencimento === null ? 'bg-[#2563EB] border-[#2563EB]' : 'bg-[#F8FAFC] dark:bg-[#0F172A] border-[#CBD5E1] group-hover:border-[#94A3B8]'}`}>
+                        {diaVencimento === null && <Check size={14} className="text-white" />}
+                      </div>
+                      <input type="checkbox" checked={diaVencimento === null} onChange={e => {
+                          setDiaVencimento(e.target.checked ? null : 1);
+                      }} className="hidden" />
+                      <span className="text-[13px] font-[600] text-[#475569] select-none">Sem dia fixo</span>
+                    </label>
+                  )}
                 </div>
               </div>
 
-              {/* Frequência */}
-              {!lancamentoRapido && (
-                <>
-                  <div className="grid grid-cols-2 gap-[12px] items-start">
-                      <div>
-                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Frequência</label>
-                        <select value={frequencia} onChange={e => setFrequencia(e.target.value as any)} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)]">
-                          <option value="mensal">Mensal</option>
-                          <option value="anual">Anual</option>
-                        </select>
-                      </div>
-                      
-                      {/* Dia/Mês de Vencimento */}
-                      {frequencia === 'mensal' && diaVencimento !== null && (
-                        <div className="flex gap-[12px]">
-                          <div className="flex-1">
-                            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
-                            <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
-                          </div>
-                          {isBusiness && (
-                            <div className="flex-1">
-                              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia de Tirar</label>
-                              <input type="number" min="1" max="31" value={diaEmissao} onChange={e => setDiaEmissao(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="Opcional" />
-                            </div>
-                          )}
+              {/* Dia/Mês de Vencimento */}
+              {frequencia === 'mensal' && diaVencimento !== null && (
+                <div className="flex gap-[12px]">
+                  <div className="flex-1">
+                    <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
+                    <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
+                  </div>
+                  {isBusiness && (
+                    <div className="flex-1">
+                      <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia de Tirar</label>
+                      <input type="number" min="1" max="31" value={diaEmissao} onChange={e => setDiaEmissao(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="Opcional" />
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {frequencia === 'anual' && (
+                  <div className={`grid ${diaVencimento !== null ? 'grid-cols-2 gap-[12px]' : 'grid-cols-1'} items-start`}>
+                      {diaVencimento !== null && (
+                        <div>
+                          <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
+                          <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
                         </div>
                       )}
-                  </div>
-
-                  {frequencia === 'anual' && (
-                      <div className="grid grid-cols-2 gap-[12px] items-start">
-                          <div>
-                            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Dia do Mês</label>
-                            <input type="number" min="1" max="31" value={diaVencimento} onChange={e => setDiaVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] outline-none transition-all focus:border-[#2563EB]" placeholder="1 a 31" />
-                          </div>
-                          <div>
-                            <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Mês</label>
-                            <select value={mesVencimento} onChange={e => setMesVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB]">
-                              <option value="">Selecione...</option>
-                              {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('pt-BR', { month: 'long' })}</option>)}
-                            </select>
-                          </div>
+                      <div>
+                        <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Mês</label>
+                        <select value={mesVencimento} onChange={e => setMesVencimento(e.target.value ? Number(e.target.value) : '')} className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none transition-all focus:border-[#2563EB]">
+                          <option value="">Selecione...</option>
+                          {[...Array(12)].map((_, i) => <option key={i+1} value={i+1}>{new Date(0, i).toLocaleString('pt-BR', { month: 'long' })}</option>)}
+                        </select>
                       </div>
-                  )}
-                </>
+                  </div>
               )}
 
               {/* Forma Pagamento */}
@@ -402,7 +430,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     }} 
                     className="w-full border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] p-[10px_14px] text-[14px] font-[500] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white outline-none cursor-pointer appearance-none focus:border-[#2563EB]"
                   >
-                    <option value="dinheiro">{isBusiness ? 'Conta' : 'Dinheiro'}</option>
+                    <option value="dinheiro">Conta</option>
                     {cards.map(c => (
                       <option key={c.id} value={c.id}>{c.nome}</option>
                     ))}
@@ -432,6 +460,14 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                     </div>
                     <div className="text-[13px] text-[#64748B] dark:text-[#94A3B8] font-[500]">vezes</div>
                   </div>
+                  {(numParcelas > 1 && !valorVariavel) && (
+                    <div className="mt-[12px] p-[10px] bg-slate-100/50 dark:bg-slate-800/50 border border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex justify-between items-center">
+                      <span className="text-[11px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">Valor p/ Parcela</span>
+                      <span className="text-[13px] font-bold text-[#2563EB] dark:text-blue-400">
+                        R$ {formatarValor(Math.round((valorNumerico / numParcelas) * 100).toString())}
+                      </span>
+                    </div>
+                  )}
                 </motion.div>
               )}
             </div>

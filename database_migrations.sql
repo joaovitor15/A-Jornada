@@ -44,6 +44,7 @@ ADD COLUMN IF NOT EXISTS card_id UUID REFERENCES public.cards(id) ON DELETE SET 
 ALTER TABLE public.transacoes_recorrentes
 ADD COLUMN IF NOT EXISTS forma_pagamento TEXT DEFAULT 'Dinheiro',
 ADD COLUMN IF NOT EXISTS card_id UUID REFERENCES public.cards(id) ON DELETE SET NULL,
+ADD COLUMN IF NOT EXISTS exclusoes_pontuais TEXT[] DEFAULT '{}'::TEXT[],
 ADD COLUMN IF NOT EXISTS dia_emissao INTEGER;
 
 -- Tabela de ativos da carteira (Ações, FIIs, etc)
