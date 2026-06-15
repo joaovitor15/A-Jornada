@@ -17,8 +17,8 @@ export default defineConfig(({mode}) => {
           name: 'Jornada',
           short_name: 'Jornada',
           description: 'Acompanhe sua jornada com facilidade',
-          theme_color: '#1c1b1f',
-          background_color: '#1c1b1f',
+          theme_color: '#1f2937',
+          background_color: '#111827',
           display: 'standalone',
           icons: [
             {
@@ -47,9 +47,12 @@ export default defineConfig(({mode}) => {
               src: 'logo-app-monochrome.svg',
               sizes: '192x192 512x512',
               type: 'image/svg+xml',
-              purpose: 'monochrome',
+              purpose: 'maskable monochrome',
             }
           ]
+        },
+        devOptions: {
+          enabled: true
         },
         workbox: {
           maximumFileSizeToCacheInBytes: 4000000,
