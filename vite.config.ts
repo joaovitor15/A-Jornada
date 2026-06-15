@@ -12,7 +12,7 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg'],
+        includeAssets: ['logo-app.svg', 'logo-app-monochrome.svg', 'icon-192-monochrome.png', 'icon-512-monochrome.png'],
         manifest: {
           name: 'Jornada',
           short_name: 'Jornada',
@@ -25,29 +25,37 @@ export default defineConfig(({mode}) => {
               src: 'icon-192.png',
               sizes: '192x192',
               type: 'image/png',
+              purpose: 'any'
             },
             {
               src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
+              purpose: 'any'
             },
             {
-              src: 'icon-512.png',
+              src: 'icon-192-monochrome.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'monochrome',
+            },
+            {
+              src: 'icon-512-monochrome.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'maskable',
+              purpose: 'monochrome',
             },
             {
               src: 'logo-app.svg',
               sizes: '192x192 512x512',
               type: 'image/svg+xml',
-              purpose: 'any maskable',
+              purpose: 'any',
             },
             {
               src: 'logo-app-monochrome.svg',
               sizes: '192x192 512x512',
               type: 'image/svg+xml',
-              purpose: 'maskable monochrome',
+              purpose: 'monochrome',
             }
           ]
         },
