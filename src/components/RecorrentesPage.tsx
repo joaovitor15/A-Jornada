@@ -596,10 +596,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   // Filter dynamic list based on state
   let listagemFiltrada = targetProvisoesToComputeStats.filter(p => {
-    // Hide data_variavel from lancamento tab only in business profile
-    const isDataVariavel = !p.dia_vencimento && !p.dia_emissao && !p.lancamento_rapido && isBusiness;
-    if (isDataVariavel) return false;
-
     if (p.tipo !== filtroNatureza) return false;
 
     // 1. Busca

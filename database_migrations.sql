@@ -107,3 +107,7 @@ ADD COLUMN IF NOT EXISTS valor_previsto NUMERIC(10, 2);
 -- Preencher valor_previsto retroativamente para evitar nulos em itens antigos
 UPDATE public.transacoes SET valor_previsto = valor WHERE valor_previsto IS NULL;
 
+-- Corrige constraint para não impedir exclusão de recorrências
+ALTER TABLE public.transacoes DROP CONSTRAINT IF EXISTS transacoes_recorrente_id_fkey;
+ALTER TABLE public.transacoes ADD CONSTRAINT transacoes_recorrente_id_fkey FOREIGN KEY (recorrente_id) REFERENCES public.transacoes_recorrentes(id) ON DELETE SET NULL;
+
