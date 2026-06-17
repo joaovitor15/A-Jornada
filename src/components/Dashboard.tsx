@@ -79,7 +79,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       const { data: antData } = await supabase
         .from('transacoes')
-        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
+        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
         .eq('profile_id', activeProfileId)
         .is('card_id', null)
         .lt('data', `${an}-${mesStr}-01`);
@@ -119,7 +119,6 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         `)
         .eq('profile_id', activeProfileId)
         .eq('tipo', 'despesa')
-        .is('card_id', null)
         .gte('data', `${an}-${mesStr}-01`)
         .lte('data', `${an}-${mesStr}-${ultimoDia}`);
 
@@ -132,7 +131,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       const invesArr = [
         ...recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
-        ...dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() === 'investimentos')
+        ...dspsArrOriginal.filter(d => !d.card_id && d.tags?.categories?.nome?.toLowerCase() === 'investimentos')
       ];
 
       const sumRecsPago = recsArr.filter(r => r.status !== 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
@@ -145,7 +144,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       const sumInvesPago = invesArr.filter(d => d.status !== 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
 
       // Calcular economia (valor_previsto - valor) para despesas ja pagas
-      const paidDespesasWithPrev = dspsArr.filter(d => d.status !== 'previsto' && d.valor_previsto !== undefined && d.valor_previsto !== null);
+      const paidDespesasWithPrev = dspsArr.filter(d => d.status !== 'previsto' && !d.card_id && d.valor_previsto !== undefined && d.valor_previsto !== null);
       const calcEconomia = paidDespesasWithPrev.reduce((acc, d) => acc + ((d.valor_previsto || d.valor) - d.valor), 0);
 
       // --- FETCH RECORRENTES PARA INCLUIR NA PROVISÃO ---
@@ -252,11 +251,24 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                             return true;
                           }
 
+                          if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                            return false;
+                          }
+
                           if (!t.data) return false;
                           const tDate = new Date(t.data + 'T12:00:00Z');
                           if (tDate.getFullYear() !== y || tDate.getMonth() !== m) return false;
                           
-                          if (t.recorrente_id === rec.id) return true;
+                          if (t.recorrente_id === rec.id) {
+                              let currentParcela = 1;
+                              if (rec.num_parcelas && rec.num_parcelas > 1) {
+                                  currentParcela = diffM + 1;
+                              }
+                              if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                                  return false;
+                              }
+                              return true;
+                          }
                           if (t.recorrente_id) return false;
                           
                           const safeDesc = t.descricao || '';
@@ -265,19 +277,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                                             cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
                           if (nameMatch) {
                               let diffOk = true;
-                              if (rec.valor !== null && rec.valor !== 0) {
+                              if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
                                   const diff = Math.abs((t.valor || 0) - Number(rec.valor));
                                   if (diff > 0.01) diffOk = false;
                               }
                               
                               if (diffOk) {
-                                  if (rec.dia_vencimento) {
-                                      try {
-                                          if (tDate.getUTCDate() === Number(rec.dia_vencimento)) return true;
-                                      } catch(e) {}
-                                  } else {
-                                      return true;
-                                  }
+                                  return true;
                               }
                           }
                           return false;
@@ -296,7 +302,6 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               if (projectedTimeId < creationTimeId) {
                 shouldRender = false;
               }
-              else if (targetYear !== activeYear && activeProfileType !== 'empresa') shouldRender = false;
 
               if (!shouldRender) return;
 
@@ -321,7 +326,21 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                        if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
                          return true;
                        }
-                       if (t.recorrente_id === rec.id) return true;
+
+                       if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                         return false;
+                       }
+
+                       if (t.recorrente_id === rec.id) {
+                           let currentParcela = 1;
+                           if (rec.num_parcelas && rec.num_parcelas > 1) {
+                               currentParcela = monthDiff + 1;
+                           }
+                           if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                               return false;
+                           }
+                           return true;
+                       }
                        if (t.recorrente_id) return false;
                        
                        const safeDesc = t.descricao || '';
@@ -330,20 +349,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                                          cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
                        if (nameMatch) {
                            let diffOk = true;
-                           if (rec.valor !== null && rec.valor !== 0) {
+                           if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
                                const diff = Math.abs((t.valor || 0) - Number(rec.valor));
                                if (diff > 0.01) diffOk = false;
                            }
                            
                            if (diffOk) {
-                               if (rec.dia_vencimento) {
-                                   try {
-                                       const tDay = new Date(t.data + 'T12:00:00Z').getUTCDate();
-                                       if (tDay === Number(rec.dia_vencimento)) return true;
-                                   } catch(e) {}
-                               } else {
-                                   return true;
-                               }
+                               return true;
                            }
                        }
                        return false;
@@ -374,7 +386,21 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                        if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
                          return true;
                        }
-                       if (t.recorrente_id === rec.id) return true;
+
+                       if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                         return false;
+                       }
+
+                       if (t.recorrente_id === rec.id) {
+                           let currentParcela = 1;
+                           if (rec.num_parcelas && rec.num_parcelas > 1) {
+                               currentParcela = monthDiff + 1;
+                           }
+                           if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                               return false;
+                           }
+                           return true;
+                       }
                        if (t.recorrente_id) return false;
 
                        const safeDesc = t.descricao || '';
@@ -383,20 +409,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                                          cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
                        if (nameMatch) {
                            let diffOk = true;
-                           if (rec.valor !== null && rec.valor !== 0) {
+                           if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
                                const diff = Math.abs((t.valor || 0) - Number(rec.valor));
                                if (diff > 0.01) diffOk = false;
                            }
                            
                            if (diffOk) {
-                               if (rec.dia_vencimento) {
-                                   try {
-                                       const tDay = new Date(t.data + 'T12:00:00Z').getUTCDate();
-                                       if (tDay === Number(rec.dia_vencimento)) return true;
-                                   } catch(e) {}
-                               } else {
-                                   return true;
-                               }
+                               return true;
                            }
                        }
                        return false;

@@ -4,7 +4,7 @@ import {
   Calendar, Check, Edit, Trash2, CreditCard, Tag as TagIcon, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Sparkles, 
   RefreshCw, AlertCircle, Plus, ChevronDown, CheckCircle2, RotateCcw,
-  Play, Pause, Info, Wallet, Pencil, Search, XCircle, Landmark, Library, Tag
+  Play, Pause, Info, Wallet, Pencil, Search, XCircle, Landmark, Library, Tag, LayoutDashboard
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RecurringModal } from './RecurringModal';
@@ -464,7 +464,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     let currentParcela = 1;
     
     // 1. Parcel options
-    if (rec.num_parcelas && rec.num_parcelas > 0) {
+    if (rec.num_parcelas && rec.num_parcelas > 1) {
       if (monthDiff < 0 || monthDiff >= rec.num_parcelas) {
         shouldRender = false;
       } else {
@@ -1401,14 +1401,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0 mt-2 mb-5 px-2">
                       <div className="flex flex-col items-center w-full md:w-auto md:flex-1 order-1">
                         <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">
-                        {item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA'))}
+                        {dashboardPeriodo === 'anual' ? 'VALOR DA PARCELA' : (item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA')))}
                         </p>
-                        <div className={`flex flex-col items-center justify-center ${item.isIgnored ? 'opacity-50 line-through' : ''}`}>
+                        <div className={`flex flex-col items-center justify-center ${dashboardPeriodo !== 'anual' && item.isIgnored ? 'opacity-50 line-through' : ''}`}>
                           {item.valor === null && (!fazerProjecao || (item.valorPrevisto === 0 && !item.isPago)) ? (
                             <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
                           ) : (
                             <p className="text-2xl font-black text-slate-800 dark:text-white">
-                              {formatarMoedaSinal(item.isPago ? item.valorEfetivado : item.valorPrevisto, true)}
+                              {formatarMoedaSinal(dashboardPeriodo === 'anual' ? item.valorPrevisto : (item.isPago ? item.valorEfetivado : item.valorPrevisto), true)}
                             </p>
                           )}
                         </div>
@@ -1442,7 +1442,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
                     {/* Footer Actions */}
                     <div className="mt-auto space-y-2">
-                      {item.isIgnored ? (
+                      {dashboardPeriodo === 'anual' ? (
+                        <div className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2 cursor-not-allowed">
+                          <LayoutDashboard size={18} />
+                          Provisão Contínua {anoAtual}
+                        </div>
+                      ) : item.isIgnored ? (
                         <button
                           onClick={() => handleUndoIgnoreProvisao(item)} 
                           className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"

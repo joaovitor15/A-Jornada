@@ -37,9 +37,8 @@ export function CardProvisoesDashboard({ activeProfileId, setActivePage, mesSele
           .eq('ativa', true),
         supabase
           .from('transacoes')
-          .select('id, data, recorrente_id, descricao')
+          .select('id, data, recorrente_id, descricao, tipo, valor, num_parcelas')
           .eq('profile_id', activeProfileId)
-          .not('recorrente_id', 'is', null)
           .gte('data', startBoundary)
           .lte('data', endBoundary)
       ]);
@@ -56,17 +55,58 @@ export function CardProvisoesDashboard({ activeProfileId, setActivePage, mesSele
       const findRealization = (rec: any, year: number, month: number) => {
         const monthStr = String(month + 1).padStart(2, '0');
         const refTag = `(Ref: ${monthStr}/${year})`;
-        
-        return transacoes.find((t: any) => {
-            if (t.recorrente_id !== rec.id) return false;
 
-            if (t.descricao && t.descricao.includes('(Ref:')) {
-               return t.descricao.includes(refTag);
-            }
-            
+        const effStartYear = rec.ultima_lancada ? new Date(rec.ultima_lancada).getFullYear() : year;
+        const effStartMonth = rec.ultima_lancada ? new Date(rec.ultima_lancada).getMonth() : month;
+        const projectedTimeId = year * 12 + month;
+        const creationTimeId = effStartYear * 12 + effStartMonth;
+        const monthDiff = projectedTimeId - creationTimeId;
+        
+        let currentParcela = 1;
+        if (rec.num_parcelas && rec.num_parcelas > 1) {
+            currentParcela = monthDiff + 1;
+        }
+
+        return transacoes.find((t: any) => {
+          if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+            return true;
+          }
+          if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+            return false;
+          }
+
+          const inTargetMonth = (() => {
             if (!t.data) return false;
             const [y, m, d] = t.data.split('-');
-            return parseInt(y, 10) === year && parseInt(m, 10) === (month + 1);
+            return parseInt(y, 10) === year && parseInt(m, 10) === month + 1;
+          })();
+
+          if (!inTargetMonth) return false;
+
+          if (t.recorrente_id === rec.id) {
+             if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+               return false;
+             }
+             return true;
+          }
+
+          if (t.recorrente_id) return false;
+
+          const safeDesc = t.descricao || '';
+          const cleanRecName = rec.nome || '';
+          const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                            cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+
+          const tipoMatch = t.tipo === rec.tipo;
+
+          if (nameMatch && tipoMatch) {
+            if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+              const diff = Math.abs(t.valor - Math.abs(Number(rec.valor)));
+              if (diff > 0.01) return false;
+            }
+            return true;
+          }
+          return false;
         });
       };
 
@@ -103,7 +143,7 @@ export function CardProvisoesDashboard({ activeProfileId, setActivePage, mesSele
         }
 
         const monthDiff = projectedTimeId - creationTimeId;
-        if (rec.num_parcelas && rec.num_parcelas > 0) {
+        if (rec.num_parcelas && rec.num_parcelas > 1) {
             if (monthDiff < 0 || monthDiff >= rec.num_parcelas) {
                 return;
             }
