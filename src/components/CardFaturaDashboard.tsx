@@ -152,10 +152,11 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
 
   // Constantes de visualização e estados
   const card = cards[0];
+  const transacoesAtivas = transacoesCard.filter(t => t.status !== 'ignorado');
 
   // 1. DADOS GLOBAIS DE CRÉDITO E LIMITE DO CARTÃO
-  const globalDespesas = transacoesCard.filter(t => t.card_id === card.id && t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor), 0);
-  const globalCreditos = transacoesCard.filter(t => t.card_id === card.id && t.tipo === 'receita').reduce((acc, t) => acc + Number(t.valor), 0);
+  const globalDespesas = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor), 0);
+  const globalCreditos = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'receita').reduce((acc, t) => acc + Number(t.valor), 0);
   const globalLimitUsed = globalDespesas - globalCreditos;
 
   // Calculando Crédito Disponível (quando o saldo usado é negativo = tem crédito sobrando)
@@ -174,9 +175,9 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
   const periodoCardAtual = helperCalcularPeriodo(card.dia_fechamento_fatura, card.dia_vencimento_fatura, 0);
   
   // 3. FIFO DE PAGAMENTOS (DISTRIBUIÇÃO DA DÍVIDA)
-  const despesasPassado = transacoesCard.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data < periodoCardAtual.inicioStr).reduce((acc, t) => acc + Number(t.valor), 0);
-  const despesasAberto = transacoesCard.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data >= periodoCardAtual.inicioStr && t.data <= periodoCardAtual.fimStr).reduce((acc, t) => acc + Number(t.valor), 0);
-  const despesasFuturo = transacoesCard.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data > periodoCardAtual.fimStr).reduce((acc, t) => acc + Number(t.valor), 0);
+  const despesasPassado = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data < periodoCardAtual.inicioStr).reduce((acc, t) => acc + Number(t.valor), 0);
+  const despesasAberto = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data >= periodoCardAtual.inicioStr && t.data <= periodoCardAtual.fimStr).reduce((acc, t) => acc + Number(t.valor), 0);
+  const despesasFuturo = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data > periodoCardAtual.fimStr).reduce((acc, t) => acc + Number(t.valor), 0);
 
   let creditosRestantes = globalCreditos;
 
@@ -364,7 +365,7 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
         return;
     }
 
-    const parcelasSelecionadasFull = transacoesCard.filter(t => anteciparParcelasSelecionadas.includes(t.id));
+    const parcelasSelecionadasFull = transacoesAtivas.filter(t => anteciparParcelasSelecionadas.includes(t.id));
     
     try {
         let remainingToAnticipate = valorPago;
@@ -677,7 +678,7 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
                </p>
 
                <div className="space-y-3 mb-6">
-                 {transacoesCard
+                 {transacoesAtivas
                     .filter(t => t.card_id === anteciparParcelasModal.id && t.data > (calcularPeriodoFatura(anteciparParcelasModal.dia_fechamento_fatura, anteciparParcelasModal.dia_vencimento_fatura) as any).fimStr && t.tipo === 'despesa')
                     .sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime())
                     .map(t => (
@@ -698,7 +699,7 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
                         </label>
                     ))
                  }
-                 {transacoesCard.filter(t => t.card_id === anteciparParcelasModal.id && t.data > (calcularPeriodoFatura(anteciparParcelasModal.dia_fechamento_fatura, anteciparParcelasModal.dia_vencimento_fatura) as any).fimStr && t.tipo === 'despesa').length === 0 && (
+                 {transacoesAtivas.filter(t => t.card_id === anteciparParcelasModal.id && t.data > (calcularPeriodoFatura(anteciparParcelasModal.dia_fechamento_fatura, anteciparParcelasModal.dia_vencimento_fatura) as any).fimStr && t.tipo === 'despesa').length === 0 && (
                     <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">Nenhuma parcela futura encontrada.</div>
                  )}
                </div>
@@ -773,7 +774,7 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
                   const periodo = helperCalcularPeriodo(faturaVisualizar.dia_fechamento_fatura, faturaVisualizar.dia_vencimento_fatura, faturaOffsetVisualizar);
                   const nomeMesStr = new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(periodo.vencimento);
                   const nomeMes = nomeMesStr.charAt(0).toUpperCase() + nomeMesStr.slice(1);
-                  const transacoesFatura = transacoesCard
+                  const transacoesFatura = transacoesAtivas
                     .filter(t => t.card_id === faturaVisualizar.id && t.data <= (periodo as any).fimStr && t.data >= (periodo as any).inicioStr)
                     .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime());
                   const despesasFatura = transacoesFatura.filter(t => t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor), 0);
@@ -906,7 +907,7 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
                       const nomeMes = nomeMesStr.charAt(0).toUpperCase() + nomeMesStr.slice(1);
                       const hoje = new Date();
                       
-                      const valorFaturaItem = transacoesCard
+                      const valorFaturaItem = transacoesAtivas
                         .filter(t => t.card_id === faturaVisualizar.id && t.data <= (periodo as any).fimStr && t.data >= (periodo as any).inicioStr)
                         .reduce((acc, t) => t.tipo === 'despesa' ? acc + Number(t.valor) : acc - Number(t.valor), 0);
                         

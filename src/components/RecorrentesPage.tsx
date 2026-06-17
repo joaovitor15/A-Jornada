@@ -725,9 +725,12 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     setEfetivarParcelas(1); // Default to 1
     
     let defaultData = todayStr;
-    if (isBusiness && p.dia_vencimento) {
-      let year = selectedDate.getFullYear();
-      let month = selectedDate.getMonth();
+    const yearOrig = selectedDate.getFullYear();
+    const monthOrig = selectedDate.getMonth();
+    
+    if (p.dia_vencimento) {
+      let year = yearOrig;
+      let month = monthOrig;
       
       if (p.frequencia === 'anual' && p.mes_vencimento) {
         month = p.mes_vencimento - 1;
@@ -735,7 +738,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       
       let targetDay = Number(p.dia_vencimento);
       
-      if (p.dia_emissao && targetDay < Number(p.dia_emissao)) {
+      if (isBusiness && p.dia_emissao && targetDay < Number(p.dia_emissao)) {
           month += 1;
           if (month > 11) {
               month = 0;
@@ -748,6 +751,11 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       if (targetDay < 1) targetDay = 1;
       
       defaultData = `${year}-${String(month + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
+    } else {
+      // If no fix day, default to today if in current month, or 1st day of target month
+      const maxDayInMonth = new Date(yearOrig, monthOrig + 1, 0).getDate();
+      let targetDay = Math.min(new Date().getDate(), maxDayInMonth);
+      defaultData = `${yearOrig}-${String(monthOrig + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
     }
     
     setEfetivarData(defaultData);
@@ -774,23 +782,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       const isBusiness = activeProfileId && profiles.find(p => p.id === activeProfileId)?.tipo === 'empresa';
       
       let descExibida = baseDesc;
-      
-      if (isBusiness) {
-        descExibida = `${baseDesc} (Ref: ${monthStr}/${yearStr})`;
-      }
+      descExibida = `${baseDesc} (Ref: ${monthStr}/${yearStr})`;
 
-      const targetDate = isBusiness ? efetivarData : (() => {
-        const year = selectedDate.getFullYear();
-        const month = selectedDate.getMonth();
-        let targetDay = provisao.dia_vencimento ? Number(provisao.dia_vencimento) : 1;
-        
-        // ensure within bounds of the month
-        const maxDayInMonth = new Date(year, month + 1, 0).getDate();
-        if (targetDay > maxDayInMonth) targetDay = maxDayInMonth;
-        if (targetDay < 1) targetDay = 1;
-
-        return `${year}-${String(month + 1).padStart(2, '0')}-${String(targetDay).padStart(2, '0')}`;
-      })();
+      const targetDate = efetivarData;
 
       const formaPgto = efetivarFormaPagamento;
       const cardId = formaPgto === 'cartao_credito' ? efetivarCartaoId : null;
@@ -817,21 +811,17 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         .eq('profile_id', activeProfileId)
         .eq('recorrente_id', provisao.id);
 
-      if (isBusiness) {
-        // Broaden search to find the explicit reference tag across boundary months
-        const targetYearPrev = targetMonth === 0 ? targetYear - 1 : targetYear;
-        const targetMonthPrev = targetMonth === 0 ? 12 : targetMonth;
-        const targetYearNext = targetMonth === 11 ? targetYear + 1 : targetYear;
-        const targetMonthNext = targetMonth === 11 ? 1 : targetMonth + 2;
-        
-        const broadStart = `${targetYearPrev}-${String(targetMonthPrev).padStart(2, '0')}-01`;
-        const nextMaxDay = new Date(targetYearNext, targetMonthNext, 0).getDate();
-        const broadEnd = `${targetYearNext}-${String(targetMonthNext).padStart(2, '0')}-${String(nextMaxDay).padStart(2, '0')}`;
-        
-        checkQuery = checkQuery.gte('data', broadStart).lte('data', broadEnd);
-      } else {
-        checkQuery = checkQuery.gte('data', monthStart).lte('data', monthEnd);
-      }
+      // Broaden search to find the explicit reference tag across boundary months
+      const targetYearPrev = targetMonth === 0 ? targetYear - 1 : targetYear;
+      const targetMonthPrev = targetMonth === 0 ? 12 : targetMonth;
+      const targetYearNext = targetMonth === 11 ? targetYear + 1 : targetYear;
+      const targetMonthNext = targetMonth === 11 ? 1 : targetMonth + 2;
+      
+      const broadStart = `${targetYearPrev}-${String(targetMonthPrev).padStart(2, '0')}-01`;
+      const nextMaxDay = new Date(targetYearNext, targetMonthNext, 0).getDate();
+      const broadEnd = `${targetYearNext}-${String(targetMonthNext).padStart(2, '0')}-${String(nextMaxDay).padStart(2, '0')}`;
+      
+      checkQuery = checkQuery.gte('data', broadStart).lte('data', broadEnd);
 
       const { data: existingTransArr, error: checkError } = await checkQuery;
 
@@ -840,18 +830,16 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       const pNumToMatch = parcelaNum || 1;
       let existingTrans = null;
       
-      if (isBusiness) {
-         const refTag = `(Ref: ${String(targetMonth + 1).padStart(2, '0')}/${targetYear})`;
-         existingTrans = existingTransArr?.find(t => 
-           (t.descricao && t.descricao.includes(refTag)) &&
-           (t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1))
-         ) || existingTransArr?.find(t => 
-           // fallback to strict month boundary if refTag is somehow missing
-           (t.data && t.data >= monthStart && t.data <= monthEnd) &&
-           (t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1))
-         ) || null;
-      } else {
-         existingTrans = existingTransArr?.find(t => t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1)) || null;
+      if (provisao.frequencia !== 'diaria') {
+        const refTag = `(Ref: ${String(targetMonth + 1).padStart(2, '0')}/${targetYear})`;
+        existingTrans = existingTransArr?.find(t => 
+          (t.descricao && t.descricao.includes(refTag)) &&
+          (t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1))
+        ) || existingTransArr?.find(t => 
+          // fallback to strict month boundary if refTag is somehow missing
+          (t.data && t.data >= monthStart && t.data <= monthEnd) &&
+          (t.num_parcelas === pNumToMatch || (!t.num_parcelas && pNumToMatch === 1))
+        ) || null;
       }
 
       if (formaPgto === 'cartao_credito' && usedParcelas > 1) {
@@ -1543,18 +1531,16 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   </p>
                 </div>
 
-                {/* Data de Pagamento Input - Only for Empresa */}
-                {isBusiness && (
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Data de Pagamento</label>
-                    <input
-                      type="date"
-                      value={efetivarData}
-                      onChange={e => setEfetivarData(e.target.value)}
-                      className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
-                    />
-                  </div>
-                )}
+                {/* Data de Pagamento Input */}
+                <div>
+                  <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Data do Pagamento</label>
+                  <input
+                    type="date"
+                    value={efetivarData}
+                    onChange={e => setEfetivarData(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
+                  />
+                </div>
 
                 {/* Input Value - Always show if variable, OR if options are expanded */}
                 {(efetivarModal.provisao.valor === null || efetivarModal.provisao.valor < 0 || efetivarMostrarOpcoes) && (

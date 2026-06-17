@@ -54,6 +54,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
   const [despesasValor, setDespesasValor] = useState(0);
   const [investimentosValor, setInvestimentosValor] = useState(0);
   const [cartoesValor, setCartoesValor] = useState(0);
+  const [cartoesDisplayTotal, setCartoesDisplayTotal] = useState(0);
+  const [cartoesPago, setCartoesPago] = useState(false);
   const [receitasPago, setReceitasPago] = useState(0);
   const [receitasPrevisto, setReceitasPrevisto] = useState(0);
   const [despesasPago, setDespesasPago] = useState(0);
@@ -77,20 +79,23 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       const mesStr = ms.toString().padStart(2, '0');
       const ultimoDia = new Date(an, ms, 0).getDate();
 
-      const { data: antData } = await supabase
+      const { data: antDataAll } = await supabase
         .from('transacoes')
-        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
+        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
         .eq('profile_id', activeProfileId)
-        .is('card_id', null)
         .lt('data', `${an}-${mesStr}-01`);
+
+      const antData = antDataAll?.filter(t => t.card_id === null) || [];
 
       let saldoAntCalcAcumulado = 0;
       if (activeProfileType !== 'empresa' && antData) {
           antData.forEach(t => {
+              if (t.status === 'ignorado') return;
               const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
               const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
               if (tagCat === 'investimentos') {
-                  saldoAntCalcAcumulado -= (vl || 0);
+                  if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                  else saldoAntCalcAcumulado -= (vl || 0);
               } else {
                   if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
                   else if (t.tipo === 'despesa') saldoAntCalcAcumulado -= (vl || 0);
@@ -134,14 +139,19 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         ...dspsArrOriginal.filter(d => !d.card_id && d.tags?.categories?.nome?.toLowerCase() === 'investimentos')
       ];
 
-      const sumRecsPago = recsArr.filter(r => r.status !== 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
-      const sumRecsPrev = recsArr.filter(r => r.status === 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumRecsPago = recsArr.filter(r => r.status !== 'previsto' && r.status !== 'ignorado').reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumRecsPrev = recsArr.filter(r => r.status === 'previsto').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
 
-      const sumDspsPago = dspsArr.filter(d => d.status !== 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
-      const sumDspsPrev = dspsArr.filter(d => d.status === 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumDspsPago = dspsArr.filter(d => d.status !== 'previsto' && d.status !== 'ignorado' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumDspsPrev = dspsArr.filter(d => d.status === 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
 
-      // Separar investimentos por pago
-      const sumInvesPago = invesArr.filter(d => d.status !== 'previsto').reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      // Separar investimentos por pago e previsto
+      const sumInvesPago = invesArr.filter(d => d.status !== 'previsto' && d.status !== 'ignorado').reduce((acc, obj) => {
+          if (obj.tipo === 'receita') return acc - (obj.valor || 0);
+          return acc + (obj.valor || 0);
+      }, 0);
+      const sumInvesPrev = invesArr.filter(d => d.status === 'previsto' && d.status !== 'ignorado' && d.tipo === 'despesa').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+      const sumInvesPrevRec = invesArr.filter(d => d.status === 'previsto' && d.status !== 'ignorado' && d.tipo === 'receita').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
 
       // Calcular economia (valor_previsto - valor) para despesas ja pagas
       const paidDespesasWithPrev = dspsArr.filter(d => d.status !== 'previsto' && !d.card_id && d.valor_previsto !== undefined && d.valor_previsto !== null);
@@ -160,6 +170,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       let sumDspsPrevRecorrente = 0;
       let sumRecsPrevRecorrente = 0;
+      let sumInvesPrevRecorrente = 0;
       let pastRecorrentesDebt = 0;
       const combinedPending: any[] = [];
       const lancamentosRapidos: any[] = [];
@@ -245,7 +256,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       }
                       if (!shouldExist) continue;
 
-                      const isMatchedInPast = antData?.find(t => {
+                      const checkData = [...(antDataAll || []), ...recsArrOriginal, ...dspsArrOriginal];
+                      const isMatchedInPast = checkData.find(t => {
                           const refTag = `(Ref: ${String(m + 1).padStart(2, '0')}/${y})`;
                           if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
                             return true;
@@ -290,8 +302,25 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       });
 
                       if (!isMatchedInPast && activeProfileType !== 'empresa') {
-                          if (rec.tipo === 'despesa') pastRecorrentesDebt -= (Number(rec.valor) || 0);
-                          else if (rec.tipo === 'receita') pastRecorrentesDebt += (Number(rec.valor) || 0);
+                          const isPastIgnored = (rec.exclusoes_pontuais || []).includes(`${y}_${m}`);
+                          if (!isPastIgnored) {
+                              let historicValue = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+                              if (rec.valor === null || rec.valor === 0) {
+                                  const realizadosAnteriores = (antDataAll || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                                  if (realizadosAnteriores.length > 0) {
+                                      const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+                                      historicValue = soma / realizadosAnteriores.length;
+                                  }
+                              }
+
+                              const recCatName = (rec.tags as any)?.categories?.nome?.toLowerCase() || '';
+                              if (recCatName !== 'investimentos') {
+                                  if (rec.tipo === 'despesa') pastRecorrentesDebt -= historicValue;
+                                  else if (rec.tipo === 'receita') pastRecorrentesDebt += historicValue;
+                              } else {
+                                  if (rec.tipo === 'receita') pastRecorrentesDebt += historicValue;
+                              }
+                          }
                       }
                   }
               }
@@ -310,7 +339,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
               let valorPrevisto = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
               if (rec.valor === null || rec.valor <= 0) {
-                const realizadosAnteriores = (antData || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                const realizadosAnteriores = (antDataAll || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
                 if (realizadosAnteriores.length > 0) {
                   const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
                   valorPrevisto = soma / realizadosAnteriores.length;
@@ -364,6 +393,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   if (!matched) {
                       if (recCatName.toLowerCase() !== 'investimentos') {
                           sumDspsPrevRecorrente += valorPrevisto;
+                      } else {
+                          sumInvesPrevRecorrente += valorPrevisto;
                       }
                       const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
                       combinedPending.push({
@@ -422,7 +453,15 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   });
 
                   if (!matched) {
-                      sumRecsPrevRecorrente += valorPrevisto;
+                      const recCatName = (rec.tags as any)?.categories?.nome?.toLowerCase() || '';
+                      if (recCatName !== 'investimentos') {
+                          sumRecsPrevRecorrente += valorPrevisto;
+                      } else {
+                          // we subtract from the investment prev as it's a negative investment (receipt)
+                          // wait, a receipt in investment should be in receitasPrevisto!
+                          // we can just keep sumInvesPrevRecorrente separate if needed but it's easier to add directly.
+                          sumRecsPrevRecorrente += valorPrevisto; 
+                      }
                       const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
                       combinedPending.push({
                           id: `rec-${rec.id}`,
@@ -442,9 +481,9 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       }
 
       setReceitasPago(sumRecsPago);
-      setReceitasPrevisto(sumRecsPrev + sumRecsPrevRecorrente);
+      setReceitasPrevisto(sumRecsPrev + sumRecsPrevRecorrente + sumInvesPrevRec);
       setDespesasPago(sumDspsPago);
-      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente);
+      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente + sumInvesPrev + sumInvesPrevRecorrente);
       setEconomiaDespesas(calcEconomia);
 
       // receitasValor e despesasValor representam o que de fato ocorreu para manter a integridade do saldo e graficos
@@ -465,9 +504,11 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         .not('card_id', 'is', null);
 
       let faturaNoMesSoma = 0;
+      let faturaTotalGasto = 0;
 
       if (userCards && transacoesCardsRaw) {
         transacoesCardsRaw.forEach(t => {
+          if (t.status === 'ignorado') return;
           const cardInfo = userCards.find(c => c.id === t.card_id);
           if (cardInfo) {
             const dateParts = t.data.split('-');
@@ -505,6 +546,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                 if (mesVencimento === targetMesVencimento && anoVencimento === targetAnoVencimento) {
                     if (t.tipo === 'despesa') {
                         faturaNoMesSoma += (vl || 0);
+                        faturaTotalGasto += (vl || 0);
                     } else if (t.tipo === 'receita') {
                         faturaNoMesSoma -= (vl || 0);
                     }
@@ -522,7 +564,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       setSaldoAnterior(saldoAntCalcAcumulado + pastRecorrentesDebt);
       setReceitasValor(sumRecsPago + saldoAntCalcAcumulado + pastRecorrentesDebt);
-      setCartoesValor(faturaNoMesSoma > 0 ? faturaNoMesSoma : 0);
+      
+      const remains = faturaNoMesSoma > 0 ? faturaNoMesSoma : 0;
+      setCartoesValor(remains);
+      
+      const isPaid = faturaTotalGasto > 0 && faturaNoMesSoma <= 0;
+      setCartoesPago(isPaid);
+      setCartoesDisplayTotal(isPaid ? faturaTotalGasto : remains);
 
       if (dspsArr) {
         dspsArr.forEach(d => {
@@ -821,15 +869,22 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
             <div className="p-[6px] bg-purple-50 dark:bg-purple-900/20 rounded-full text-purple-500 dark:text-purple-400 w-[32px] h-[32px] flex items-center justify-center">
               <CreditCard size={18} />
             </div>
-            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
-              {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
-            </span>
+            <div className="flex flex-col items-end gap-1">
+              <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+                {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
+              </span>
+              {!isCardsLoading && cartoesDisplayTotal > 0 && (
+                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold ${cartoesPago ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'} w-max`}>
+                  {cartoesPago ? 'PAGO' : 'NÃO PAGO'}
+                </span>
+              )}
+            </div>
           </div>
           <div className="flex flex-col">
             {isCardsLoading ? (
                <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesValor)}</span>
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesDisplayTotal)}</span>
             )}
           </div>
           <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-purple-500 dark:bg-purple-400" />
