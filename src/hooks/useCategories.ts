@@ -11,6 +11,7 @@ export interface Category {
   archived_at?: string | null;
   profile_id: string;
   created_at: string;
+  ordem?: number | null;
 }
 
 export interface Tag {
@@ -288,6 +289,7 @@ export function useCategories(profileId: string | undefined) {
 
   return {
     categories,
+    setCategories,
     tags,
     loading,
     criarCategoria,

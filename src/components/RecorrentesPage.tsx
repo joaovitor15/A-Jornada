@@ -1395,8 +1395,8 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     <div className="w-full h-px bg-slate-200 dark:bg-slate-700/50 mb-5 border-t border-dashed border-slate-300 dark:border-slate-600 box-border"></div>
 
                     {/* Stats Grid */}
-                    <div className="flex flex-col md:flex-row justify-between items-center gap-4 md:gap-0 mt-2 mb-5 px-2">
-                      <div className="flex flex-col items-center w-full md:w-auto md:flex-1 order-1">
+                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mt-2 mb-5 px-2 w-full">
+                      <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-1">
                         <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">
                         {dashboardPeriodo === 'anual' ? 'VALOR DA PARCELA' : (item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA')))}
                         </p>
@@ -1404,7 +1404,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                           {item.valor === null && (!fazerProjecao || (item.valorPrevisto === 0 && !item.isPago)) ? (
                             <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
                           ) : (
-                            <p className="text-2xl font-black text-slate-800 dark:text-white">
+                            <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
                               {formatarMoedaSinal(dashboardPeriodo === 'anual' ? item.valorPrevisto : (item.isPago ? item.valorEfetivado : item.valorPrevisto), true)}
                             </p>
                           )}
@@ -1417,13 +1417,13 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       </div>
 
                       {fazerProjecao && (
-                        <div className="flex flex-col items-center w-full md:w-auto md:flex-1 order-2">
+                        <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-2">
                           <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">CUSTO {anoAtual} {periodoTexto ? `(${periodoTexto})` : ''}</p>
                           <div className="flex flex-col items-center justify-center">
                             {item.valor === null && item.valorPrevisto === 0 && !item.isPago ? (
                               <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
                             ) : (
-                              <p className="text-2xl font-black text-slate-800 dark:text-white">
+                              <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
                                 {formatarMoedaSinal(item.tipo === 'despesa' ? -custoAnual : custoAnual, true)}
                               </p>
                             )}
@@ -1464,18 +1464,20 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                         </div>
                       ) : (
                         <div className="flex flex-row gap-2">
-                          <button 
-                            onClick={async () => {
-                                handleIgnoreProvisao(item);
-                            }}
-                            className="flex-1 py-2.5 px-2 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
-                          >
-                            <XCircle size={16} />
-                            Não Lançar
-                          </button>
+                          {item.frequencia !== 'diaria' && (
+                            <button 
+                              onClick={async () => {
+                                  handleIgnoreProvisao(item);
+                              }}
+                              className="flex-1 py-2.5 px-2 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                            >
+                              <XCircle size={16} />
+                              Não Lançar
+                            </button>
+                          )}
                           <button 
                             onClick={() => handleOpenEfetivarModal(item)}
-                            className={`flex-[1.5] py-2.5 px-3 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                            className={`${item.frequencia === 'diaria' ? 'w-full' : 'flex-[1.5]'} py-2.5 px-3 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                                 item.tipo === 'receita' 
                                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
                                   : 'bg-[#3B82F6] hover:bg-blue-600 text-white'
@@ -1532,12 +1534,21 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
               {/* Form elements */}
               <div className="space-y-4">
                 {/* Description info */}
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block">Descrição</span>
-                  <p className="font-extrabold text-slate-750 dark:text-slate-200 text-sm">
-                    {efetivarModal.provisao.nome} {efetivarModal.provisao.num_parcelas > 1 ? `(${efetivarModal.parcelaNum}/${efetivarModal.provisao.num_parcelas})` : ''}
-                    {efetivarModal.provisao.valor !== null && ` - ${formatCurrency(efetivarModal.provisao.valor)}`}
-                  </p>
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3.5 rounded-2xl flex justify-between items-center gap-3">
+                  <div>
+                    <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider block mb-0.5">Descrição</span>
+                    <p className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight">
+                      {efetivarModal.provisao.nome} {efetivarModal.provisao.num_parcelas > 1 ? `(${efetivarModal.parcelaNum}/${efetivarModal.provisao.num_parcelas})` : ''}
+                    </p>
+                  </div>
+                  {efetivarModal.provisao.valor !== null && (
+                    <div className="text-right">
+                      <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider block mb-0.5">Valor Estimado</span>
+                      <p className="font-black text-blue-600 dark:text-blue-400 text-base whitespace-nowrap">
+                        {formatCurrency(efetivarModal.provisao.valor)}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {/* Data de Pagamento Input */}

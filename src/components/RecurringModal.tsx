@@ -463,7 +463,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                   {(numParcelas > 1 && !valorVariavel) && (
                     <div className="mt-[12px] p-[10px] bg-slate-100/50 dark:bg-slate-800/50 border border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex justify-between items-center">
                       <span className="text-[11px] font-[800] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider">Valor p/ Parcela</span>
-                      <span className="text-[13px] font-bold text-[#2563EB] dark:text-blue-400">
+                      <span className="text-[13px] font-bold text-[#2563EB] dark:text-blue-400 whitespace-nowrap">
                         R$ {formatarValor(Math.round((valorNumerico / numParcelas) * 100).toString())}
                       </span>
                     </div>

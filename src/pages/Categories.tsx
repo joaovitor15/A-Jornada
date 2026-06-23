@@ -8,8 +8,9 @@ import {
   Cat, Trees, Building, Hotel, MapPin, Globe, Sun, Moon, Star, Flame, Droplets, Leaf,
   Recycle, Package, Pill, PiggyBank, Landmark, Fuel, Lock
 } from 'lucide-react';
-import { useCategories, Category } from '../hooks/useCategories';
+import { supabase } from '../supabaseClient';
 import { SupabaseProfile } from '../hooks/useProfiles';
+import { useCategories, Category } from '../hooks/useCategories';
 import { motion, AnimatePresence } from 'motion/react';
 
 interface CategoriesProps {
@@ -87,8 +88,43 @@ export default function Categories({ activeProfile }: CategoriesProps) {
     criarTag, 
     excluirTag,
     archiveCategory,
-    unarchiveCategory
+    unarchiveCategory,
+    setCategories
   } = useCategories(activeProfile?.id);
+
+  const dragCategoryItem = useRef<number | null>(null);
+  const dragCategoryOverItem = useRef<number | null>(null);
+
+  const handleSortCategory = async (tipo: 'receita' | 'despesa') => {
+    if (dragCategoryItem.current === null || dragCategoryOverItem.current === null) return;
+    if (dragCategoryItem.current === dragCategoryOverItem.current) return;
+
+    let itemsToSort = tipo === 'receita' ? [...receitas] : [...despesas];
+    
+    const draggedItemContent = itemsToSort[dragCategoryItem.current];
+    itemsToSort.splice(dragCategoryItem.current, 1);
+    itemsToSort.splice(dragCategoryOverItem.current, 0, draggedItemContent);
+    
+    const updatedSortedItems = itemsToSort.map((item, index) => ({ ...item, ordem: index }));
+    
+    // Outros itens que não foram reordenados nesta lista
+    const otherItems = categories.filter(c => c.tipo !== tipo || (activeTab === 'em_uso' && c.archived) || (activeTab === 'arquivadas' && !c.archived));
+    
+    setCategories([...updatedSortedItems, ...otherItems]);
+
+    dragCategoryItem.current = null;
+    dragCategoryOverItem.current = null;
+
+    try {
+      await Promise.all(
+        updatedSortedItems.map(item => 
+          supabase.from('categories').update({ ordem: item.ordem }).eq('id', item.id)
+        )
+      );
+    } catch(e) {
+      console.error("Erro ao salvar ordem de categorias:", e);
+    }
+  };
 
   const [activeTab, setActiveTab] = useState<'em_uso' | 'arquivadas'>('em_uso');
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -180,8 +216,13 @@ export default function Categories({ activeProfile }: CategoriesProps) {
     activeTab === 'em_uso' ? !c.archived : c.archived
   );
   
-  const receitas = displayedCategories.filter(c => c.tipo === 'receita');
+  const receitas = displayedCategories.filter(c => c.tipo === 'receita').sort((a, b) => {
+    if (a.ordem != null && b.ordem != null) return a.ordem - b.ordem;
+    return a.nome.localeCompare(b.nome);
+  });
+  
   const despesas = displayedCategories.filter(c => c.tipo === 'despesa').sort((a, b) => {
+    if (a.ordem != null && b.ordem != null) return a.ordem - b.ordem;
     const aIsSys = a.nome.toLowerCase() === 'cartão de crédito' || a.nome.toLowerCase() === 'investimentos';
     const bIsSys = b.nome.toLowerCase() === 'cartão de crédito' || b.nome.toLowerCase() === 'investimentos';
     if (aIsSys && !bIsSys) return 1;
@@ -283,13 +324,31 @@ export default function Categories({ activeProfile }: CategoriesProps) {
     return iconObj ? iconObj.component : Tag;
   };
 
-  const renderCategoryCard = (category: Category, isArchivedView: boolean) => {
+  const renderCategoryCard = (category: Category, isArchivedView: boolean, index?: number) => {
     const IconComp = getIcon(category.icone);
+    const isDraggable = activeTab === 'em_uso' && index !== undefined;
     
     return (
       <div 
         key={category.id} 
-        className={`bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#F1F5F9] dark:border-[#334155] p-[14px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:border-[#E2E8F0] dark:border-[#334155] flex flex-col gap-[10px] relative tag-popover-container ${isArchivedView ? 'opacity-70 bg-[#F8FAFC] dark:bg-[#0F172A]' : ''}`}
+        draggable={isDraggable}
+        onDragStart={(e) => {
+          if (!isDraggable) {
+            e.preventDefault();
+            return;
+          }
+          dragCategoryItem.current = index!;
+        }}
+        onDragEnter={() => {
+          if (!isDraggable) return;
+          dragCategoryOverItem.current = index!;
+        }}
+        onDragEnd={() => {
+          if (!isDraggable) return;
+          handleSortCategory(category.tipo);
+        }}
+        onDragOver={(e) => e.preventDefault()}
+        className={`bg-white dark:bg-[#1E293B] rounded-[16px] border border-[#F1F5F9] dark:border-[#334155] p-[14px] shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all duration-200 hover:shadow-[0_4px_20px_rgba(0,0,0,0.08)] hover:border-[#E2E8F0] dark:border-[#334155] flex flex-col gap-[10px] relative tag-popover-container ${isArchivedView ? 'opacity-70 bg-[#F8FAFC] dark:bg-[#0F172A]' : ''} ${isDraggable ? 'cursor-grab active:cursor-grabbing' : ''}`}
       >
         {isArchivedView && (
            <div>
@@ -600,7 +659,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px] w-full">
-                    {receitas.map(c => renderCategoryCard(c, false))}
+                    {receitas.map((c, idx) => renderCategoryCard(c, false, idx))}
                   </div>
                 )}
               </section>
@@ -622,7 +681,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-[14px] w-full">
-                    {despesas.map(c => renderCategoryCard(c, false))}
+                    {despesas.map((c, idx) => renderCategoryCard(c, false, idx))}
                   </div>
                 )}
               </section>

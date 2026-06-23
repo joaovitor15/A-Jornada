@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '../supabaseClient';
 import { Plus, BarChart2, Edit, Trash2, TrendingUp, TrendingDown, ChevronDown, MoreVertical, Wallet, ChevronLeft, ChevronRight, Percent, Search, Tag, Pipette } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCategories } from '../hooks/useCategories';
 import { useTransacoes } from '../hooks/useTransacoes';
@@ -21,6 +21,8 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
   
   const [graficoDespesasAgrupamento, setGraficoDespesasAgrupamento] = useState<'categoria' | 'tag'>('categoria');
   const [graficoReceitasAgrupamento, setGraficoReceitasAgrupamento] = useState<'categoria' | 'tag'>('categoria');
+  const [selectedCategoriaDespesaTags, setSelectedCategoriaDespesaTags] = useState<string | null>(null);
+  const [selectedCategoriaReceitaTags, setSelectedCategoriaReceitaTags] = useState<string | null>(null);
 
   const [relatorios, setRelatorios] = useState<any[]>([]);
   const [loadingRelatorios, setLoadingRelatorios] = useState(true);
@@ -57,6 +59,49 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
   const [showNovoRelatorioMenu, setShowNovoRelatorioMenu] = useState(false);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
 
+  const dragItem = useRef<number | null>(null);
+  const dragOverItem = useRef<number | null>(null);
+
+  const handleSort = async () => {
+    if (dragItem.current === null || dragOverItem.current === null) return;
+    if (dragItem.current === dragOverItem.current) {
+        dragItem.current = null;
+        dragOverItem.current = null;
+        return;
+    }
+    const _relatorios = [...relatorios];
+    const draggedItemContent = _relatorios.splice(dragItem.current, 1)[0];
+    _relatorios.splice(dragOverItem.current, 0, draggedItemContent);
+    dragItem.current = null;
+    dragOverItem.current = null;
+    setRelatorios(_relatorios);
+    
+    if (activeProfileId) {
+        localStorage.setItem(`relatoriosOrder_${activeProfileId}`, JSON.stringify(_relatorios.map(r => r.id)));
+        
+        // Tenta salvar no Supabase na coluna 'ordem'
+        let hasError = false;
+        let errorMessage = '';
+        
+        await Promise.all(_relatorios.map((rel, idx) => 
+           supabase.from('relatorios_personalizados').update({ ordem: idx }).eq('id', rel.id).then(({ error }) => {
+               if (error && !hasError) {
+                   hasError = true;
+                   errorMessage = error.message;
+               }
+           })
+        ));
+
+        if (hasError) {
+            if (errorMessage.includes("column \"ordem\" of relation") || errorMessage.includes("Could not find the 'ordem' column")) {
+                alert("A ordem está sendo salva apenas no seu navegador atual. Para salvar na nuvem e sincronizar em outros computadores, crie a coluna 'ordem' (tipo número) na tabela 'relatorios_personalizados' do Supabase.");
+            } else {
+                console.error("Erro ao salvar ordem no Supabase:", errorMessage);
+            }
+        }
+    }
+  };
+
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null} | null>(null);
 
@@ -75,7 +120,31 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     if (error) {
       console.error('Erro ao carregar relatórios', error);
     } else {
-      setRelatorios(data || []);
+      let sortedData = data || [];
+      const savedOrderStr = localStorage.getItem(`relatoriosOrder_${activeProfileId}`);
+      
+      sortedData.sort((a, b) => {
+         // Se a coluna ordem existir no banco e não for nula, tem precedência absoluta
+         const temOrdemNoBanco = a.ordem !== undefined && a.ordem !== null && b.ordem !== undefined && b.ordem !== null;
+         
+         if (temOrdemNoBanco) {
+            return a.ordem - b.ordem;
+         }
+
+         // Fallback para o Local Storage (se não houver coluna ordem no banco)
+         if (savedOrderStr) {
+             try {
+                const savedOrder = JSON.parse(savedOrderStr);
+                const indexA = savedOrder.indexOf(a.id);
+                const indexB = savedOrder.indexOf(b.id);
+                if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+                if (indexA !== -1) return -1;
+                if (indexB !== -1) return 1;
+             } catch (e) {}
+         }
+         return 0;
+      });
+      setRelatorios(sortedData);
     }
     setLoadingRelatorios(false);
   };
@@ -241,9 +310,31 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     return valor.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
+  const CustomTooltip = ({ active, payload }: any) => {
+    if (active && payload && payload.length) {
+      const entry = payload[0];
+      const name = entry.payload?.nome || entry.name || 'Sem classificação';
+      const value = Number(entry.value || 0);
+      const itemTotal = entry.payload?.totalRef || 1;
+      const percentage = (value / itemTotal) * 100;
+      return (
+        <div className="bg-white dark:bg-[#1E293B] border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl shadow-lg text-xs font-bold text-slate-800 dark:text-slate-200 z-[110]">
+          <div className="flex items-center gap-1.5 mb-1">
+            <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.payload?.cor || entry.color }} />
+            <span className="font-extrabold max-w-[150px] truncate" title={name}>{name}</span>
+          </div>
+          <p className="text-slate-500 dark:text-slate-400 font-extrabold ml-4 whitespace-nowrap">
+            R$ {formatarMoeda(value)} ({percentage.toFixed(1)}%)
+          </p>
+        </div>
+      );
+    }
+    return null;
+  };
+
   const COLORS = ['#2563EB', '#16A34A', '#EF4444', '#EAB308', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#d946ef'];
 
-  const getChartData = (tipoTransacao: 'receita' | 'despesa', agrupamento: 'categoria' | 'tag') => {
+  const getChartData = (tipoTransacao: 'receita' | 'despesa', agrupamento: 'categoria' | 'tag', selectedCategoryId?: string | null) => {
     const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
     const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
 
@@ -251,10 +342,14 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
       if (t.tipo !== tipoTransacao) return false;
       if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
       if (t.tags?.categories?.id && investCatIds.includes(t.tags.categories.id)) return false;
+      
+      if (agrupamento === 'tag' && selectedCategoryId) {
+         if (t.tags?.categories?.id !== selectedCategoryId) return false;
+      }
       return true;
     });
 
-    const mapa = new Map<string, { nome: string; valor: number; cor: string }>();
+    const mapa = new Map<string, { id: string; nome: string; valor: number; cor: string }>();
 
     txs.forEach(t => {
        let key = 'Sem Classificação';
@@ -274,7 +369,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
           }
        }
 
-       const curr = mapa.get(key) || { nome, valor: 0, cor };
+       const curr = mapa.get(key) || { id: key, nome, valor: 0, cor };
        curr.valor += Number(t.valor);
        mapa.set(key, curr);
     });
@@ -290,6 +385,9 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     }
 
     const total = data.reduce((acc, curr) => acc + curr.valor, 0);
+    data.forEach(d => {
+       (d as any).totalRef = total;
+    });
 
     return { data, total };
   };
@@ -524,7 +622,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-[16px] mt-2">
-            {relatorios.map(rel => {
+            {relatorios.map((rel, index) => {
                 // Cálculo 
                 const catIds = rel.categorias_ids || [];
                 const txs = transacoes.filter(t => {
@@ -540,7 +638,18 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                 const displayCats = formatList.slice(0, 3).join(', ') + (formatList.length > 3 ? ` e mais ${formatList.length - 3}` : '');
 
                 return (
-                  <div key={rel.id} className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] flex flex-col gap-[12px]">
+                  <div 
+                     key={rel.id} 
+                     draggable
+                     onDragStart={() => {
+                         setOpenMenuId(null);
+                         dragItem.current = index;
+                     }}
+                     onDragEnter={() => dragOverItem.current = index}
+                     onDragEnd={handleSort}
+                     onDragOver={(e) => e.preventDefault()}
+                     className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] flex flex-col gap-[12px] cursor-grab active:cursor-grabbing transition-transform hover:scale-[1.01] active:scale-[0.98]"
+                  >
                       <div className="flex justify-between items-start">
                           {(() => {
                              const IconComponent = rel.icone_representativo ? ICONS.find(i => i.name === rel.icone_representativo)?.component || Tag : null;
@@ -575,14 +684,14 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                                      >
                                        <button 
                                          onClick={() => { setOpenMenuId(null); handleEdit(rel); }}
-                                         className="flex items-center gap-[8px] p-[10px_12px] rounded-[10px] hover:bg-[#F8FAFC] dark:bg-[#0F172A] transition-colors text-left text-[#64748B] dark:text-[#94A3B8]"
+                                         className="flex items-center gap-[8px] p-[10px_12px] rounded-[10px] hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A] transition-colors text-left text-[#64748B] dark:text-[#94A3B8]"
                                        >
                                          <Edit size={16} />
                                          <span className="text-[13px] font-[600]">Editar</span>
                                        </button>
                                        <button 
                                          onClick={() => { setOpenMenuId(null); setDeleteModal({ isOpen: true, id: rel.id }); }}
-                                         className="flex items-center gap-[8px] p-[10px_12px] rounded-[10px] hover:bg-[#FEF2F2] transition-colors text-left text-[#EF4444]"
+                                         className="flex items-center gap-[8px] p-[10px_12px] rounded-[10px] hover:bg-[#FEF2F2] dark:hover:bg-red-500/10 transition-colors text-left text-[#EF4444]"
                                        >
                                          <Trash2 size={16} />
                                          <span className="text-[13px] font-[600]">Excluir</span>
@@ -621,14 +730,18 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
         {/* GRÁFICO DESPESAS */}
         {(() => {
-           const { data, total } = getChartData('despesa', graficoDespesasAgrupamento);
+           const { data, total } = getChartData('despesa', graficoDespesasAgrupamento, selectedCategoriaDespesaTags);
+           const availableCategorias = categories.filter(c => c.tipo === 'despesa' && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'investimentos');
            return (
              <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] flex flex-col gap-[16px]">
                 <h3 className="text-[18px] font-[700] text-[#0F172A] dark:text-white">Despesas por Categoria/Tag</h3>
                 
-                <div className="flex items-center gap-[12px]">
+                <div className="flex items-center gap-[12px] flex-wrap">
                   <button 
-                    onClick={() => setGraficoDespesasAgrupamento('categoria')} 
+                    onClick={() => {
+                      setGraficoDespesasAgrupamento('categoria');
+                      setSelectedCategoriaDespesaTags(null);
+                    }} 
                     className={`flex items-center justify-center rounded-[100px] py-[6px] px-[16px] text-[13px] font-[600] transition-all duration-200 ${
                         graficoDespesasAgrupamento === 'categoria' 
                           ? 'bg-[#EFF6FF] text-[#2563EB] border-[1.5px] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
@@ -647,11 +760,27 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                   >
                     Tags
                   </button>
+
+                  {graficoDespesasAgrupamento === 'tag' && (
+                     <div className="relative">
+                        <select
+                           value={selectedCategoriaDespesaTags || ''}
+                           onChange={(e) => setSelectedCategoriaDespesaTags(e.target.value || null)}
+                           className="appearance-none bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] py-[6px] pl-[16px] pr-[32px] text-[13px] font-[600] text-[#64748B] dark:text-[#94A3B8] focus:outline-none focus:border-[#2563EB] transition-all cursor-pointer"
+                        >
+                           <option value="">Todas as categorias</option>
+                           {availableCategorias.map(c => (
+                              <option key={c.id} value={c.id}>{c.nome}</option>
+                           ))}
+                        </select>
+                        <ChevronDown className="absolute right-[12px] top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-[#64748B] dark:text-[#94A3B8] pointer-events-none" />
+                     </div>
+                  )}
                 </div>
 
                 {data.length > 0 ? (
-                  <div className="flex flex-col sm:flex-row items-center justify-start gap-[24px] mt-2">
-                    <div className="w-[180px] h-[180px] shrink-0">
+                  <div className="flex flex-col xl:flex-row items-center justify-start gap-[24px] mt-2">
+                    <div className="w-[180px] h-[180px] shrink-0 mx-auto xl:mx-0">
                       <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <PieChart style={{ outline: 'none' }}>
                           <Pie
@@ -662,27 +791,43 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                             outerRadius={80}
                             paddingAngle={2}
                             dataKey="valor"
+                            nameKey="nome"
                             style={{ outline: 'none' }}
                           >
                             {data.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.cor} />
                             ))}
                           </Pie>
-                          <Tooltip 
-                            formatter={(value: number) => `R$ ${formatarMoeda(value)}`}
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
-                          />
+                          <Tooltip content={<CustomTooltip />} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-col gap-[8px] flex-1 w-full max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex flex-col gap-[8px] flex-1 w-full max-h-[180px] overflow-y-auto pr-2 custom-scrollbar text-left">
                       {data.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-[8px] truncate">
+                        <div 
+                           key={i} 
+                           className={`flex flex-col xl:flex-row xl:items-center xl:justify-between gap-1 xl:gap-4 w-full ${graficoDespesasAgrupamento === 'categoria' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1 -ml-1 rounded' : ''}`}
+                           onClick={() => {
+                              if (graficoDespesasAgrupamento === 'categoria') {
+                                 if (item.id === 'Sem Classificação') {
+                                    setSelectedCategoriaDespesaTags(null);
+                                 } else {
+                                    setSelectedCategoriaDespesaTags(item.id);
+                                 }
+                                 setGraficoDespesasAgrupamento('tag');
+                              }
+                           }}
+                        >
+                          <div className="flex items-center justify-start gap-[8px] truncate">
                             <div className="w-[12px] h-[12px] rounded-full shrink-0" style={{ backgroundColor: item.cor }}></div>
-                            <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white truncate" title={item.nome}>{item.nome}</span>
+                            <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white truncate" title={item.nome}>
+                              {item.nome}
+                              <span className="xl:hidden text-[13px] font-[700] text-[#64748B] dark:text-[#94A3B8] ml-2 shrink-0">
+                                {((item.valor / total) * 100).toFixed(1)}%
+                              </span>
+                            </span>
                           </div>
-                          <div className="text-[13px] font-[700] text-[#64748B] dark:text-[#94A3B8] shrink-0">
+                          <div className="hidden xl:block text-[13px] font-[700] text-[#64748B] dark:text-[#94A3B8] shrink-0">
                              {((item.valor / total) * 100).toFixed(1)}%
                           </div>
                         </div>
@@ -690,7 +835,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 rounded-[16px] border border-dashed border-slate-200">
+                  <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-[16px] border border-dashed border-slate-200 dark:border-slate-800/70">
                      <TrendingDown size={24} className="text-[#94A3B8] mb-2" />
                      <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] font-medium">Nenhuma despesa neste período</p>
                   </div>
@@ -701,14 +846,18 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
         {/* GRÁFICO RECEITAS */}
         {(() => {
-           const { data, total } = getChartData('receita', graficoReceitasAgrupamento);
+           const { data, total } = getChartData('receita', graficoReceitasAgrupamento, selectedCategoriaReceitaTags);
+           const availableCategorias = categories.filter(c => c.tipo === 'receita' && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'investimentos');
            return (
              <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] flex flex-col gap-[16px]">
                 <h3 className="text-[18px] font-[700] text-[#0F172A] dark:text-white">Receitas por Categoria/Tag</h3>
                 
-                <div className="flex items-center gap-[12px]">
+                <div className="flex items-center gap-[12px] flex-wrap">
                   <button 
-                    onClick={() => setGraficoReceitasAgrupamento('categoria')} 
+                    onClick={() => {
+                      setGraficoReceitasAgrupamento('categoria');
+                      setSelectedCategoriaReceitaTags(null);
+                    }} 
                     className={`flex items-center justify-center rounded-[100px] py-[6px] px-[16px] text-[13px] font-[600] transition-all duration-200 ${
                         graficoReceitasAgrupamento === 'categoria' 
                           ? 'bg-[#EFF6FF] text-[#2563EB] border-[1.5px] border-[#2563EB] shadow-[0_2px_8px_rgba(37,99,235,0.2)]' 
@@ -727,11 +876,27 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                   >
                     Tags
                   </button>
+
+                  {graficoReceitasAgrupamento === 'tag' && (
+                     <div className="relative">
+                        <select
+                           value={selectedCategoriaReceitaTags || ''}
+                           onChange={(e) => setSelectedCategoriaReceitaTags(e.target.value || null)}
+                           className="appearance-none bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[100px] py-[6px] pl-[16px] pr-[32px] text-[13px] font-[600] text-[#64748B] dark:text-[#94A3B8] focus:outline-none focus:border-[#2563EB] transition-all cursor-pointer"
+                        >
+                           <option value="">Todas as categorias</option>
+                           {availableCategorias.map(c => (
+                              <option key={c.id} value={c.id}>{c.nome}</option>
+                           ))}
+                        </select>
+                        <ChevronDown className="absolute right-[12px] top-1/2 -translate-y-1/2 w-[14px] h-[14px] text-[#64748B] dark:text-[#94A3B8] pointer-events-none" />
+                     </div>
+                  )}
                 </div>
 
                 {data.length > 0 ? (
-                  <div className="flex flex-col sm:flex-row items-center justify-start gap-[24px] mt-2">
-                    <div className="w-[180px] h-[180px] shrink-0">
+                  <div className="flex flex-col xl:flex-row items-center justify-start gap-[24px] mt-2">
+                    <div className="w-[180px] h-[180px] shrink-0 mx-auto xl:mx-0">
                       <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
                         <PieChart style={{ outline: 'none' }}>
                           <Pie
@@ -742,27 +907,43 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                             outerRadius={80}
                             paddingAngle={2}
                             dataKey="valor"
+                            nameKey="nome"
                             style={{ outline: 'none' }}
                           >
                             {data.map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.cor} />
                             ))}
                           </Pie>
-                          <Tooltip 
-                            formatter={(value: number) => `R$ ${formatarMoeda(value)}`}
-                            contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}
-                          />
+                          <Tooltip content={<CustomTooltip />} />
                         </PieChart>
                       </ResponsiveContainer>
                     </div>
-                    <div className="flex flex-col gap-[8px] flex-1 w-full max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                    <div className="flex flex-col gap-[8px] flex-1 w-full max-h-[180px] overflow-y-auto pr-2 custom-scrollbar text-left">
                       {data.map((item, i) => (
-                        <div key={i} className="flex items-center justify-between gap-4">
-                          <div className="flex items-center gap-[8px] truncate">
+                        <div 
+                           key={i} 
+                           className={`flex flex-col xl:flex-row xl:items-center xl:justify-between gap-1 xl:gap-4 w-full ${graficoReceitasAgrupamento === 'categoria' ? 'cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-800 p-1 -ml-1 rounded' : ''}`}
+                           onClick={() => {
+                              if (graficoReceitasAgrupamento === 'categoria') {
+                                 if (item.id === 'Sem Classificação') {
+                                    setSelectedCategoriaReceitaTags(null);
+                                 } else {
+                                    setSelectedCategoriaReceitaTags(item.id);
+                                 }
+                                 setGraficoReceitasAgrupamento('tag');
+                              }
+                           }}
+                        >
+                          <div className="flex items-center justify-start gap-[8px] truncate">
                             <div className="w-[12px] h-[12px] rounded-full shrink-0" style={{ backgroundColor: item.cor }}></div>
-                            <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white truncate" title={item.nome}>{item.nome}</span>
+                            <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white truncate" title={item.nome}>
+                              {item.nome}
+                              <span className="xl:hidden text-[13px] font-[700] text-[#64748B] dark:text-[#94A3B8] ml-2 shrink-0">
+                                {((item.valor / total) * 100).toFixed(1)}%
+                              </span>
+                            </span>
                           </div>
-                          <div className="text-[13px] font-[700] text-[#64748B] dark:text-[#94A3B8] shrink-0">
+                          <div className="hidden xl:block text-[13px] font-[700] text-[#64748B] dark:text-[#94A3B8] shrink-0">
                              {((item.valor / total) * 100).toFixed(1)}%
                           </div>
                         </div>
@@ -770,7 +951,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                     </div>
                   </div>
                 ) : (
-                  <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 rounded-[16px] border border-dashed border-slate-200">
+                  <div className="flex flex-col items-center justify-center p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-[16px] border border-dashed border-slate-200 dark:border-slate-800/70">
                      <TrendingUp size={24} className="text-[#94A3B8] mb-2" />
                      <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] font-medium">Nenhuma receita neste período</p>
                   </div>
@@ -975,11 +1156,11 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                                     key={cat.id}
                                     onClick={() => toggleCategoria(cat.id)}
                                     className={`flex items-center gap-[8px] p-[10px] rounded-[10px] border-[1.5px] text-left transition-colors ${
-                                       isSelected ? 'bg-blue-50 border-blue-200 shadow-sm' : 'bg-white dark:bg-[#1E293B] border-slate-200 hover:bg-slate-50'
+                                       isSelected ? 'bg-blue-50 dark:bg-blue-950/45 border-blue-200 dark:border-blue-800 shadow-sm' : 'bg-white dark:bg-[#1E293B] border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/40'
                                     }`}
                                  >
                                     <div className="w-[12px] h-[12px] rounded-full shrink-0" style={{ backgroundColor: cat.cor }}/>
-                                    <span className={`text-[13px] font-[600] truncate text-[#0F172A] dark:text-white`}>{cat.nome}</span>
+                                    <span className={`text-[13px] font-[600] truncate ${isSelected ? 'text-blue-900 dark:text-blue-200' : 'text-[#0F172A] dark:text-slate-200'}`}>{cat.nome}</span>
                                     <div className="ml-auto flex items-center justify-center shrink-0">
                                        <div className={`w-[18px] h-[18px] rounded-sm border-[1.5px] flex items-center justify-center transition-colors ${
                                           isSelected ? 'bg-[#2563EB] border-[#2563EB]' : 'border-[#CBD5E1] bg-white dark:bg-[#1E293B]'
