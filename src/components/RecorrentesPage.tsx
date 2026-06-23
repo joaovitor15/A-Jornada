@@ -1293,7 +1293,16 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   
                   // Calcular Custo para o restante do ano (a partir do mês selecionado)
                   let custoAnual = item.valorPrevisto;
-                  let mesesRestantes = 12 - selectedDate.getMonth();
+                  
+                  const realYear = new Date().getFullYear();
+                  let startMonthIndex = selectedDate.getMonth();
+                  if (anoAtual > realYear) {
+                    startMonthIndex = 0; // Se o ano é posterior, projetamos o ano cheio (desde Janeiro)
+                  } else if (anoAtual < realYear) {
+                    startMonthIndex = 12; // Se o ano já passou, 0 meses restantes
+                  }
+                  
+                  let mesesRestantes = Math.max(0, 12 - startMonthIndex);
                   
                   let periodoTexto = '';
                   
@@ -1305,7 +1314,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     periodoTexto = `${qtd} ${qtd === 1 ? 'MÊS' : 'MESES'}`;
                   } else if (item.frequencia === 'diaria') {
                     if (fazerProjecao) {
-                      let dias = Math.round((new Date(anoAtual, 11, 31).getTime() - new Date(anoAtual, selectedDate.getMonth(), 1).getTime()) / (1000 * 3600 * 24)) + 1;
+                      let dias = Math.round((new Date(anoAtual, 11, 31).getTime() - new Date(anoAtual, startMonthIndex, 1).getTime()) / (1000 * 3600 * 24)) + 1;
                       let qtd = (item.isPago || item.isIgnored) ? Math.max(0, dias - 1) : dias;
                       custoAnual = item.valorPrevisto * qtd;
                       periodoTexto = `${qtd} DIAS`;
@@ -1314,7 +1323,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       periodoTexto = '';
                     }
                   } else if (item.frequencia === 'semanal') {
-                    let semanas = Math.round((new Date(anoAtual, 11, 31).getTime() - new Date(anoAtual, selectedDate.getMonth(), 1).getTime()) / (1000 * 3600 * 24) / 7);
+                    let semanas = Math.round((new Date(anoAtual, 11, 31).getTime() - new Date(anoAtual, startMonthIndex, 1).getTime()) / (1000 * 3600 * 24) / 7);
                     let qtd = (item.isPago || item.isIgnored) ? Math.max(0, semanas - 1) : semanas;
                     custoAnual = item.valorPrevisto * qtd;
                     periodoTexto = `${qtd} SEM.`;
