@@ -4,10 +4,11 @@ import {
   Calendar, Check, Edit, Trash2, CreditCard, Tag as TagIcon, 
   ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Sparkles, 
   RefreshCw, AlertCircle, Plus, ChevronDown, CheckCircle2, RotateCcw,
-  Play, Pause, Info, Wallet, Pencil, Search, XCircle, Landmark, Library, Tag, LayoutDashboard
+  Play, Pause, Info, Wallet, Pencil, Search, XCircle, Landmark, Library, Tag, LayoutDashboard, Settings
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RecurringModal } from './RecurringModal';
+import { InvestimentoConfigModal } from './InvestimentoConfigModal';
 import { useCategories } from '../hooks/useCategories';
 import { useProfiles } from '../hooks/useProfiles';
 import { ICONS } from '../pages/Categories';
@@ -34,18 +35,24 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   // Filters
   const [busca, setBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<'pendentes' | 'lancadas'>('pendentes');
-  const [filtroNatureza, setFiltroNatureza] = useState<'despesa' | 'receita'>('despesa');
+  const [filtroNatureza, setFiltroNatureza] = useState<'despesa' | 'receita' | 'investimento'>('despesa');
 
   // Core Data States
   const [loading, setLoading] = useState(true);
   const [provisoesRaw, setProvisoesRaw] = useState<any[]>([]);
   const [realTransactions, setRealTransactions] = useState<any[]>([]);
+  const [globalInvestments, setGlobalInvestments] = useState<{ [tag_id: string]: { total: number, uniqueMonths: number, transactions: any[] } }>({});
 
   // Modal State for New/Edit Model
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
-  const [modalType, setModalType] = useState<'receita' | 'despesa'>('despesa');
+  const [modalType, setModalType] = useState<'receita' | 'despesa' | 'investimento'>('despesa');
   const [editingRec, setEditingRec] = useState<any>(null);
+  
+  // Investimento Config Modal State
+  const [isInvestimentoConfigOpen, setIsInvestimentoConfigOpen] = useState(false);
+  const [configInvestimento, setConfigInvestimento] = useState<any>(null);
+
   const [activeTab, setActiveTab] = useState<'lancamento' | 'modelos' | 'dashboard' | 'direto'>('lancamento');
 
   // Efetivacao / Lançamento Modal State
@@ -219,6 +226,53 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       if (transError) throw transError;
       setRealTransactions(realTransDocs || []);
+
+      // Fetch ALL transactions for recurring investments (Global sum by tag_id and category_id)
+      const { data: invData, error: invError } = await supabase
+        .from('transacoes')
+        .select('*')
+        .eq('profile_id', activeProfileId);
+        
+      if (invError) {
+        console.error("Erro no invData:", invError);
+      }
+      if (!invError && invData) {
+        const acc: any = {};
+        invData.forEach(t => {
+          const catKey = t.category_id;
+          const tagKey = t.tag_id;
+          const recKey = t.recorrente_id;
+          
+          if (recKey) {
+             if (!acc[recKey]) acc[recKey] = { total: 0, uniqueMonths: 0, transactions: [], _months: new Set() };
+             acc[recKey].total += Math.abs(t.valor);
+             const d = new Date(t.data);
+             acc[recKey]._months.add(`${d.getUTCFullYear()}-${d.getUTCMonth()}`);
+             acc[recKey].transactions.push(t);
+          }
+          if (catKey) {
+             if (!acc[catKey]) acc[catKey] = { total: 0, uniqueMonths: 0, transactions: [], _months: new Set() };
+             acc[catKey].total += Math.abs(t.valor);
+             const d = new Date(t.data);
+             acc[catKey]._months.add(`${d.getUTCFullYear()}-${d.getUTCMonth()}`);
+             acc[catKey].transactions.push(t);
+          }
+          if (tagKey) {
+             if (!acc[tagKey]) acc[tagKey] = { total: 0, uniqueMonths: 0, transactions: [], _months: new Set() };
+             acc[tagKey].total += Math.abs(t.valor);
+             const d = new Date(t.data);
+             acc[tagKey]._months.add(`${d.getUTCFullYear()}-${d.getUTCMonth()}`);
+             acc[tagKey].transactions.push(t);
+          }
+        });
+        Object.keys(acc).forEach(k => {
+            acc[k].uniqueMonths = acc[k]._months.size;
+            delete acc[k]._months;
+        });
+        setGlobalInvestments(acc);
+      } else {
+        setGlobalInvestments({});
+      }
 
       // 3. Keep cards list updated for pocket choices
       const { data: cardDocs } = await supabase
@@ -596,7 +650,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   // Filter dynamic list based on state
   let listagemFiltrada = targetProvisoesToComputeStats.filter(p => {
-    if (p.tipo !== filtroNatureza) return false;
+    const isInvestimento = p.categories?.nome?.toLowerCase() === 'investimentos';
+    
+    if (filtroNatureza === 'investimento') {
+      if (!isInvestimento) return false;
+    } else {
+      if (isInvestimento) return false;
+      if (p.tipo !== filtroNatureza) return false;
+    }
 
     // 1. Busca
     if (busca) {
@@ -1177,6 +1238,18 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                 <div 
                   onClick={() => {
                     setIsDropdownOpen(false);
+                    setConfigInvestimento(null);
+                    setIsInvestimentoConfigOpen(true);
+                  }}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors cursor-pointer group"
+                >
+                  <TrendingUp size={15} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span className="text-xs font-bold text-amber-600 dark:text-amber-500">Planejar Investimento</span>
+                </div>
+                <div className="border-t border-slate-100 dark:border-[#334155] my-1" />
+                <div 
+                  onClick={() => {
+                    setIsDropdownOpen(false);
                     setModalType('receita');
                     setEditingRec(null);
                     setIsModalOpen(true);
@@ -1226,23 +1299,32 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       </div>
 
       {/* NATUREZA TABS */}
-      <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl w-full md:w-max mt-4">
+      <div className="flex bg-slate-100 dark:bg-slate-900/50 p-1 rounded-xl w-full lg:w-max mt-4 overflow-x-auto custom-scrollbar">
         <button
           onClick={() => setFiltroNatureza('despesa')}
-          className={`flex-1 md:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 ${filtroNatureza === 'despesa' ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          className={`flex-1 min-w-[120px] lg:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${filtroNatureza === 'despesa' ? 'bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           Despesas
         </button>
         <button
           onClick={() => setFiltroNatureza('receita')}
-          className={`flex-1 md:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 ${filtroNatureza === 'receita' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          className={`flex-1 min-w-[120px] lg:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${filtroNatureza === 'receita' ? 'bg-white dark:bg-slate-800 text-emerald-600 dark:text-emerald-400 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
         >
           Receitas
         </button>
+        <button
+          onClick={() => setFiltroNatureza('investimento')}
+          className={`flex-1 min-w-[120px] lg:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${filtroNatureza === 'investimento' ? 'bg-white dark:bg-slate-800 text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+        >
+          Investimentos
+        </button>
       </div>
 
-      {/* FREQUENCY GROUPED LIST */}
-      <div className="space-y-8 mt-8">
+      {/* MAIN LAYOUT WRAPPER FOR LIST AND PROJEÇÃO */}
+      <div className={filtroNatureza === 'investimento' && listagemFiltrada.length > 0 ? "grid grid-cols-1 min-[500px]:grid-cols-2 gap-4 lg:gap-8 mt-8 items-stretch" : "mt-8"}>
+        
+        {/* LIST COLUMN */}
+        <div className="w-full h-full flex flex-col space-y-8">
         {listagemFiltrada.length === 0 ? (
           <div className="text-center py-12 bg-white dark:bg-[#1E293B] rounded-2xl border border-slate-200 dark:border-slate-800">
             <Library size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
@@ -1276,18 +1358,20 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
             }[freqKey];
 
             return (
-              <div key={freqKey} className="space-y-4">
-                <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
-                  <div className="w-2 h-2 rounded-full bg-blue-500"></div>
-                  <h3 className="text-lg font-black text-slate-800 dark:text-white capitalize">
-                    {freqLabel}
-                  </h3>
-                  <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2">
-                    {items.length} {items.length === 1 ? 'item' : 'itens'}
-                  </span>
-                </div>
+              <div key={freqKey} className={`space-y-4 ${filtroNatureza === 'investimento' ? 'flex-1 flex flex-col' : ''}`}>
+                {filtroNatureza !== 'investimento' && (
+                  <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2">
+                    <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                    <h3 className="text-lg font-black text-slate-800 dark:text-white capitalize">
+                      {freqLabel}
+                    </h3>
+                    <span className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-[10px] font-bold px-2 py-0.5 rounded-full ml-2">
+                      {items.length} {items.length === 1 ? 'item' : 'itens'}
+                    </span>
+                  </div>
+                )}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className={filtroNatureza === 'investimento' ? "grid grid-cols-1 gap-4 h-full flex-1" : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"}>
                   {items.map((item) => {
                   const IconComp = ICONS.find(i => i.name === item.categories?.icone)?.component || Landmark;
                   
@@ -1333,17 +1417,21 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                     periodoTexto = '';
                   }
                   
+                  const periodoLabel = dashboardPeriodo === 'anual' 
+                    ? `${anoAtual}` 
+                    : `${nomesMeses[mesAtual - 1]} ${anoAtual}`.toUpperCase();
+
                   return (
                   <div 
                     key={item.id}
-                    className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative flex flex-col"
+                    className={`bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative flex flex-col ${filtroNatureza === 'investimento' ? 'h-full min-h-[300px]' : ''}`}
                   >
                     {/* Header */}
-                    <div className="flex justify-between items-start mb-4">
-                      <div className="flex flex-col gap-1">
+                    <div className="flex flex-wrap justify-between items-start mb-4 gap-3">
+                      <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
                         <div className="flex items-center gap-2">
-                          <Calendar size={18} className="text-[#8B5CF6]" />
-                          <h4 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-widest">
+                          <Calendar size={18} className="text-[#8B5CF6] shrink-0" />
+                          <h4 className="text-[15px] sm:text-base font-black text-slate-800 dark:text-white uppercase tracking-wider break-normal pr-1">
                             {item.nome}
                           </h4>
                         </div>
@@ -1352,7 +1440,9 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                             <TagIcon size={12} /> {item.tags?.nome || item.categories?.nome || 'SEM TAG'}
                           </span>
                           <span className="text-slate-300 dark:text-slate-600">•</span>
-                          {item.frequencia === 'diaria' ? (
+                          {filtroNatureza === 'investimento' ? (
+                            <span className="text-[#8B5CF6] dark:text-[#A78BFA] whitespace-nowrap">{item.forma_pagamento === 'cartao_credito' ? `${item.cards?.nome || 'Cartão'}${item.num_parcelas > 1 ? ` (${item.num_parcelas}x)` : ''}` : 'CONTA'}</span>
+                          ) : item.frequencia === 'diaria' ? (
                             <span className="text-[#8B5CF6] dark:text-[#A78BFA] whitespace-nowrap">{item.forma_pagamento === 'cartao_credito' ? `${item.cards?.nome || 'Cartão'}${item.num_parcelas > 1 ? ` (${item.num_parcelas}x)` : ''}` : 'CONTA'}</span>
                           ) : item.dia_vencimento ? (
                             <span className="text-[#8B5CF6] dark:text-[#A78BFA] flex items-center gap-1 whitespace-nowrap">
@@ -1371,71 +1461,177 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       </div>
                       
                       <div className="flex gap-2">
-                        <button 
-                          className="flex items-center justify-center text-[#3B82F6] hover:opacity-80 transition-opacity"
-                          onClick={() => {
-                            setModalType(item.tipo);
-                            setEditingRec(item);
-                            setIsModalOpen(true);
-                          }}
-                          title="Editar"
-                        >
-                          <Pencil size={18} />
-                        </button>
-                        <button 
-                          className="flex items-center justify-center text-[#EF4444] hover:opacity-80 transition-opacity"
-                          onClick={() => setDeleteModal({ isOpen: true, id: item.id, nome: item.nome })}
-                          title="Excluir"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {filtroNatureza === 'investimento' ? (
+                          <button 
+                            className="flex items-center justify-center text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors bg-slate-100 dark:bg-slate-800 p-2 rounded-lg"
+                            onClick={() => {
+                              setConfigInvestimento(item);
+                              setIsInvestimentoConfigOpen(true);
+                            }}
+                            title="Configurações"
+                          >
+                            <Settings size={16} />
+                          </button>
+                        ) : (
+                          <>
+                            <button 
+                              className="flex items-center justify-center text-[#3B82F6] hover:opacity-80 transition-opacity"
+                              onClick={() => {
+                                setModalType(item.tipo);
+                                setEditingRec(item);
+                                setIsModalOpen(true);
+                              }}
+                              title="Editar"
+                            >
+                              <Pencil size={18} />
+                            </button>
+                            <button 
+                              className="flex items-center justify-center text-[#EF4444] hover:opacity-80 transition-opacity"
+                              onClick={() => setDeleteModal({ isOpen: true, id: item.id, nome: item.nome })}
+                              title="Excluir"
+                            >
+                              <Trash2 size={18} />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
 
-                    <div className="w-full h-px bg-slate-200 dark:bg-slate-700/50 mb-5 border-t border-dashed border-slate-300 dark:border-slate-600 box-border"></div>
+                    <div className={`w-full h-px bg-slate-200 dark:bg-slate-700/50 ${filtroNatureza === 'investimento' ? 'mb-4 mt-2' : 'mb-5'} border-t border-dashed border-slate-300 dark:border-slate-600 box-border`}></div>
 
                     {/* Stats Grid */}
-                    <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mt-2 mb-5 px-2 w-full">
-                      <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-1">
-                        <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">
-                        {dashboardPeriodo === 'anual' ? 'VALOR DA PARCELA' : (item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA')))}
-                        </p>
-                        <div className={`flex flex-col items-center justify-center ${dashboardPeriodo !== 'anual' && item.isIgnored ? 'opacity-50 line-through' : ''}`}>
-                          {item.valor === null && (!fazerProjecao || (item.valorPrevisto === 0 && !item.isPago)) ? (
-                            <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
-                          ) : (
-                            <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
-                              {formatarMoedaSinal(dashboardPeriodo === 'anual' ? item.valorPrevisto : (item.isPago ? item.valorEfetivado : item.valorPrevisto), true)}
-                            </p>
-                          )}
-                        </div>
-                        {(item.valor === null || item.valor < 0) && fazerProjecao && (
-                          <span className="text-[9px] font-black bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded-md mt-1 scale-95 uppercase tracking-wider whitespace-nowrap">
-                            Variável estim.
-                          </span>
-                        )}
-                      </div>
+                    {filtroNatureza === 'investimento' ? (() => {
+                      const tagId = item.tag_id || item.tags?.id;
+                      const catId = item.category_id || item.categories?.id;
+                      const recId = item.id;
+                      let stats = { total: 0, uniqueMonths: 0, transactions: [] as any[] };
+                      
+                      if (recId && globalInvestments[recId]) {
+                         stats = globalInvestments[recId];
+                      } else if (tagId && globalInvestments[tagId]) {
+                         stats = globalInvestments[tagId];
+                      } else if (catId && globalInvestments[catId]) {
+                         stats = globalInvestments[catId];
+                      }
+                      
+                      const jaInvestidoTotal = stats.total;
+                      const uniqueMonths = stats.uniqueMonths;
 
-                      {fazerProjecao && (
-                        <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-2">
-                          <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">CUSTO {anoAtual} {periodoTexto ? `(${periodoTexto})` : ''}</p>
-                          <div className="flex flex-col items-center justify-center">
-                            {item.valor === null && item.valorPrevisto === 0 && !item.isPago ? (
+                      const mediaMensal = uniqueMonths > 0 ? jaInvestidoTotal / uniqueMonths : 0;
+
+                      const currentRealDate = new Date();
+                      const currentYear = currentRealDate.getFullYear();
+                      const currentMonth = currentRealDate.getMonth();
+
+                      let targetYear = anoAtual;
+                      let targetMonth = dashboardPeriodo === 'anual' ? 11 : mesAtual - 1;
+
+                      let mesesRestantes = (targetYear - currentYear) * 12 + (targetMonth - currentMonth);
+                      
+                      const investidoEsteMes = stats.transactions.some((t: any) => {
+                         const d = new Date(t.data);
+                         return d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth;
+                      });
+                      if (!investidoEsteMes && mesesRestantes >= 0) {
+                         mesesRestantes += 1;
+                      }
+
+                      if (mesesRestantes < 0) mesesRestantes = 0;
+
+                      // Projeção usa o Aporte Base
+                      const projecaoFinal = jaInvestidoTotal + (item.valorPrevisto * mesesRestantes);
+
+                      let projecaoLabel = '';
+                      if (dashboardPeriodo === 'anual') {
+                        if (mesesRestantes === 12) {
+                           projecaoLabel = `PROJEÇÃO ${targetYear}`;
+                        } else {
+                           projecaoLabel = `PROJEÇÃO ${targetYear} (${mesesRestantes}M)`;
+                        }
+                      } else {
+                        if (mesesRestantes > 0) {
+                           projecaoLabel = `PROJEÇÃO (${mesesRestantes}M)`;
+                        } else {
+                           projecaoLabel = `PROJEÇÃO`;
+                        }
+                      }
+
+                      let investidoNoPeriodo = 0;
+                      stats.transactions.forEach((t: any) => {
+                         const d = new Date(t.data);
+                         const y = d.getUTCFullYear();
+                         const m = d.getUTCMonth() + 1;
+                         if (dashboardPeriodo === 'anual') {
+                            if (y === anoAtual) investidoNoPeriodo += Math.abs(t.valor);
+                         } else {
+                            if (y === anoAtual && m === mesAtual) investidoNoPeriodo += Math.abs(t.valor);
+                         }
+                      });
+
+                      return (
+                        <div className="mt-0 w-full flex-1 flex flex-col justify-between items-center">
+                           <div className="w-full flex justify-center mt-4">
+                               <p className="text-[13px] sm:text-[14px] font-black text-blue-500 dark:text-blue-400 uppercase tracking-widest whitespace-nowrap">
+                                 {periodoLabel}
+                               </p>
+                           </div>
+
+                           {/* Display 1: Já Investido */}
+                           <div className="rounded-xl flex flex-col justify-center items-center w-full flex-1 pb-4">
+                               <p className="text-[11px] sm:text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-2 whitespace-nowrap mt-6">
+                                 JÁ INVESTIDO
+                               </p>
+                               <div className="flex flex-col items-center justify-center mt-1">
+                                 <p className="text-3xl sm:text-4xl font-black text-slate-800 dark:text-white whitespace-nowrap">
+                                   {formatCurrency(investidoNoPeriodo)}
+                                 </p>
+                               </div>
+                           </div>
+                        </div>
+                      );
+                    })() : (
+                      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mt-2 mb-5 px-2 w-full">
+                        <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-1">
+                          <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">
+                          {dashboardPeriodo === 'anual' ? 'VALOR DA PARCELA' : (item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA')))}
+                          </p>
+                          <div className={`flex flex-col items-center justify-center ${dashboardPeriodo !== 'anual' && item.isIgnored ? 'opacity-50 line-through' : ''}`}>
+                            {item.valor === null && (!fazerProjecao || (item.valorPrevisto === 0 && !item.isPago)) ? (
                               <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
                             ) : (
                               <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
-                                {formatarMoedaSinal(item.tipo === 'despesa' ? -custoAnual : custoAnual, true)}
+                                {formatarMoedaSinal(dashboardPeriodo === 'anual' ? item.valorPrevisto : (item.isPago ? item.valorEfetivado : item.valorPrevisto), true)}
                               </p>
                             )}
                           </div>
-                          {(item.valor === null || item.valor < 0) && (
+                          {(item.valor === null || item.valor < 0) && fazerProjecao && (
                             <span className="text-[9px] font-black bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded-md mt-1 scale-95 uppercase tracking-wider whitespace-nowrap">
                               Variável estim.
                             </span>
                           )}
                         </div>
-                      )}
-                    </div>
+
+                        {fazerProjecao && (
+                          <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-2">
+                            <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">CUSTO {anoAtual} {periodoTexto ? `(${periodoTexto})` : ''}</p>
+                            <div className="flex flex-col items-center justify-center">
+                              {item.valor === null && item.valorPrevisto === 0 && !item.isPago ? (
+                                <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
+                              ) : (
+                                <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
+                                  {formatarMoedaSinal(item.tipo === 'despesa' ? -custoAnual : custoAnual, true)}
+                                </p>
+                              )}
+                            </div>
+                            {(item.valor === null || item.valor < 0) && (
+                              <span className="text-[9px] font-black bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400 px-1.5 py-0.5 rounded-md mt-1 scale-95 uppercase tracking-wider whitespace-nowrap">
+                                Variável estim.
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Footer Actions */}
                     <div className="mt-auto space-y-2">
@@ -1452,19 +1648,19 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                           <RotateCcw size={18} />
                           Desfazer "Não Lançado"
                         </button>
-                      ) : item.isPago ? (
+                      ) : item.isPago && filtroNatureza !== 'investimento' ? (
                         <div className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2 cursor-not-allowed">
                           <CheckCircle2 size={18} />
                           {item.tipo === 'receita' ? 'Já recebido neste mês' : 'Já pago neste mês'}
                         </div>
-                      ) : item.isOffMonth ? (
+                      ) : item.isOffMonth && filtroNatureza !== 'investimento' ? (
                         <div className="w-full py-3 px-4 rounded-xl text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 flex items-center justify-center gap-2 cursor-not-allowed">
                           <CheckCircle2 size={18} />
                           {item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'Já recebido neste ano' : 'Já pago neste ano') : (item.tipo === 'receita' ? 'Fora do mês' : 'Fora do mês')}
                         </div>
                       ) : (
                         <div className="flex flex-row gap-2">
-                          {item.frequencia !== 'diaria' && (
+                          {item.frequencia !== 'diaria' && filtroNatureza !== 'investimento' && (
                             <button 
                               onClick={async () => {
                                   handleIgnoreProvisao(item);
@@ -1477,14 +1673,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                           )}
                           <button 
                             onClick={() => handleOpenEfetivarModal(item)}
-                            className={`${item.frequencia === 'diaria' ? 'w-full' : 'flex-[1.5]'} py-2.5 px-3 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
+                            className={`${item.frequencia === 'diaria' || filtroNatureza === 'investimento' ? 'w-full' : 'flex-[1.5]'} py-2.5 px-3 rounded-[14px] text-xs sm:text-[13px] font-bold shadow-sm transition-transform active:scale-[0.98] flex items-center justify-center gap-1.5 ${
                                 item.tipo === 'receita' 
                                   ? 'bg-emerald-500 hover:bg-emerald-600 text-white' 
-                                  : 'bg-[#3B82F6] hover:bg-blue-600 text-white'
+                                  : (filtroNatureza === 'investimento' ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-[#3B82F6] hover:bg-blue-600 text-white')
                               }`}
                           >
                             <CheckCircle2 size={16} />
-                            Lançar agora
+                            {filtroNatureza === 'investimento' ? 'Lançar Aporte' : 'Lançar agora'}
                           </button>
                         </div>
                       )}
@@ -1498,8 +1694,156 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         })
       )}
       </div>
+      
+      {/* PROJEÇÃO COLUMN (Only if Investimentos) */}
+      {filtroNatureza === 'investimento' && listagemFiltrada.length > 0 && (() => {
+         const item = listagemFiltrada[0];
+         const tagId = item.tag_id || item.tags?.id;
+         const catId = item.category_id || item.categories?.id;
+         const recId = item.id;
+         let stats = { total: 0, uniqueMonths: 0, transactions: [] as any[] };
+         
+         if (recId && globalInvestments[recId]) {
+            stats = globalInvestments[recId];
+         } else if (tagId && globalInvestments[tagId]) {
+            stats = globalInvestments[tagId];
+         } else if (catId && globalInvestments[catId]) {
+            stats = globalInvestments[catId];
+         }
+         
+         const transactions = stats.transactions;
+         const jaInvestidoTotal = stats.total;
+
+         const currentRealDate = new Date();
+         const currentYear = currentRealDate.getFullYear();
+         const currentMonth = currentRealDate.getMonth();
+
+         // Nova lógica de média: pega todos os investimentos feitos até o período alvo selecionado
+         let investidoAteAlvo = 0;
+         let uniqueMonthsAteAlvoSet = new Set();
+         
+         let targetMaxYear = anoAtual;
+         let targetMaxMonth = dashboardPeriodo === 'anual' ? 11 : mesAtual - 1;
+
+         transactions.forEach((t: any) => {
+            const d = new Date(t.data);
+            const y = d.getUTCFullYear();
+            const m = d.getUTCMonth();
+            
+            // Só considera transações que ocorreram antes ou durante o mês alvo selecionado
+            if (y < targetMaxYear || (y === targetMaxYear && m <= targetMaxMonth)) {
+               investidoAteAlvo += Math.abs(t.valor);
+               uniqueMonthsAteAlvoSet.add(`${y}-${m}`);
+            }
+         });
+         const uniqueMonthsAteAlvo = uniqueMonthsAteAlvoSet.size;
+         
+         let mediaMensal = uniqueMonthsAteAlvo > 0 ? investidoAteAlvo / uniqueMonthsAteAlvo : item.valorPrevisto;
+
+         let mesesRestantes = 0;
+         let projecaoFinal = 0;
+         let projecaoLabel = '';
+         let aporteBaseLabel = formatCurrency(item.valorPrevisto);
+
+         if (dashboardPeriodo === 'anual') {
+             let targetYear = anoAtual;
+             let targetMonth = 11;
+             mesesRestantes = (targetYear - currentYear) * 12 + (targetMonth - currentMonth);
+             if (mesesRestantes < 0) mesesRestantes = 0;
+             
+             const investidoEsteMes = transactions.some((t: any) => {
+                const d = new Date(t.data);
+                return d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth;
+             });
+             if (!investidoEsteMes && mesesRestantes > 0) {
+                mesesRestantes += 1;
+             }
+             
+             projecaoFinal = jaInvestidoTotal + (mediaMensal * mesesRestantes);
+             projecaoLabel = `PROJEÇÃO DEZ/${anoAtual}`;
+         } else {
+             // Mensal
+             let targetYear = anoAtual;
+             let targetMonth = mesAtual - 1;
+             mesesRestantes = (targetYear - currentYear) * 12 + (targetMonth - currentMonth);
+             
+             const investidoEsteMes = transactions.some((t: any) => {
+                const d = new Date(t.data);
+                return d.getUTCFullYear() === currentYear && d.getUTCMonth() === currentMonth;
+             });
+             if (!investidoEsteMes && mesesRestantes >= 0) {
+                mesesRestantes += 1;
+             }
+             if (mesesRestantes < 0) mesesRestantes = 0;
+             
+             projecaoFinal = jaInvestidoTotal + (mediaMensal * mesesRestantes);
+             
+             if (mesesRestantes > 0) {
+                projecaoLabel = `PROJEÇÃO (${mesesRestantes}M)`;
+             } else {
+                projecaoLabel = `PROJEÇÃO (ATUAL)`;
+             }
+         }
+
+         const periodoLabelProj = dashboardPeriodo === 'anual' 
+            ? `${anoAtual}` 
+            : `${nomesMeses[mesAtual - 1]} ${anoAtual}`.toUpperCase();
+
+         return (
+            <div className="bg-white dark:bg-[#1E293B] rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative flex flex-col h-full min-h-[300px]">
+               {/* Header */}
+               <div className="flex flex-wrap justify-between items-start mb-4 gap-3">
+                 <div className="flex flex-col gap-1 flex-1 min-w-[120px]">
+                   <div className="flex items-center gap-2">
+                     <TrendingUp size={18} className="text-amber-500 shrink-0" />
+                     <h4 className="text-[15px] sm:text-base font-black text-slate-800 dark:text-white uppercase tracking-wider break-normal pr-1">
+                       PROJEÇÃO
+                     </h4>
+                   </div>
+                 </div>
+               </div>
+               
+               <div className="flex-1 flex flex-col items-center justify-between w-full h-full">
+                   <div className="w-full flex justify-center mt-3">
+                       <p className="text-[13px] sm:text-[14px] font-black text-amber-500 dark:text-amber-400 uppercase tracking-widest whitespace-nowrap">
+                         {periodoLabelProj}
+                       </p>
+                   </div>
+                   
+                   <div className="flex flex-row flex-wrap items-center justify-center gap-4 lg:gap-8 w-full flex-1 pb-4">
+                     <div className="flex flex-col items-center mt-6">
+                       <p className="text-[9px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest mb-1 lg:mb-2 opacity-80">Média</p>
+                       <p className="text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-100">{formatCurrency(mediaMensal)}</p>
+                     </div>
+                     
+                     <div className="text-slate-300 dark:text-slate-700 hidden min-[1100px]:block font-light text-xl">=</div>
+                     
+                     <div className="flex flex-col items-center">
+                       <p className="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1 lg:mb-2 opacity-90 drop-shadow-sm">
+                         {mesesRestantes > 0 ? 'Total Esperado' : 'Total Investido'}
+                       </p>
+                       <p className="text-3xl lg:text-4xl xl:text-5xl font-black text-amber-500 dark:text-amber-400 tracking-tight drop-shadow-md">{formatCurrency(projecaoFinal)}</p>
+                     </div>
+                   </div>
+               </div>
+            </div>
+         );
+      })()}
+
+      </div>
 
       {/* RECURRING MODAL COMPONENT */}
+      <InvestimentoConfigModal
+        isOpen={isInvestimentoConfigOpen}
+        onClose={() => setIsInvestimentoConfigOpen(false)}
+        onSaved={fetchProvisoesAndRealizations}
+        onLaunchNow={(rec) => handleOpenEfetivarModal(rec)}
+        recorrencia={configInvestimento}
+        activeProfileId={activeProfileId}
+        categories={categories}
+        tags={tags}
+      />
+
       <RecurringModal 
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}

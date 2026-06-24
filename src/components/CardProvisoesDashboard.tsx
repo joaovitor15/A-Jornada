@@ -32,7 +32,7 @@ export function CardProvisoesDashboard({ activeProfileId, setActivePage, mesSele
       const [recRes, transRes] = await Promise.all([
         supabase
           .from('transacoes_recorrentes')
-          .select('*')
+          .select('*, categories (nome)')
           .eq('profile_id', activeProfileId)
           .eq('ativa', true),
         supabase
@@ -116,6 +116,9 @@ export function CardProvisoesDashboard({ activeProfileId, setActivePage, mesSele
       recorrentes.forEach((rec) => {
         if (rec.lancamento_rapido === true) return;
         
+        const catName = rec.categories?.nome?.toLowerCase() || '';
+        if (catName === 'investimentos') return;
+
         const freq = (rec.frequencia || 'mensal').toLowerCase();
         if (freq === 'diaria' || freq === 'semanal' || freq === 'diária') return;
 

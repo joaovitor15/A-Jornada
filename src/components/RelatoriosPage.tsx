@@ -341,7 +341,6 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     const txs = transacoes.filter(t => {
       if (t.tipo !== tipoTransacao) return false;
       if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
-      if (t.tags?.categories?.id && investCatIds.includes(t.tags.categories.id)) return false;
       
       if (agrupamento === 'tag' && selectedCategoryId) {
          if (t.tags?.categories?.id !== selectedCategoryId) return false;
@@ -567,7 +566,6 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
            const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
            const validTxs = transacoes.filter(t => {
              if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
-             if (t.tags?.categories?.id && investCatIds.includes(t.tags.categories.id)) return false;
              return true;
            });
 
@@ -677,12 +675,13 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                                <AnimatePresence>
                                  {openMenuId === rel.id && (
                                    <>
-                                     <div className="fixed inset-0 z-40" onClick={() => setOpenMenuId(null)} />
+                                     <div className="fixed inset-0 z-40" onPointerDown={(e) => { e.stopPropagation(); setOpenMenuId(null); }} />
                                      <motion.div 
                                        initial={{opacity: 0, y: -10, scale: 0.95}} animate={{opacity: 1, y: 0, scale: 1}} exit={{opacity: 0, y: -10, scale: 0.95}} transition={{duration: 0.15}}
                                        className="absolute top-[calc(100%+8px)] right-0 w-[140px] bg-white dark:bg-[#1E293B] rounded-[16px] shadow-[0_8px_30px_rgba(0,0,0,0.12)] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] p-[8px] z-50 flex flex-col gap-[4px]"
                                      >
                                        <button 
+                                         onPointerDown={(e) => e.stopPropagation()}
                                          onClick={() => { setOpenMenuId(null); handleEdit(rel); }}
                                          className="flex items-center gap-[8px] p-[10px_12px] rounded-[10px] hover:bg-[#F8FAFC] dark:hover:bg-[#0F172A] transition-colors text-left text-[#64748B] dark:text-[#94A3B8]"
                                        >
@@ -690,6 +689,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                                          <span className="text-[13px] font-[600]">Editar</span>
                                        </button>
                                        <button 
+                                         onPointerDown={(e) => e.stopPropagation()}
                                          onClick={() => { setOpenMenuId(null); setDeleteModal({ isOpen: true, id: rel.id }); }}
                                          className="flex items-center gap-[8px] p-[10px_12px] rounded-[10px] hover:bg-[#FEF2F2] dark:hover:bg-red-500/10 transition-colors text-left text-[#EF4444]"
                                        >
@@ -970,14 +970,14 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                   initial={{opacity: 0, scale: 0.95}} animate={{opacity: 1, scale: 1}} exit={{opacity: 0, scale: 0.95}}
                   className="bg-white dark:bg-[#1E293B] rounded-[24px] p-[24px] w-full max-w-[400px] z-[101] shadow-2xl text-center"
                >
-                  <div className="w-[48px] h-[48px] bg-[#FEF2F2] rounded-full flex items-center justify-center mx-auto mb-[16px]">
+                  <div className="w-[48px] h-[48px] bg-[#FEF2F2] dark:bg-red-500/10 rounded-full flex items-center justify-center mx-auto mb-[16px]">
                      <Trash2 className="text-[#EF4444]" size={24} />
                   </div>
                   <h3 className="text-[18px] font-[800] text-[#0F172A] dark:text-white mb-[12px]">Excluir Relatório</h3>
                   <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] mb-[24px]">Tem certeza que deseja excluir? Suas transações ficarão intactas.</p>
                   
                   <div className="flex gap-[12px]">
-                    <button onClick={() => setDeleteModal(null)} className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] transition-colors">Cancelar</button>
+                    <button onClick={() => setDeleteModal(null)} className="flex-1 bg-[#F1F5F9] dark:bg-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#E2E8F0] dark:hover:bg-[#475569] transition-colors">Cancelar</button>
                     <button 
                        onClick={() => executeDelete(deleteModal.id!)}
                        className="flex-1 bg-[#EF4444] text-white font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#DC2626] transition-all shadow-[0_4px_14px_rgba(239,68,68,0.3)] active:scale-[0.98]"

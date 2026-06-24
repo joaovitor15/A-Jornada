@@ -60,6 +60,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
   const [receitasPrevisto, setReceitasPrevisto] = useState(0);
   const [despesasPago, setDespesasPago] = useState(0);
   const [despesasPrevisto, setDespesasPrevisto] = useState(0);
+  const [investimentosPrevisto, setInvestimentosPrevisto] = useState(0);
   const [economiaDespesas, setEconomiaDespesas] = useState(0);
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
 
@@ -82,10 +83,10 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       const { data: antDataAll } = await supabase
         .from('transacoes')
         .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
-        .eq('profile_id', activeProfileId)
-        .lt('data', `${an}-${mesStr}-01`);
+        .eq('profile_id', activeProfileId);
 
-      const antData = antDataAll?.filter(t => t.card_id === null) || [];
+      const cutoffDate = `${an}-${mesStr}-01`;
+      const antData = antDataAll?.filter(t => t.card_id === null && (t.data || '') < cutoffDate) || [];
 
       let saldoAntCalcAcumulado = 0;
       if (activeProfileType !== 'empresa' && antData) {
@@ -127,16 +128,29 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         .gte('data', `${an}-${mesStr}-01`)
         .lte('data', `${an}-${mesStr}-${ultimoDia}`);
 
+      const { data: transferencias } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'transferencia')
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
       // Separar receitas por pago vs previsto
       const recsArrOriginal = receitas || [];
       const dspsArrOriginal = despesas || [];
+      const transfersArrOriginal = transferencias || [];
 
       const recsArr = recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
       const dspsArr = dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
 
       const invesArr = [
         ...recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
-        ...dspsArrOriginal.filter(d => !d.card_id && d.tags?.categories?.nome?.toLowerCase() === 'investimentos')
+        ...dspsArrOriginal.filter(d => !d.card_id && d.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
+        ...transfersArrOriginal.filter(t => t.tags?.categories?.nome?.toLowerCase() === 'investimentos' || t.descricao?.toLowerCase().includes('investimento'))
       ];
 
       const sumRecsPago = recsArr.filter(r => r.status !== 'previsto' && r.status !== 'ignorado').reduce((acc, obj) => acc + (obj.valor || 0), 0);
@@ -256,7 +270,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       }
                       if (!shouldExist) continue;
 
-                      const checkData = [...(antDataAll || []), ...recsArrOriginal, ...dspsArrOriginal];
+                      const checkData = [...(antDataAll || []), ...recsArrOriginal, ...dspsArrOriginal, ...transfersArrOriginal];
                       const isMatchedInPast = checkData.find(t => {
                           const refTag = `(Ref: ${String(m + 1).padStart(2, '0')}/${y})`;
                           if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
@@ -313,7 +327,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                                   }
                               }
 
-                              const recCatName = (rec.tags as any)?.categories?.nome?.toLowerCase() || '';
+                              const recCatName = rec.categories?.nome?.toLowerCase() || '';
                               if (recCatName !== 'investimentos') {
                                   if (rec.tipo === 'despesa') pastRecorrentesDebt -= historicValue;
                                   else if (rec.tipo === 'receita') pastRecorrentesDebt += historicValue;
@@ -349,8 +363,9 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               }
 
               if (rec.tipo === 'despesa') {
-                  // Compare with existing dspsArr
-                  const matched = dspsArr.find(t => {
+                  // Compare with existing dspsArrOriginal, transfersArrOriginal, and past transactions
+                  const checkArr = [...(antDataAll || []), ...dspsArrOriginal, ...transfersArrOriginal];
+                  const matched = checkArr.find(t => {
                        const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
                        if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
                          return true;
@@ -411,8 +426,9 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       });
                   }
               } else if (rec.tipo === 'receita') {
-                  // Compare with existing recsArr
-                  const matched = recsArr.find(t => {
+                  // Compare with existing recsArrOriginal and past transactions
+                  const checkArr = [...(antDataAll || []), ...recsArrOriginal, ...transfersArrOriginal];
+                  const matched = checkArr.find(t => {
                        const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
                        if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
                          return true;
@@ -453,7 +469,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   });
 
                   if (!matched) {
-                      const recCatName = (rec.tags as any)?.categories?.nome?.toLowerCase() || '';
+                      const recCatName = rec.categories?.nome?.toLowerCase() || '';
                       if (recCatName !== 'investimentos') {
                           sumRecsPrevRecorrente += valorPrevisto;
                       } else {
@@ -483,7 +499,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       setReceitasPago(sumRecsPago);
       setReceitasPrevisto(sumRecsPrev + sumRecsPrevRecorrente + sumInvesPrevRec);
       setDespesasPago(sumDspsPago);
-      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente + sumInvesPrev + sumInvesPrevRecorrente);
+      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente);
+      setInvestimentosPrevisto(sumInvesPrev + sumInvesPrevRecorrente);
       setEconomiaDespesas(calcEconomia);
 
       // receitasValor e despesasValor representam o que de fato ocorreu para manter a integridade do saldo e graficos
