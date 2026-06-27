@@ -983,10 +983,14 @@ export default function EAFCProfilePage({ activeProfileId }: GamePageProps) {
                     className="w-full text-center bg-slate-100 dark:bg-[#1E293B] border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-3 font-bold outline-none focus:ring-2 focus:ring-[#00D1FF] text-slate-800 dark:text-white"
                     required
                   >
-                    <option value="" disabled>GER</option>
-                    {Array.from({ length: 120 - 110 + 1 }, (_, i) => 110 + i).map(ger => (
-                      <option key={ger} value={ger}>{ger}</option>
-                    ))}
+                    <option value="" disabled>Selecione</option>
+                    <option value="110">150 (110-114)</option>
+                    <option value="115">300 (115)</option>
+                    <option value="116">600 (116)</option>
+                    <option value="117">1.500 (117)</option>
+                    <option value="118">3.500 (118)</option>
+                    <option value="119">5.000 (119)</option>
+                    <option value="120">10.000 (120)</option>
                   </select>
                 </div>
                 <div className="flex-1">
@@ -1096,10 +1100,14 @@ export default function EAFCProfilePage({ activeProfileId }: GamePageProps) {
                     className="w-full text-center bg-slate-100 dark:bg-[#1E293B] border border-slate-300 dark:border-slate-700 rounded-xl px-2 py-3 font-bold outline-none focus:ring-2 focus:ring-[#EF4444] text-slate-800 dark:text-white"
                     required
                   >
-                    <option value="" disabled>GER</option>
-                    {Array.from({ length: 120 - 110 + 1 }, (_, i) => 110 + i).map(ger => (
-                      <option key={ger} value={ger}>{ger}</option>
-                    ))}
+                    <option value="" disabled>Selecione</option>
+                    <option value="110">150 (110-114)</option>
+                    <option value="115">300 (115)</option>
+                    <option value="116">600 (116)</option>
+                    <option value="117">1.500 (117)</option>
+                    <option value="118">3.500 (118)</option>
+                    <option value="119">5.000 (119)</option>
+                    <option value="120">10.000 (120)</option>
                   </select>
                 </div>
                 <div className="flex-1">
