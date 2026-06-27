@@ -22,10 +22,11 @@ import {
   Coffee, Rocket, Award, Target, Zap, Globe, Landmark, PiggyBank,
   DollarSign, GraduationCap, Baby, Dog, Car, Plane, Gamepad2,
   Camera, Gift, Music, Book, Repeat, Banknote, CreditCard,
-  LineChart, PieChart, Activity, Menu, X, Sun, Moon
+  LineChart, PieChart, Activity, Menu, X, Sun, Moon, Trophy
 } from 'lucide-react';
 import { Page } from '../types';
 import { SupabaseProfile } from '../hooks/useProfiles';
+import { SoccerBall } from './SoccerBall';
 import { motion, AnimatePresence } from 'motion/react';
 
 import JornadaLogo from './JornadaLogo';
@@ -45,7 +46,7 @@ interface AppLayoutProps {
   profiles: SupabaseProfile[];
   onProfileChange: (id: string) => void;
   updateProfileModules: (id: string, modules: Partial<SupabaseProfile>) => Promise<{ error: any }>;
-  selectedGame?: 'cr' | 'bs' | null;
+  selectedGame?: 'cr' | 'bs' | 'eafc' | null;
 }
 
 export default function AppLayout({ 
@@ -133,6 +134,9 @@ export default function AppLayout({
     ...((selectedGame === 'bs' && activeProfile?.game_show_brawl_stars !== false) ? [
       { id: 'bs_profile' as Page, icon: Star, title: 'Dados' },
       { id: 'bs_brawlers' as Page, icon: Users, title: 'Brawlers' },
+    ] : []),
+    ...((selectedGame === 'eafc') ? [
+      { id: 'eafc_profile' as Page, icon: SoccerBall, title: 'Elenco' },
     ] : []),
   ] : [];
 

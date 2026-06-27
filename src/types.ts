@@ -43,4 +43,4 @@ export interface Cofre {
   created_at?: string;
 }
 
-export type Page = 'dashboard' | 'transactions' | 'profiles' | 'reports' | 'settings' | 'categories' | 'recorrentes' | 'relatorios' | 'cartoes' | 'investimentos' | 'investimentos_ativos' | 'investimentos_cofres' | 'investimentos_metas' | 'game' | 'cr_profile' | 'cr_cards' | 'cr_badges' | 'bs_profile' | 'bs_brawlers';
+export type Page = 'dashboard' | 'transactions' | 'profiles' | 'reports' | 'settings' | 'categories' | 'recorrentes' | 'relatorios' | 'cartoes' | 'investimentos' | 'investimentos_ativos' | 'investimentos_cofres' | 'investimentos_metas' | 'game' | 'cr_profile' | 'cr_cards' | 'cr_badges' | 'bs_profile' | 'bs_brawlers' | 'eafc_profile';

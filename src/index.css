@@ -18,6 +18,10 @@
   body {
     @apply bg-[--color-bg-main] text-slate-800 antialiased dark:bg-slate-900 dark:text-slate-100;
   }
+  
+  html.dark {
+    color-scheme: dark;
+  }
 }
 
 .card-shadow {

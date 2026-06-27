@@ -27,6 +27,7 @@ export interface SupabaseProfile {
   game_ativo?: boolean;
   game_show_clash_royale?: boolean;
   game_show_brawl_stars?: boolean;
+  eafc_fragmentos?: number;
   dashboard_metas_classes?: any;
   dashboard_compras_mes?: number;
 }
