@@ -29,7 +29,6 @@ import CRCardsPage from './pages/CRCardsPage';
 import CRBadgesPage from './pages/CRBadgesPage';
 import BSProfilePage from './pages/BSProfilePage';
 import BSBrawlersPage from './pages/BSBrawlersPage';
-import EAFCProfilePage from './pages/EAFCProfilePage';
 
 export default function App() {
   const { user, loading: authLoading, login, cadastrar, logout } = useAuth();
@@ -73,7 +72,7 @@ export default function App() {
 
     const finPages: Page[] = ['dashboard', 'transactions', 'categories', 'recorrentes', 'relatorios', 'cartoes'];
     const invPages: Page[] = ['investimentos', 'investimentos_ativos', 'investimentos_cofres'];
-    const gamePages: Page[] = ['game', 'cr_profile', 'cr_cards', 'cr_badges', 'bs_profile', 'bs_brawlers', 'eafc_profile'];
+    const gamePages: Page[] = ['game', 'cr_profile', 'cr_cards', 'cr_badges', 'bs_profile', 'bs_brawlers'];
 
     const finActive = activeProfile.enable_sistema_financeiro !== false;
     const invActive = activeProfile.investimentos_ativo === true;
@@ -114,12 +113,11 @@ export default function App() {
     setActivePage(page);
     const crPages = ['cr_profile', 'cr_cards', 'cr_badges'];
     const bsPages = ['bs_profile', 'bs_brawlers'];
-    const eafcPages = ['eafc_profile'];
     
     if (page === 'game') {
       setSelectedGame(null);
       localStorage.removeItem('selected_game');
-    } else if (!crPages.includes(page) && !bsPages.includes(page) && !eafcPages.includes(page)) {
+    } else if (!crPages.includes(page) && !bsPages.includes(page)) {
       setSelectedGame(null);
       localStorage.removeItem('selected_game');
     }
@@ -295,14 +293,6 @@ export default function App() {
           'Sistema Game',
           'Brawlers',
           <BSBrawlersPage activeProfileId={activeProfile?.id} />
-        );
-      case 'eafc_profile':
-        return renderContentWithGuard(
-          activeProfile?.game_ativo === true,
-          true,
-          'Sistema Game',
-          'Perfil EA FC Mobile',
-          <EAFCProfilePage activeProfileId={activeProfile?.id} />
         );
       default:
         return (
