@@ -29,6 +29,7 @@ class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, errorInfo: any) {
     console.error("ErrorBoundary caught an error", error, errorInfo);
+    this.setState({ errorInfo });
   }
 
   render() {
@@ -38,6 +39,7 @@ class ErrorBoundary extends Component<Props, State> {
           <h1>Something went wrong.</h1>
           <pre>{this.state.error?.message}</pre>
           <pre>{this.state.error?.stack}</pre>
+          <pre style={{ color: 'blue' }}>{(this.state as any).errorInfo?.componentStack}</pre>
         </div>
       );
     }

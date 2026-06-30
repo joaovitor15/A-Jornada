@@ -32,10 +32,22 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const mesAtual = selectedDate.getMonth() + 1;
   const nomesMeses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
+  const { categories, tags } = useCategories(activeProfileId);
+  const { profiles } = useProfiles();
+  const activeProfile = profiles.find(p => p.id === activeProfileId);
+  const isBusiness = activeProfile?.tipo === 'empresa';
+  const isInvestimentosEnabled = activeProfile?.investimentos_ativo !== false;
+
   // Filters
   const [busca, setBusca] = useState('');
   const [filtroTipo, setFiltroTipo] = useState<'pendentes' | 'lancadas'>('pendentes');
   const [filtroNatureza, setFiltroNatureza] = useState<'despesa' | 'receita' | 'investimento'>('despesa');
+
+  useEffect(() => {
+    if (!isInvestimentosEnabled && filtroNatureza === 'investimento') {
+      setFiltroNatureza('despesa');
+    }
+  }, [isInvestimentosEnabled, filtroNatureza]);
 
   // Core Data States
   const [loading, setLoading] = useState(true);
@@ -164,11 +176,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     
     triggerRefresh();
   };
-
-  const { categories, tags } = useCategories(activeProfileId);
-  const { profiles } = useProfiles();
-  const activeProfile = profiles.find(p => p.id === activeProfileId);
-  const isBusiness = activeProfile?.tipo === 'empresa';
 
   // Navigation handlers
   const handleMudarAno = (increment: number) => {
@@ -633,15 +640,27 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     .reduce((sum, p) => sum + p.valorPrevisto, 0);
 
   const statReceitasPrevistas = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'receita' && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => {
+      const isInvest = p.categories?.nome?.toLowerCase() === 'investimentos';
+      const isFarmacia = isBusiness && (p.categories?.nome?.toLowerCase() === 'farmácia popular' || p.categories?.nome?.toLowerCase() === 'farmacia popular');
+      return p.tipo === 'receita' && !p.isOffMonth && !isInvest && !isFarmacia;
+    })
     .reduce((sum, p) => sum + p.valorPrevisto, 0);
 
   const statReceitasPendentes = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'receita' && !p.isPago && !p.isIgnored && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => {
+      const isInvest = p.categories?.nome?.toLowerCase() === 'investimentos';
+      const isFarmacia = isBusiness && (p.categories?.nome?.toLowerCase() === 'farmácia popular' || p.categories?.nome?.toLowerCase() === 'farmacia popular');
+      return p.tipo === 'receita' && !p.isPago && !p.isIgnored && !p.isOffMonth && !isInvest && !isFarmacia;
+    })
     .reduce((sum, p) => sum + p.valorPrevisto, 0);
 
   const statReceitasRecebidas = targetProvisoesToComputeStats
-    .filter(p => p.tipo === 'receita' && p.isPago && !p.isOffMonth && p.categories?.nome?.toLowerCase() !== 'investimentos')
+    .filter(p => {
+      const isInvest = p.categories?.nome?.toLowerCase() === 'investimentos';
+      const isFarmacia = isBusiness && (p.categories?.nome?.toLowerCase() === 'farmácia popular' || p.categories?.nome?.toLowerCase() === 'farmacia popular');
+      return p.tipo === 'receita' && p.isPago && !p.isOffMonth && !isInvest && !isFarmacia;
+    })
     .reduce((sum, p) => sum + p.valorEfetivado, 0);
 
   // Accomplished progress
@@ -723,7 +742,10 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
   const formatarMoedaSinal = (valor: number, mostrarSinal = false) => {
     const abs = Math.abs(valor);
-    const formatado = abs.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    let formatado = abs.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    if (formatado.endsWith(',00')) {
+      formatado = formatado.slice(0, -3);
+    }
     if (mostrarSinal) {
       if (valor > 0) return `+R$ ${formatado}`;
       if (valor < 0) return `-R$ ${formatado}`;
@@ -1235,18 +1257,22 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                 exit={{ opacity: 0, y: -10 }}
                 className="absolute top-[100%] mt-2 right-0 bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#334155] shadow-[0_8px_24px_rgba(0,0,0,0.12)] p-1.5 min-w-[200px] z-50 overflow-hidden"
               >
-                <div 
-                  onClick={() => {
-                    setIsDropdownOpen(false);
-                    setConfigInvestimento(null);
-                    setIsInvestimentoConfigOpen(true);
-                  }}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors cursor-pointer group"
-                >
-                  <TrendingUp size={15} className="text-amber-500 group-hover:scale-110 transition-transform" />
-                  <span className="text-xs font-bold text-amber-600 dark:text-amber-500">Planejar Investimento</span>
-                </div>
-                <div className="border-t border-slate-100 dark:border-[#334155] my-1" />
+                {isInvestimentosEnabled && (
+                  <>
+                    <div 
+                      onClick={() => {
+                        setIsDropdownOpen(false);
+                        setConfigInvestimento(null);
+                        setIsInvestimentoConfigOpen(true);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl hover:bg-amber-100 dark:hover:bg-amber-950/40 transition-colors cursor-pointer group"
+                    >
+                      <TrendingUp size={15} className="text-amber-500 group-hover:scale-110 transition-transform" />
+                      <span className="text-xs font-bold text-amber-600 dark:text-amber-500">Planejar Investimento</span>
+                    </div>
+                    <div className="border-t border-slate-100 dark:border-[#334155] my-1" />
+                  </>
+                )}
                 <div 
                   onClick={() => {
                     setIsDropdownOpen(false);
@@ -1312,12 +1338,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         >
           Receitas
         </button>
-        <button
-          onClick={() => setFiltroNatureza('investimento')}
-          className={`flex-1 min-w-[120px] lg:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${filtroNatureza === 'investimento' ? 'bg-white dark:bg-slate-800 text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-        >
-          Investimentos
-        </button>
+        {isInvestimentosEnabled && (
+          <button
+            onClick={() => setFiltroNatureza('investimento')}
+            className={`flex-1 min-w-[120px] lg:w-40 py-2.5 px-4 rounded-lg text-sm font-bold uppercase tracking-wider transition-all duration-300 whitespace-nowrap ${filtroNatureza === 'investimento' ? 'bg-white dark:bg-slate-800 text-amber-500 shadow-sm' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+          >
+            Investimentos
+          </button>
+        )}
       </div>
 
       {/* MAIN LAYOUT WRAPPER FOR LIST AND PROJEÇÃO */}
@@ -1590,7 +1618,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                         </div>
                       );
                     })() : (
-                      <div className="flex flex-col sm:flex-row justify-between items-center gap-4 sm:gap-0 mt-2 mb-5 px-2 w-full">
+                      <div className="flex flex-col sm:flex-row md:flex-col 2xl:flex-row justify-between items-center gap-4 lg:gap-3 mt-2 mb-5 px-2 w-full">
                         <div className="flex flex-col items-center w-full sm:w-auto sm:flex-1 order-1">
                           <p className="text-[10px] font-bold text-slate-800 dark:text-slate-300 uppercase tracking-widest mb-2 whitespace-nowrap text-center">
                           {dashboardPeriodo === 'anual' ? 'VALOR DA PARCELA' : (item.isOffMonth && !item.isPago && !item.isIgnored ? (item.frequencia === 'anual' ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'FORA DO MÊS ALVO') : (item.isIgnored ? 'NÃO LANÇADO' : (item.isPago ? (item.tipo === 'receita' ? 'VALOR RECEBIDO' : 'VALOR PAGO') : 'VALOR DA PARCELA')))}
@@ -1599,7 +1627,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                             {item.valor === null && (!fazerProjecao || (item.valorPrevisto === 0 && !item.isPago)) ? (
                               <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
                             ) : (
-                              <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
+                              <p className="text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap tracking-tight">
                                 {formatarMoedaSinal(dashboardPeriodo === 'anual' ? item.valorPrevisto : (item.isPago ? item.valorEfetivado : item.valorPrevisto), true)}
                               </p>
                             )}
@@ -1618,7 +1646,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                               {item.valor === null && item.valorPrevisto === 0 && !item.isPago ? (
                                 <span className="text-sm font-bold text-slate-800 dark:text-white mt-1 mb-1">Valor Variável</span>
                               ) : (
-                                <p className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap">
+                                <p className="text-2xl font-black text-slate-800 dark:text-white whitespace-nowrap tracking-tight">
                                   {formatarMoedaSinal(item.tipo === 'despesa' ? -custoAnual : custoAnual, true)}
                                 </p>
                               )}

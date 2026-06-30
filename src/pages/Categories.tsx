@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Plus, Pencil, Trash2, X, FolderOpen, Archive, RotateCcw, ChevronDown, Search, Pipette,
-  ShoppingCart, Car, Home, Heart, Briefcase, Coffee, Utensils, Plane, Music, Book,
-  Dumbbell, Tag, Wallet, CreditCard, DollarSign, TrendingUp, TrendingDown,
-  ShoppingBag, Smartphone, Monitor, Shirt, Zap, Wifi, Bus, Bike, Gift, Pizza, Apple,
-  Stethoscope, GraduationCap, Hammer, Wrench, Palette, Camera, Gamepad2, Baby, Dog,
-  Cat, Trees, Building, Hotel, MapPin, Globe, Sun, Moon, Star, Flame, Droplets, Leaf,
-  Recycle, Package, Pill, PiggyBank, Landmark, Fuel, Lock
+  Plus, Pencil, Trash2, X, FolderOpen, Archive, RotateCcw, ChevronDown, Search, Pipette, TrendingUp, Tag, TrendingDown,
+  User, Building2, Home, Lock,
+  CircleDollarSign, BadgeDollarSign, BanknoteArrowUp, Heart, Signature,
+  ShoppingCart, Gamepad2, TvMinimalPlay, CreditCard, TrendingUpDown, HandCoins, TicketCheck,
+  CalendarSync, HeartPulse, IdCardLanyard, Wifi, TicketPercent, Zap, Droplet, LayoutPanelLeft, TruckElectric
 } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 import { SupabaseProfile } from '../hooks/useProfiles';
 import { useCategories, Category } from '../hooks/useCategories';
 import { motion, AnimatePresence } from 'motion/react';
+import IconPicker from '../components/IconPicker';
 
 interface CategoriesProps {
   activeProfile: SupabaseProfile | null;
@@ -22,59 +21,30 @@ export const COLORS = [
   '#EC4899', '#0F172A', '#06B6D4', '#84CC16', '#F59E0B', '#6B7280'
 ];
 
-export const ICONS = [
-  { name: 'ShoppingCart', label: 'mercado compras', component: ShoppingCart },
-  { name: 'Car', label: 'carro transporte', component: Car },
+export const ICONS: Array<{ name: string; label: string; component: any }> = [
+  { name: 'User', label: 'usuário perfil pessoa', component: User },
+  { name: 'Building2', label: 'prédio empresa negócio', component: Building2 },
   { name: 'Home', label: 'casa moradia', component: Home },
-  { name: 'Heart', label: 'saúde amor', component: Heart },
-  { name: 'Briefcase', label: 'trabalho emprego', component: Briefcase },
-  { name: 'Coffee', label: 'café bebida', component: Coffee },
-  { name: 'Utensils', label: 'alimentação comida', component: Utensils },
-  { name: 'Plane', label: 'viagem avião', component: Plane },
-  { name: 'Music', label: 'música som', component: Music },
-  { name: 'Book', label: 'educação livro', component: Book },
-  { name: 'Dumbbell', label: 'academia exercício', component: Dumbbell },
-  { name: 'Tag', label: 'tag geral', component: Tag },
-  { name: 'Wallet', label: 'carteira dinheiro', component: Wallet },
-  { name: 'CreditCard', label: 'cartão crédito', component: CreditCard },
-  { name: 'DollarSign', label: 'dinheiro dólar', component: DollarSign },
-  { name: 'TrendingUp', label: 'alta receita lucro', component: TrendingUp },
-  { name: 'TrendingDown', label: 'baixa despesa prejuízo', component: TrendingDown },
-  { name: 'ShoppingBag', label: 'sacola compras', component: ShoppingBag },
-  { name: 'Smartphone', label: 'celular telefone', component: Smartphone },
-  { name: 'Monitor', label: 'computador pc monitor', component: Monitor },
-  { name: 'Shirt', label: 'camisa roupa vestuário', component: Shirt },
-  { name: 'Zap', label: 'energia raio', component: Zap },
-  { name: 'Wifi', label: 'internet rede wifi', component: Wifi },
-  { name: 'Bus', label: 'ônibus transporte público', component: Bus },
-  { name: 'Bike', label: 'bicicleta transporte', component: Bike },
-  { name: 'Gift', label: 'presente doação', component: Gift },
-  { name: 'Pizza', label: 'pizza comida fastfood', component: Pizza },
-  { name: 'Apple', label: 'maçã fruta saúde', component: Apple },
-  { name: 'Stethoscope', label: 'médico doutor', component: Stethoscope },
-  { name: 'GraduationCap', label: 'faculdade escola formatura', component: GraduationCap },
-  { name: 'Hammer', label: 'martelo obra', component: Hammer },
-  { name: 'Wrench', label: 'chave de boca ferramentas', component: Wrench },
-  { name: 'Palette', label: 'paleta arte pintura', component: Palette },
-  { name: 'Camera', label: 'câmera foto vídeo', component: Camera },
-  { name: 'Gamepad2', label: 'videogame jogo lazer', component: Gamepad2 },
-  { name: 'Baby', label: 'bebê criança filho', component: Baby },
-  { name: 'Dog', label: 'cachorro cão pet', component: Dog },
-  { name: 'Cat', label: 'gato pet felino', component: Cat },
-  { name: 'Trees', label: 'árvore natureza ambiente', component: Trees },
-  { name: 'Building', label: 'prédio cidade', component: Building },
-  { name: 'Hotel', label: 'hotel hospedagem', component: Hotel },
-  { name: 'MapPin', label: 'mapa localização gps', component: MapPin },
-  { name: 'Globe', label: 'globo mundo planeta', component: Globe },
-  { name: 'Sun', label: 'sol clima dia', component: Sun },
-  { name: 'Moon', label: 'lua noite', component: Moon },
-  { name: 'Star', label: 'estrela favorito', component: Star },
-  { name: 'Flame', label: 'fogo chama quente', component: Flame },
-  { name: 'Droplets', label: 'água gotas umidade', component: Droplets },
-  { name: 'Leaf', label: 'folha planta', component: Leaf },
-  { name: 'Recycle', label: 'reciclagem lixo verde', component: Recycle },
-  { name: 'Package', label: 'pacote caixa encomenda', component: Package },
-  { name: 'Archive', label: 'arquivo caixa', component: Archive }
+  { name: 'CircleDollarSign', label: 'dinheiro cifrão financeiro', component: CircleDollarSign },
+  { name: 'BadgeDollarSign', label: 'medalha dólar prêmio', component: BadgeDollarSign },
+  { name: 'BanknoteArrowUp', label: 'nota dinheiro enviar pagar', component: BanknoteArrowUp },
+  { name: 'Heart', label: 'coração saúde amor', component: Heart },
+  { name: 'Signature', label: 'assinatura caneta documento', component: Signature },
+  { name: 'ShoppingCart', label: 'carrinho compras loja', component: ShoppingCart },
+  { name: 'Gamepad2', label: 'videogame jogo controle', component: Gamepad2 },
+  { name: 'TvMinimalPlay', label: 'tv tela vídeo assistir', component: TvMinimalPlay },
+  { name: 'CreditCard', label: 'cartão crédito débito', component: CreditCard },
+  { name: 'TrendingUpDown', label: 'gráfico tendência oscilação', component: TrendingUpDown },
+  { name: 'HandCoins', label: 'mão moedas dar receber', component: HandCoins },
+  { name: 'TicketCheck', label: 'ticket ingresso cheque validar', component: TicketCheck },
+  { name: 'CalendarSync', label: 'calendário sincronizar data', component: CalendarSync },
+  { name: 'HeartPulse', label: 'coração pulso saúde vida', component: HeartPulse },
+  { name: 'IdCardLanyard', label: 'crachá documento identificação cordão', component: IdCardLanyard },
+  { name: 'Wifi', label: 'wifi internet conexão rede', component: Wifi },
+  { name: 'TicketPercent', label: 'ticket cupom desconto porcentagem', component: TicketPercent },
+  { name: 'Zap', label: 'raio energia eletricidade rápido', component: Zap },
+  { name: 'Droplet', label: 'gota água líquido umidade', component: Droplet },
+  { name: 'TruckElectric', label: 'caminhão elétrico frete transporte sustentável', component: TruckElectric }
 ];
 
 export default function Categories({ activeProfile }: CategoriesProps) {
@@ -563,7 +533,7 @@ export default function Categories({ activeProfile }: CategoriesProps) {
         {/* CABEÇALHO CENTRALIZADO */}
       <div className="text-center mb-[28px] flex flex-col items-center">
         <h1 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight mb-4 flex items-center gap-3">
-          <Tag size={28} className="text-[#3B82F6]" />
+          <LayoutPanelLeft size={28} className="text-[#3B82F6]" />
           Categorias & Tags
         </h1>
 
@@ -823,101 +793,13 @@ export default function Categories({ activeProfile }: CategoriesProps) {
                     </div>
                   </div>
 
-                  {/* ÍCONES */}
-                  <div className="flex flex-col gap-[10px]" ref={iconSelectorRef}>
-                    <label className="block text-[13px] font-bold text-[#64748B] dark:text-[#94A3B8] uppercase tracking-tight">Ícone</label>
-                    
-                    {/* Select/Display Visual Current Icon */}
-                    <button 
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setIsIconDropdownOpen(prev => !prev);
-                      }}
-                      className="flex items-center justify-between w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] px-[14px] py-[10px] min-h-[44px] cursor-pointer hover:border-[#2563EB] transition-colors"
-                    >
-                      <div className="flex items-center gap-[10px]">
-                        <div 
-                          className="w-[30px] h-[30px] rounded-[8px] flex items-center justify-center text-white"
-                          style={{ backgroundColor: catColor }}
-                        >
-                          {(() => {
-                            const SelectedIcon = ICONS.find(i => i.name === catIcon)?.component || Tag;
-                            return <SelectedIcon size={18} />;
-                          })()}
-                        </div>
-                        <span className="text-[14px] text-[#374151] dark:text-[#E2E8F0] font-medium capitalize">
-                          {catIcon}
-                        </span>
-                      </div>
-                      <ChevronDown size={14} className="text-[#94A3B8] dark:text-[#475569]" />
-                    </button>
-
-                    <AnimatePresence>
-                      {isIconDropdownOpen && (
-                        <motion.div
-                          initial={{ opacity: 0, height: 0 }}
-                          animate={{ opacity: 1, height: 'auto' }}
-                          exit={{ opacity: 0, height: 0 }}
-                          className="w-full bg-[#FFFFFF] dark:bg-[#1E293B] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex flex-col gap-[10px] overflow-hidden p-[12px] shadow-sm transform-origin-top"
-                        >
-                          {/* Search Input inline */}
-                          <div className="relative w-full">
-                            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8] dark:text-[#475569]" />
-                            <input
-                              type="text"
-                              placeholder="Buscar ícone..."
-                              value={iconSearchTerm}
-                              onClick={(e) => e.stopPropagation()}
-                              onChange={(e) => setIconSearchTerm(e.target.value)}
-                              className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[8px] py-[8px] pr-[12px] pl-[34px] text-[16px] sm:text-[13px] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#2563EB] transition-all"
-                            />
-                          </div>
-
-                          {/* Icons Grid inline */}
-                          <div className="grid grid-cols-7 gap-[6px] overflow-y-auto max-h-[160px] icons-grid-scroll">
-                            {ICONS.filter(icon => icon.label.toLowerCase().includes(iconSearchTerm.toLowerCase())).map(icon => {
-                              const IconComponent = icon.component;
-                              const isSelected = catIcon === icon.name;
-                              return (
-                                <button 
-                                  key={icon.name}
-                                  title={icon.name}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setCatIcon(icon.name);
-                                    setIsIconDropdownOpen(false);
-                                    setIconSearchTerm('');
-                                  }}
-                                  className="w-[36px] h-[36px] flex items-center justify-center rounded-[8px] transition-all cursor-pointer"
-                                  style={isSelected ? {
-                                    backgroundColor: catColor,
-                                    color: '#FFFFFF',
-                                    boxShadow: `0 2px 6px ${catColor}66`
-                                  } : {
-                                    backgroundColor: 'transparent',
-                                    color: '#64748B'
-                                  }}
-                                  onMouseEnter={(e) => {
-                                    if (!isSelected) {
-                                      e.currentTarget.style.backgroundColor = '#F1F5F9';
-                                    }
-                                  }}
-                                  onMouseLeave={(e) => {
-                                    if (!isSelected) {
-                                      e.currentTarget.style.backgroundColor = 'transparent';
-                                    }
-                                  }}
-                                >
-                                  <IconComponent size={18} />
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
+                  <div className="z-[60]">
+                    <IconPicker 
+                      value={catIcon} 
+                      onChange={setCatIcon} 
+                      color={catColor} 
+                      label="Ícone" 
+                    />
                   </div>
                 </div>
 

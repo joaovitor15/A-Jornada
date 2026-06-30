@@ -31,10 +31,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import JornadaLogo from './JornadaLogo';
 
 const PROFILE_ICONS: Record<string, any> = {
-  User, Building2, Users, UserCheck, Briefcase, Home, Star, Crown, Heart, Smile,
-  Coffee, Rocket, Shield, Award, Target, Zap, Globe, Landmark, PiggyBank,
-  Wallet, TrendingUp, BarChart2, DollarSign, GraduationCap, Baby, Dog, Car,
-  Plane, Gamepad2, Camera, Gift, Music, Book
+  User, Building2, Home
 };
 
 interface AppLayoutProps {

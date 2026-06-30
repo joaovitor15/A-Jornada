@@ -5,7 +5,9 @@ import { motion, AnimatePresence, Reorder } from 'motion/react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useCategories } from '../hooks/useCategories';
 import { useTransacoes } from '../hooks/useTransacoes';
+import { useProfiles } from '../hooks/useProfiles';
 import { COLORS, ICONS } from '../pages/Categories';
+import IconPicker from './IconPicker';
 
 interface RelatoriosPageProps {
   activeProfileId?: string;
@@ -32,7 +34,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
   // Form State
   const [formNome, setFormNome] = useState('');
-  const [formTipo, setFormTipo] = useState<'receita' | 'despesa'>('despesa');
+  const [formTipo, setFormTipo] = useState<'receita' | 'despesa' | 'lucro'>('despesa');
   const [formCategoriasIds, setFormCategoriasIds] = useState<string[]>([]);
   const [formCalcularMargem, setFormCalcularMargem] = useState(false);
   const [formIcone, setFormIcone] = useState<string | null>(null);
@@ -105,6 +107,10 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
   // Delete modal state
   const [deleteModal, setDeleteModal] = useState<{isOpen: boolean, id: string | null} | null>(null);
 
+  const { profiles } = useProfiles();
+  const activeProfile = profiles.find(p => p.id === activeProfileId);
+  const isBusiness = activeProfile?.tipo === 'empresa';
+
   const { categories } = useCategories(activeProfileId);
   const { transacoes, carregarTransacoesMes, carregarTransacoesAno } = useTransacoes();
 
@@ -171,7 +177,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
   const handleSalvar = async () => {
     if (!formNome.trim()) return alert("Informe um nome para o relatório.");
-    if (formCategoriasIds.length === 0) return alert("Selecione pelo menos uma categoria.");
+    if (formCategoriasIds.length === 0 && formTipo !== 'lucro') return alert("Selecione pelo menos uma categoria.");
     if (!activeProfileId) return;
 
     setSubmitting(true);
@@ -192,8 +198,8 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
       profile_id: activeProfileId,
       nome_relatorio: formNome.trim(),
       tipo_relatorio: formTipo,
-      categorias_ids: formCategoriasIds,
-      calcular_margem: formTipo === 'despesa' ? formCalcularMargem : false,
+      categorias_ids: formTipo === 'lucro' && formCategoriasIds.length === 0 ? ['00000000-0000-0000-0000-000000000000'] : formCategoriasIds,
+      calcular_margem: formCalcularMargem,
       icone_representativo: iconeToSave,
       cor_representativa: corToSave
     };
@@ -277,21 +283,21 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     setEditingRelatorio(rel);
     setFormNome(rel.nome_relatorio);
     setFormTipo(rel.tipo_relatorio);
-    setFormCategoriasIds(rel.categorias_ids || []);
+    setFormCategoriasIds((rel.categorias_ids || []).filter((id: string) => id !== '00000000-0000-0000-0000-000000000000'));
     setFormCalcularMargem(rel.calcular_margem || false);
     setFormIcone(rel.icone_representativo || null);
     setFormCor(rel.cor_representativa || null);
     setIsModalOpen(true);
   };
 
-  const handleCreateRelatorio = (tipo: 'receita' | 'despesa') => {
+  const handleCreateRelatorio = (tipo: 'receita' | 'despesa' | 'lucro') => {
     setEditingRelatorio(null);
     setFormNome('');
     setFormTipo(tipo);
     setFormCategoriasIds([]);
-    setFormCalcularMargem(false);
-    setFormIcone(null);
-    setFormCor(null);
+    setFormCalcularMargem(tipo === 'lucro' ? true : false);
+    setFormIcone(tipo === 'lucro' ? 'Wallet' : null);
+    setFormCor(tipo === 'lucro' ? '#3B82F6' : null);
     setShowNovoRelatorioMenu(false);
     setIsModalOpen(true);
   };
@@ -341,6 +347,11 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     const txs = transacoes.filter(t => {
       if (t.tipo !== tipoTransacao) return false;
       if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+      
+      if (tipoTransacao === 'receita' && isBusiness && t.tags?.categories?.nome) {
+         const catNome = t.tags.categories.nome.toLowerCase();
+         if (catNome === 'farmácia popular' || catNome === 'farmacia popular') return false;
+      }
       
       if (agrupamento === 'tag' && selectedCategoryId) {
          if (t.tags?.categories?.id !== selectedCategoryId) return false;
@@ -393,7 +404,16 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
   const availableCategories = categories.filter(c => c.tipo === formTipo && c.nome.toLowerCase() !== 'cartão de crédito');
   const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
-  const totalReceitasPeriodo = transacoes.filter(t => t.tipo === 'receita' && (!t.tags?.categories?.id || !cardCatIds.includes(t.tags.categories.id))).reduce((acc, curr) => acc + Number(curr.valor), 0);
+  
+  const totalReceitasPeriodo = transacoes.filter(t => {
+    if (t.tipo !== 'receita') return false;
+    if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+    if (isBusiness && t.tags?.categories?.nome) {
+      const catNome = t.tags.categories.nome.toLowerCase();
+      if (catNome === 'farmácia popular' || catNome === 'farmacia popular') return false;
+    }
+    return true;
+  }).reduce((acc, curr) => acc + Number(curr.valor), 0);
 
   return (
     <div className="p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[24px] pb-24">
@@ -569,7 +589,14 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
              return true;
            });
 
-           const totalReceitas = validTxs.filter(t => t.tipo === 'receita').reduce((acc, curr) => acc + Number(curr.valor), 0);
+           const totalReceitas = validTxs.filter(t => {
+             if (t.tipo !== 'receita') return false;
+             if (isBusiness && t.tags?.categories?.nome) {
+                const catNome = t.tags.categories.nome.toLowerCase();
+                if (catNome === 'farmácia popular' || catNome === 'farmacia popular') return false;
+             }
+             return true;
+           }).reduce((acc, curr) => acc + Number(curr.valor), 0);
            const totalDespesas = validTxs.filter(t => t.tipo === 'despesa').reduce((acc, curr) => acc + Number(curr.valor), 0);
            const saldoTotal = totalReceitas - totalDespesas;
            
@@ -598,8 +625,11 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                        <h3 className="text-[16px] font-[700] text-[#0F172A] dark:text-white">Saldo Total</h3>
                        <Wallet size={24} className={`${saldoTotal > 0 ? 'text-[#16A34A]' : saldoTotal < 0 ? 'text-[#EF4444]' : 'text-[#0F172A] dark:text-white'} shrink-0`} />
                    </div>
-                   <div className={`text-[24px] font-[800] mt-1 ${saldoTotal > 0 ? 'text-[#16A34A]' : saldoTotal < 0 ? 'text-[#EF4444]' : 'text-[#0F172A] dark:text-white'}`}>
-                      R$ {formatarMoeda(saldoTotal)}
+                   <div className="flex items-center gap-3">
+                     <div className={`text-[24px] font-[800] mt-1 ${saldoTotal > 0 ? 'text-[#16A34A]' : saldoTotal < 0 ? 'text-[#EF4444]' : 'text-[#0F172A] dark:text-white'}`}>
+                        R$ {formatarMoeda(saldoTotal)}
+                     </div>
+                     {/* removed percentage here as requested */}
                    </div>
                </div>
              </>
@@ -623,17 +653,34 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
             {relatorios.map((rel, index) => {
                 // Cálculo 
                 const catIds = rel.categorias_ids || [];
-                const txs = transacoes.filter(t => {
-                   if (t.tipo !== rel.tipo_relatorio) return false;
-                   const txCatId = t.tags?.categories?.id;
-                   return txCatId && catIds.includes(txCatId);
-                });
-                const sum = txs.reduce((acc, curr) => acc + Number(curr.valor), 0);
-
-                const isReceita = rel.tipo_relatorio === 'receita';
-                const catsInReport = categories.filter(c => catIds.includes(c.id));
-                const formatList = catsInReport.map(c => c.nome);
-                const displayCats = formatList.slice(0, 3).join(', ') + (formatList.length > 3 ? ` e mais ${formatList.length - 3}` : '');
+                let sum = 0;
+                let displayCats = '';
+                
+                if (rel.tipo_relatorio === 'lucro') {
+                   const validTxs = transacoes.filter(t => {
+                     const catId = t.tags?.categories?.id;
+                     const catNome = t.tags?.categories?.nome?.toLowerCase();
+                     if (catId && cardCatIds.includes(catId)) return false;
+                     if (catNome === 'investimentos') return false;
+                     if (isBusiness && (catNome === 'farmácia popular' || catNome === 'farmacia popular')) return false;
+                     return true;
+                   });
+                   const recs = validTxs.filter(t => t.tipo === 'receita').reduce((acc, curr) => acc + Number(curr.valor), 0);
+                   const desps = validTxs.filter(t => t.tipo === 'despesa').reduce((acc, curr) => acc + Number(curr.valor), 0);
+                   sum = recs - desps;
+                   displayCats = 'Receitas - Despesas (Margem baseada nas Receitas)';
+                } else {
+                   const txs = transacoes.filter(t => {
+                      if (t.tipo !== rel.tipo_relatorio) return false;
+                      const txCatId = t.tags?.categories?.id;
+                      return txCatId && catIds.includes(txCatId);
+                   });
+                   sum = txs.reduce((acc, curr) => acc + Number(curr.valor), 0);
+                   const catsInReport = categories.filter(c => catIds.includes(c.id));
+                   const formatList = catsInReport.map(c => c.nome);
+                   displayCats = formatList.slice(0, 3).join(', ') + (formatList.length > 3 ? ` e mais ${formatList.length - 3}` : '');
+                }
+                const isReceita = rel.tipo_relatorio === 'receita' || rel.tipo_relatorio === 'lucro';
 
                 return (
                   <div 
@@ -708,7 +755,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                           <div className="text-[24px] font-[800] text-[#0F172A] dark:text-white">
                              R$ {formatarMoeda(sum)}
                           </div>
-                          {!isReceita && rel.calcular_margem && (() => {
+                          {rel.calcular_margem && (() => {
                              const marginRaw = totalReceitasPeriodo > 0 ? (sum / totalReceitasPeriodo) * 100 : 0;
                              const marginStr = totalReceitasPeriodo > 0 ? marginRaw.toFixed(2).replace('.', ',') : "0,00";
                              const colorClass = marginRaw > 0 ? "text-[#16A34A]" : marginRaw < 0 ? "text-[#EF4444]" : "text-[#64748B] dark:text-[#94A3B8]";
@@ -847,7 +894,13 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
         {/* GRÁFICO RECEITAS */}
         {(() => {
            const { data, total } = getChartData('receita', graficoReceitasAgrupamento, selectedCategoriaReceitaTags);
-           const availableCategorias = categories.filter(c => c.tipo === 'receita' && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'investimentos');
+           const availableCategorias = categories.filter(c => {
+             if (c.tipo !== 'receita') return false;
+             const cNome = c.nome.toLowerCase();
+             if (cNome === 'cartão de crédito' || cNome === 'investimentos') return false;
+             if (isBusiness && (cNome === 'farmácia popular' || cNome === 'farmacia popular')) return false;
+             return true;
+           });
            return (
              <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[20px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] flex flex-col gap-[16px]">
                 <h3 className="text-[18px] font-[700] text-[#0F172A] dark:text-white">Receitas por Categoria/Tag</h3>
@@ -1002,13 +1055,14 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
               exit={{ opacity: 0, scale: 0.95 }}
               className="bg-white dark:bg-[#1E293B] rounded-[24px] w-full max-w-[500px] max-h-[90vh] flex flex-col z-[101] shadow-2xl overflow-hidden"
             >
-               <div className="p-[24px] pt-[28px] border-b border-[#F1F5F9] dark:border-[#334155] shrink-0">
-                  <h2 className="text-[20px] font-[800] text-[#0F172A] dark:text-white">
-                     {editingRelatorio ? 'Editar Relatório' : 'Novo Relatório'} <span className="text-[#64748B] dark:text-[#94A3B8] text-[16px] font-medium ml-1">({formTipo === 'receita' ? 'Receita' : 'Despesa'})</span>
-                  </h2>
-               </div>
+               <form onSubmit={(e) => { e.preventDefault(); handleSalvar(); }} className="flex flex-col h-full max-h-[90vh]">
+                 <div className="p-[24px] pt-[28px] border-b border-[#F1F5F9] dark:border-[#334155] shrink-0">
+                    <h2 className="text-[20px] font-[800] text-[#0F172A] dark:text-white">
+                       {editingRelatorio ? 'Editar Relatório' : 'Novo Relatório'} <span className="text-[#64748B] dark:text-[#94A3B8] text-[16px] font-medium ml-1">({formTipo === 'receita' ? 'Receita' : 'Despesa'})</span>
+                    </h2>
+                 </div>
 
-               <div className="p-[24px] flex-1 overflow-y-auto space-y-[20px]">
+                 <div className="p-[24px] flex-1 overflow-y-auto space-y-[20px]">
                   {/* NOME */}
                   <div>
                     <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Nome do Relatório</label>
@@ -1022,7 +1076,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                   </div>
 
                   {/* COR E ÍCONE REPRESENTATIVOS */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-[16px]">
+                  <div className="flex flex-col gap-[20px]">
                     {/* COR */}
                     <div className="flex flex-col gap-[8px]">
                       <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[2px]">Cor (Opcional)</label>
@@ -1030,6 +1084,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                         {COLORS.slice(0, 5).map(color => (
                           <button
                             key={color}
+                            type="button"
                             onClick={(e) => { e.preventDefault(); setFormCor(color); }}
                             className="w-[28px] h-[28px] rounded-full flex items-center justify-center cursor-pointer transition-all"
                             style={{ 
@@ -1049,6 +1104,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                             style={{ display: 'none' }}
                           />
                           <button 
+                            type="button"
                             onClick={(e) => { e.preventDefault(); colorInputRef.current?.click(); }}
                             className="flex items-center gap-1.5 bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-dashed border-[#CBD5E1] text-[#64748B] dark:text-[#94A3B8] rounded-[8px] py-[4px] px-[10px] text-[12px] hover:border-[#2563EB] hover:text-[#2563EB] transition-colors cursor-pointer whitespace-nowrap"
                           >
@@ -1059,88 +1115,18 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                     </div>
 
                     {/* ÍCONE */}
-                    <div className="flex flex-col gap-[8px]" ref={iconSelectorRef}>
-                      <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[2px]">Ícone (Opcional)</label>
-                      <button 
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setIsIconDropdownOpen(prev => !prev);
-                        }}
-                        className="flex items-center justify-between w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] px-[14px] py-[6px] min-h-[40px] cursor-pointer hover:border-[#2563EB] transition-colors"
-                      >
-                        <div className="flex items-center gap-[10px]">
-                          <div 
-                            className="w-[24px] h-[24px] rounded-[6px] flex items-center justify-center text-white bg-[#94A3B8]"
-                            style={formCor ? { backgroundColor: formCor } : {}}
-                          >
-                            {(() => {
-                              const SelectedIcon = formIcone ? ICONS.find(i => i.name === formIcone)?.component || Tag : Tag;
-                              return <SelectedIcon size={14} />;
-                            })()}
-                          </div>
-                          <span className="text-[13px] text-[#374151] dark:text-[#E2E8F0] font-medium capitalize">
-                            {formIcone || 'Automático'}
-                          </span>
-                        </div>
-                        <ChevronDown size={14} className="text-[#94A3B8]" />
-                      </button>
-
-                      <AnimatePresence>
-                        {isIconDropdownOpen && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="w-full bg-[#FFFFFF] dark:bg-[#1E293B] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex flex-col gap-[10px] overflow-hidden p-[12px] shadow-sm transform-origin-top absolute z-10 bottom-[10%]"
-                          >
-                            <div className="relative w-full">
-                              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
-                              <input
-                                type="text"
-                                placeholder="Buscar ícone..."
-                                value={iconSearchTerm}
-                                onClick={(e) => e.stopPropagation()}
-                                onChange={(e) => setIconSearchTerm(e.target.value)}
-                                className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[8px] py-[8px] pr-[12px] pl-[34px] text-[13px] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#2563EB] transition-all"
-                              />
-                            </div>
-                            <div className="grid grid-cols-6 gap-[6px] overflow-y-auto max-h-[160px] icons-grid-scroll">
-                              {ICONS.filter(icon => icon.label.toLowerCase().includes(iconSearchTerm.toLowerCase())).map(icon => {
-                                const IconComponent = icon.component;
-                                const isSelected = formIcone === icon.name;
-                                return (
-                                  <button 
-                                    key={icon.name}
-                                    title={icon.name}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      setFormIcone(icon.name);
-                                      setIsIconDropdownOpen(false);
-                                      setIconSearchTerm('');
-                                    }}
-                                    className="w-[32px] h-[32px] flex items-center justify-center rounded-[8px] transition-all cursor-pointer"
-                                    style={isSelected ? {
-                                      backgroundColor: formCor || '#2563EB',
-                                      color: '#FFFFFF'
-                                    } : {
-                                      backgroundColor: 'transparent',
-                                      color: '#64748B'
-                                    }}
-                                  >
-                                    <IconComponent size={18} />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+                    <div className="z-[60]">
+                      <IconPicker 
+                        value={formIcone} 
+                        onChange={setFormIcone} 
+                        color={formCor} 
+                        optional={true}
+                      />
                     </div>
                   </div>
 
                   {/* MULTISELECT CATEGORIAS */}
+                  {formTipo !== 'lucro' && (
                   <div>
                     <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">
                        Categorias Incluídas ({formCategoriasIds.length})
@@ -1174,27 +1160,27 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                        </div>
                     )}
                   </div>
+                  )}
                   
                   {/* CALCULAR MARGEM */}
-                  {formTipo === 'despesa' && (
-                     <div className="flex items-start gap-[12px] p-[16px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px]">
-                       <input 
-                         type="checkbox" 
-                         id="calcularMargem"
-                         checked={formCalcularMargem}
-                         onChange={(e) => setFormCalcularMargem(e.target.checked)}
-                         className="mt-[2px] w-[18px] h-[18px] rounded-[4px] border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
-                       />
-                       <label htmlFor="calcularMargem" className="text-[14px] font-[600] text-[#0F172A] dark:text-white cursor-pointer select-none">
-                         Calcular Margem 
-                         <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-normal block mt-1">Exibe a margem % em relação à receita total do período.</span>
-                       </label>
-                     </div>
-                  )}
+                  <div className="flex items-start gap-[12px] p-[16px] bg-white dark:bg-[#1E293B] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px]">
+                    <input 
+                      type="checkbox" 
+                      id="calcularMargem"
+                      checked={formCalcularMargem}
+                      onChange={(e) => setFormCalcularMargem(e.target.checked)}
+                      className="mt-[2px] w-[18px] h-[18px] rounded-[4px] border-[#CBD5E1] text-[#2563EB] focus:ring-[#2563EB] cursor-pointer"
+                    />
+                    <label htmlFor="calcularMargem" className="text-[14px] font-[600] text-[#0F172A] dark:text-white cursor-pointer select-none">
+                      Calcular Margem 
+                      <span className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-normal block mt-1">Exibe a margem % em relação à receita total do período.</span>
+                    </label>
+                  </div>
                </div>
 
                <div className="p-[24px] pt-[16px] bg-[#F8FAFC] dark:bg-[#0F172A] border-t border-[#F1F5F9] dark:border-[#334155] shrink-0 flex gap-[12px]">
                  <button 
+                   type="button"
                    onClick={() => setIsModalOpen(false)} 
                    disabled={submitting}
                    className="flex-1 bg-white dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#334155] text-[#64748B] dark:text-[#94A3B8] font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-slate-50 transition-colors disabled:opacity-50"
@@ -1202,13 +1188,14 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                     Cancelar
                  </button>
                  <button 
-                    onClick={handleSalvar}
+                    type="submit"
                     disabled={submitting}
                     className="flex-1 bg-[#2563EB] text-white font-[700] text-[14px] rounded-[14px] py-[12px] hover:bg-[#1D4ED8] transition-all shadow-[0_4px_14px_rgba(37,99,235,0.3)] active:scale-[0.98] disabled:opacity-50 flex justify-center items-center gap-2"
                  >
                     {submitting ? 'Salvando...' : 'Salvar Relatório'}
                  </button>
                </div>
+               </form>
             </motion.div>
           </div>
         )}

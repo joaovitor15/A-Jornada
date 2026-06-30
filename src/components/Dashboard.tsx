@@ -6,6 +6,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { motion, AnimatePresence } from 'motion/react';
 import { CardFaturaDashboard } from './CardFaturaDashboard';
 import { CardProvisoesDashboard } from './CardProvisoesDashboard';
+import { useProfiles } from '../hooks/useProfiles';
 
 interface DashboardProps {
   activeProfileName: string;
@@ -17,6 +18,8 @@ interface DashboardProps {
 export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileType, setActivePage }: DashboardProps) => {
   const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { profiles } = useProfiles();
+  const currentProfile = profiles.find(p => p.id === activeProfileId);
   
   const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear());
   const [mesSelecionado, setMesSelecionado] = useState(new Date().getMonth() + 1);
@@ -94,12 +97,16 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               if (t.status === 'ignorado') return;
               const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
               const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
-              if (tagCat === 'investimentos') {
-                  if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
-                  else saldoAntCalcAcumulado -= (vl || 0);
-              } else {
-                  if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
-                  else if (t.tipo === 'despesa') saldoAntCalcAcumulado -= (vl || 0);
+              const isFarmacia = activeProfileType === 'empresa' && (tagCat === 'farmácia popular' || tagCat === 'farmacia popular');
+              
+              if (!isFarmacia) {
+                if (tagCat === 'investimentos') {
+                    if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                    else saldoAntCalcAcumulado -= (vl || 0);
+                } else {
+                    if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                    else if (t.tipo === 'despesa') saldoAntCalcAcumulado -= (vl || 0);
+                }
               }
           });
       }
@@ -144,7 +151,16 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       const dspsArrOriginal = despesas || [];
       const transfersArrOriginal = transferencias || [];
 
-      const recsArr = recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
+      const isFarmaciaPopular = (catName?: string) => {
+        if (!catName || activeProfileType !== 'empresa') return false;
+        const lower = catName.toLowerCase();
+        return lower === 'farmácia popular' || lower === 'farmacia popular';
+      };
+
+      const recsArr = recsArrOriginal.filter(r => {
+        const catName = r.tags?.categories?.nome?.toLowerCase();
+        return catName !== 'investimentos' && !isFarmaciaPopular(r.tags?.categories?.nome);
+      });
       const dspsArr = dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
 
       const invesArr = [
@@ -653,11 +669,14 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         if (dateParts.length >= 2) {
           const mes = parseInt(dateParts[1], 10) - 1;
           if (mes >= 0 && mes < 12) {
-            if (t.tipo === 'despesa' && t.tags?.categories?.nome?.toLowerCase() === 'investimentos') {
+            const catName = t.tags?.categories?.nome;
+            const isFarmacia = activeProfileType === 'empresa' && catName && (catName.toLowerCase() === 'farmácia popular' || catName.toLowerCase() === 'farmacia popular');
+            
+            if (t.tipo === 'despesa' && catName?.toLowerCase() === 'investimentos') {
                dados[mes].investimentos += t.valor || 0;
-            } else if (t.tipo === 'receita') {
+            } else if (t.tipo === 'receita' && !isFarmacia) {
               dados[mes].receitas += t.valor || 0;
-            } else {
+            } else if (t.tipo === 'despesa' && !isFarmacia) {
               dados[mes].despesas += t.valor || 0;
             }
           }
@@ -881,31 +900,33 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         </div>
 
         {/* CARD 4 — CARTÃO */}
-        <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
-          <div className="flex items-start justify-between mb-[16px]">
-            <div className="p-[6px] bg-purple-50 dark:bg-purple-900/20 rounded-full text-purple-500 dark:text-purple-400 w-[32px] h-[32px] flex items-center justify-center">
-              <CreditCard size={18} />
-            </div>
-            <div className="flex flex-col items-end gap-1">
-              <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
-                {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
-              </span>
-              {!isCardsLoading && cartoesDisplayTotal > 0 && (
-                <span className={`inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold ${cartoesPago ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'} w-max`}>
-                  {cartoesPago ? 'PAGO' : 'NÃO PAGO'}
+        {currentProfile?.financeiro_show_cartoes !== false && (
+          <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
+            <div className="flex items-start justify-between mb-[16px]">
+              <div className="p-[6px] bg-purple-50 dark:bg-purple-900/20 rounded-full text-purple-500 dark:text-purple-400 w-[32px] h-[32px] flex items-center justify-center">
+                <CreditCard size={18} />
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+                  {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
                 </span>
+                {!isCardsLoading && cartoesDisplayTotal > 0 && (
+                  <span className={`inline-flex items-center px-1.5 py-0.5 rounded-[4px] text-[9px] font-bold ${cartoesPago ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400' : 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400'} w-max`}>
+                    {cartoesPago ? 'PAGO' : 'NÃO PAGO'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col">
+              {isCardsLoading ? (
+                 <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+              ) : (
+                <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesDisplayTotal)}</span>
               )}
             </div>
+            <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-purple-500 dark:bg-purple-400" />
           </div>
-          <div className="flex flex-col">
-            {isCardsLoading ? (
-               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
-            ) : (
-              <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesDisplayTotal)}</span>
-            )}
-          </div>
-          <div className="absolute bottom-0 left-0 right-0 h-[4px] bg-purple-500 dark:bg-purple-400" />
-        </div>
+        )}
 
         {/* CARD 5 — DESPESAS */}
         <div className="bg-white dark:bg-[#1E293B] rounded-[20px] p-[24px] border-[1.5px] border-[#F1F5F9] dark:border-[#334155] shadow-[0_2px_12px_rgba(0,0,0,0.06)] relative overflow-hidden">
@@ -951,7 +972,9 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 items-stretch pt-2">
-        <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} />
+        {currentProfile?.financeiro_show_cartoes !== false && (
+          <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} />
+        )}
         <CardProvisoesDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} refreshTrigger={refreshTrigger} />
       </div>
 

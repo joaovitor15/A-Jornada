@@ -368,7 +368,6 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
     const parcelasSelecionadasFull = transacoesAtivas.filter(t => anteciparParcelasSelecionadas.includes(t.id));
     
     try {
-        let remainingToAnticipate = valorPago;
         const localToday = () => {
           const today = new Date();
           const yyyy = today.getFullYear();
@@ -377,42 +376,29 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
           return `${yyyy}-${mm}-${dd}`;
         };
         const dataAtual = localToday();
+        const totalOriginal = parcelasSelecionadasFull.reduce((acc, t) => acc + Number(t.valor), 0);
+        const discountFactor = valorPago / totalOriginal;
+        let remainingToAnticipate = valorPago;
 
         for (let i = 0; i < parcelasSelecionadasFull.length; i++) {
             const t = parcelasSelecionadasFull[i];
-            const valorParcela = Number(t.valor);
+            const isLast = i === parcelasSelecionadasFull.length - 1;
             
-            if (remainingToAnticipate <= 0) break;
-
-            if (remainingToAnticipate >= valorParcela) {
-                const { error: errUpdate } = await supabase.from('transacoes').update({
-                    data: dataAtual,
-                    descricao: t.descricao.includes('(Antecipada)') ? t.descricao : `${t.descricao} (Antecipada)`
-                }).eq('id', t.id);
-                if (errUpdate) throw errUpdate;
-                remainingToAnticipate -= valorParcela;
+            let newValue = 0;
+            if (isLast) {
+                // To avoid floating point issues, the last one takes whatever is remaining
+                newValue = Number(remainingToAnticipate.toFixed(2));
             } else {
-                const { error: errUpdate } = await supabase.from('transacoes').update({
-                    data: dataAtual,
-                    valor: remainingToAnticipate,
-                    descricao: t.descricao.includes('(Antecipada)') ? t.descricao : `${t.descricao} (Antecipada)`
-                }).eq('id', t.id);
-                if (errUpdate) throw errUpdate;
-                
-                const { error: errInsert } = await supabase.from('transacoes').insert({
-                    profile_id: t.profile_id,
-                    tipo: t.tipo,
-                    descricao: t.descricao,
-                    data: t.data, 
-                    valor: valorParcela - remainingToAnticipate,
-                    forma_pagamento: t.forma_pagamento,
-                    card_id: t.card_id,
-                    tag_id: t.tag_id
-                });
-                if (errInsert) throw errInsert;
-                
-                remainingToAnticipate = 0;
+                newValue = Number((Number(t.valor) * discountFactor).toFixed(2));
+                remainingToAnticipate -= newValue;
             }
+
+            const { error: errUpdate } = await supabase.from('transacoes').update({
+                data: dataAtual,
+                valor: newValue,
+                descricao: t.descricao.includes('(Antecipada)') ? t.descricao : `${t.descricao} (Antecipada)`
+            }).eq('id', t.id);
+            if (errUpdate) throw errUpdate;
         }
 
         alert("Parcelas antecipadas com sucesso!");

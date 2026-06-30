@@ -1,10 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { 
   UserPlus, Pencil, Trash2, CheckCircle, X, Check, Loader2, AlertCircle, User,
-  Building2, Users, UserCheck, Briefcase, Home, Star, Crown, Heart, Smile,
-  Coffee, Rocket, Shield, Award, Target, Zap, Globe, Landmark, PiggyBank,
-  Wallet, TrendingUp, BarChart2, DollarSign, GraduationCap, Baby, Dog, Car,
-  Plane, Gamepad2, Camera, Gift, Music, Book, ChevronDown, Search, Pipette, Settings
+  Building2, Gamepad2, Zap, Wallet, TrendingUp, ChevronDown, Search, Pipette, Settings, Home
 } from 'lucide-react';
 import { useProfiles, SupabaseProfile } from '../hooks/useProfiles';
 import { motion, AnimatePresence } from 'motion/react';
@@ -14,40 +11,10 @@ const PROFILE_COLORS = [
   '#EC4899', '#0F172A', '#06B6D4', '#84CC16', '#D97706'
 ];
 
-const PROFILE_ICONS = [
+const PROFILE_ICONS: Array<{ name: string; component: any }> = [
   { name: 'User', component: User },
-  { name: 'Users', component: Users },
-  { name: 'UserCheck', component: UserCheck },
-  { name: 'Briefcase', component: Briefcase },
   { name: 'Building2', component: Building2 },
-  { name: 'Home', component: Home },
-  { name: 'Star', component: Star },
-  { name: 'Crown', component: Crown },
-  { name: 'Heart', component: Heart },
-  { name: 'Smile', component: Smile },
-  { name: 'Coffee', component: Coffee },
-  { name: 'Rocket', component: Rocket },
-  { name: 'Shield', component: Shield },
-  { name: 'Award', component: Award },
-  { name: 'Target', component: Target },
-  { name: 'Zap', component: Zap },
-  { name: 'Globe', component: Globe },
-  { name: 'Landmark', component: Landmark },
-  { name: 'PiggyBank', component: PiggyBank },
-  { name: 'Wallet', component: Wallet },
-  { name: 'TrendingUp', component: TrendingUp },
-  { name: 'BarChart2', component: BarChart2 },
-  { name: 'DollarSign', component: DollarSign },
-  { name: 'GraduationCap', component: GraduationCap },
-  { name: 'Baby', component: Baby },
-  { name: 'Dog', component: Dog },
-  { name: 'Car', component: Car },
-  { name: 'Plane', component: Plane },
-  { name: 'Gamepad2', component: Gamepad2 },
-  { name: 'Camera', component: Camera },
-  { name: 'Gift', component: Gift },
-  { name: 'Music', component: Music },
-  { name: 'Book', component: Book }
+  { name: 'Home', component: Home }
 ];
 
 interface ProfilesPageProps {
