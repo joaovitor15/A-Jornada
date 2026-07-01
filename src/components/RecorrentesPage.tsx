@@ -743,9 +743,6 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const formatarMoedaSinal = (valor: number, mostrarSinal = false) => {
     const abs = Math.abs(valor);
     let formatado = abs.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    if (formatado.endsWith(',00')) {
-      formatado = formatado.slice(0, -3);
-    }
     if (mostrarSinal) {
       if (valor > 0) return `+R$ ${formatado}`;
       if (valor < 0) return `-R$ ${formatado}`;
