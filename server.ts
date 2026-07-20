@@ -15,7 +15,7 @@ async function startServer() {
   // API Route for Google Sheets Cotacoes Proxy
   app.get("/api/cotacoes", async (req, res) => {
     try {
-      const url = "https://script.google.com/macros/s/AKfycbzmsz9GdRvOtLFvjqEHWCCqpb9FvbsYXKTjGTEzD9dpIaHWL8WzXthKyHJn2B718lZUwA/exec";
+      const url = "https://script.google.com/macros/s/AKfycbyqel2ZyibAr6fpba1h7XMp4rr8FB6TQKgP2a44SlN1_0sRaVZXey7c2cVFpr4frjNRLQ/exec";
       console.log(`[API] Fetching Google Sheets (GET): ${url}`);
       const response = await fetch(url);
       const text = await response.text();
@@ -29,7 +29,7 @@ async function startServer() {
   app.post("/api/cotacoes", async (req, res) => {
     try {
       const { action, ticker } = req.body;
-      const url = "https://script.google.com/macros/s/AKfycbzmsz9GdRvOtLFvjqEHWCCqpb9FvbsYXKTjGTEzD9dpIaHWL8WzXthKyHJn2B718lZUwA/exec";
+      const url = "https://script.google.com/macros/s/AKfycbyqel2ZyibAr6fpba1h7XMp4rr8FB6TQKgP2a44SlN1_0sRaVZXey7c2cVFpr4frjNRLQ/exec";
       console.log(`[API] Fetching Google Sheets (POST): ${url}`);
       const response = await fetch(url, {
         method: "POST",

@@ -14,9 +14,19 @@ export function useCotacoesGSheets() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchCotacoesGoogle = async () => {
+  const fetchCotacoesGoogle = async (isForceSync = false) => {
     try {
-      const response = await fetch(API_URL);
+      let response;
+      if (isForceSync) {
+        response = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'sync' })
+        });
+      } else {
+        response = await fetch(`${API_URL}?t=${Date.now()}`);
+      }
+      
       const resultText = await response.text();
       
       // Checa se a resposta é HTML (login page) ou JSON
@@ -32,7 +42,7 @@ export function useCotacoesGSheets() {
         const cotacoesToUpsert = resultJSON.map(c => ({
           ticker: c.TICKER,
           cotacao: parseFloat(String(c.ULTIMA_COTACAO).replace(',', '.')) || 0,
-          updated_at: new Date().toISOString()
+          updated_at: c.DATA_ATUALIZACAO ? new Date(c.DATA_ATUALIZACAO).toISOString() : new Date().toISOString()
         })).filter(c => c.ticker);
 
         if (cotacoesToUpsert.length > 0) {
@@ -40,6 +50,9 @@ export function useCotacoesGSheets() {
           if (err) console.error("Erro ao salvar cache de cotações:", err);
         }
       } else if (resultJSON.error) {
+         if (resultJSON.error === 'Ação ignorada') {
+            throw new Error('Você precisa atualizar o script no Google Apps Script (veja o guia GOOGLE_APPS_SCRIPT.md) para suportar a sincronização forçada.');
+         }
          throw new Error(resultJSON.error);
       }
     } catch (err: any) {
@@ -49,7 +62,7 @@ export function useCotacoesGSheets() {
     }
   };
 
-  const fetchCotacoes = async () => {
+  const fetchCotacoes = async (forceSync = false) => {
     try {
       setLoading(true);
       setError(null);
@@ -65,11 +78,14 @@ export function useCotacoesGSheets() {
           ULTIMA_COTACAO: row.cotacao,
           DATA_ATUALIZACAO: row.updated_at
         })));
-        setLoading(false); // Já exibimos dados, pode tirar o loading principal
+        // Se for forceSync, não tira o loading ainda
+        if (!forceSync) {
+           setLoading(false); 
+        }
       }
 
       // Baixa dados mais recentes pelo GSheets em "background" (já atualizando o state depois)
-      await fetchCotacoesGoogle();
+      await fetchCotacoesGoogle(forceSync);
 
     } catch (err: any) {
       setError(err.message || 'Erro ao buscar cotações.');

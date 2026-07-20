@@ -130,6 +130,13 @@ function doPost(e) {
       payload = JSON.parse(Object.keys(e.parameter)[0]); // Fallback se passar como form params do fetch
     }
     
+    // CASO DE SINCRONIZAÇÃO FORÇADA
+    if (payload && payload.action === 'sync') {
+      atualizarCotacoes();
+      return doGet(e); // Retorna as cotações recém-atualizadas
+    }
+
+    // CASO DE ADIÇÃO 
     if (payload && payload.action === 'add' && payload.ticker) {
       const ss = SpreadsheetApp.getActiveSpreadsheet();
       const abaAtivos = ss.getSheetByName('Ativos');

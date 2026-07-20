@@ -730,7 +730,7 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
             )}
             <div className="flex bg-[#F1F5F9] dark:bg-[#0F172A] rounded-2xl p-1.5 shrink-0">
               <button 
-                onClick={refetch} 
+                onClick={() => refetch(true)} 
                 disabled={cotacoesLoading}
                 className={`flex items-center gap-2 px-6 py-2.5 rounded-xl font-bold text-sm transition-all whitespace-nowrap bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#2563EB] dark:text-[#3B82F6] shadow-sm dark:shadow-lg border border-[#E2E8F0] dark:border-[#1E293B] ${cotacoesLoading ? 'opacity-70 cursor-not-allowed' : ''}`}
               >
