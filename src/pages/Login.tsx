@@ -62,11 +62,11 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
   };
 
   return (
-    <div className="min-h-screen w-full bg-[#F0F7FF] dark:bg-[#0F172A] flex items-center justify-center p-4 font-sans relative">
+    <div className="min-h-screen w-full bg-[#F0F2F5] dark:bg-[#0F172A] flex items-center justify-center p-4 font-sans relative transition-colors duration-300">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-[400px] bg-white dark:bg-[#1E293B] rounded-[20px] p-10 shadow-[0_4px_24px_rgba(0,0,0,0.08)] relative"
+        className="w-full max-w-[400px] bg-white dark:bg-[#0B0F19] rounded-2xl p-8 sm:p-10 shadow-2xl border border-[#E2E8F0] dark:border-[#1E293B] relative"
       >
         <div className="absolute top-4 right-4 z-10">
           <button
@@ -80,13 +80,13 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
 
         {/* TOPO DO CARD */}
         <div className="flex flex-col items-center mb-8">
-          <img src="/logo-app.svg" alt="Jornada" className="w-16 h-16 mb-4 object-contain" />
-          <h1 className="text-[22px] font-bold text-[#0F172A] dark:text-white mb-1">Jornada</h1>
+          <JornadaLogo className="w-16 h-16 mb-4" themed={true} />
+          <h1 className="text-[22px] font-bold text-[#0F172A] dark:text-white mb-1 tracking-tight">Jornada</h1>
           <p className="text-[13px] text-[#64748B] dark:text-[#94A3B8]">Gerencie suas finanças com facilidade</p>
         </div>
 
         {/* ABAS */}
-        <div className="flex gap-2 p-1 bg-[#F1F5F9] dark:bg-[#0F172A] rounded-xl mb-8">
+        <div className="flex gap-2 p-1 bg-[#F1F5F9] dark:bg-[#1E293B] rounded-xl mb-8">
           <button
             onClick={() => { setIsLogin(true); setError(null); }}
             className={`flex-1 py-2 px-4 text-sm font-medium transition-all ${
@@ -97,7 +97,9 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
           </button>
           <button
             onClick={() => { setIsLogin(false); setError(null); }}
-            className="btn-salvar flex-1"
+            className={`flex-1 py-2 px-4 text-sm font-medium transition-all ${
+              !isLogin ? 'bg-[#2563EB] text-white shadow-sm' : 'text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
+            } rounded-lg`}
           >
             Criar Conta
           </button>
@@ -108,10 +110,10 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
           <motion.div 
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="btn-salvar flex-1"
+            className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-xl mb-6"
           >
-            <AlertCircle size={18} className="text-[#EF4444] mt-0.5" />
-            <p className="text-[13px] text-[#DC2626] font-medium leading-tight">{error}</p>
+            <AlertCircle size={18} className="text-[#EF4444] mt-0.5 shrink-0" />
+            <p className="text-[13px] text-[#DC2626] dark:text-red-400 font-medium leading-tight flex-1">{error}</p>
           </motion.div>
         )}
 
@@ -168,7 +170,7 @@ export default function Login({ onLogin, onRegister }: LoginProps) {
           <button
             disabled={loading}
             type="submit"
-            className="btn-salvar flex-1"
+            className="w-full bg-[#2563EB] hover:bg-[#1D4ED8] disabled:bg-blue-300 dark:disabled:bg-blue-900/50 disabled:text-white/50 disabled:cursor-not-allowed text-white font-bold py-2.5 rounded-xl text-sm transition-all shadow-sm flex items-center justify-center gap-2 mt-4"
           >
             {loading ? (
               <>
