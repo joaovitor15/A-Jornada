@@ -1,0 +1,1178 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard, LayoutDashboard } from 'lucide-react';
+import { TransactionModal } from './TransactionModal';
+import { supabase } from '../supabaseClient';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { motion, AnimatePresence } from 'motion/react';
+import { CardFaturaDashboard } from './CardFaturaDashboard';
+import { CardProvisoesDashboard } from './CardProvisoesDashboard';
+import { useProfiles } from '../hooks/useProfiles';
+
+interface DashboardProps {
+  activeProfileName: string;
+  activeProfileId: string;
+  activeProfileType?: string;
+  setActivePage?: (page: any) => void;
+}
+
+export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileType, setActivePage }: DashboardProps) => {
+  const [isTransactionModalOpen, setIsTransactionModalOpen] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const { profiles } = useProfiles();
+  const currentProfile = profiles.find(p => p.id === activeProfileId);
+  
+  const [anoSelecionado, setAnoSelecionado] = useState(new Date().getFullYear());
+  const [mesSelecionado, setMesSelecionado] = useState(new Date().getMonth() + 1);
+
+  const [dropdownMesAberto, setDropdownMesAberto] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Fechar dropdown ao clicar fora ou apertar Escape
+  useEffect(() => {
+    const fecharFora = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownMesAberto(false);
+      }
+    };
+    const fecharEsc = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setDropdownMesAberto(false);
+      }
+    };
+    document.addEventListener('mousedown', fecharFora);
+    document.addEventListener('keydown', fecharEsc);
+    return () => {
+      document.removeEventListener('mousedown', fecharFora);
+      document.removeEventListener('keydown', fecharEsc);
+    };
+  }, []);
+
+  const selecionarMes = (index: number) => {
+    setMesSelecionado(index + 1);
+    setDropdownMesAberto(false);
+  };
+
+  const [saldoAnterior, setSaldoAnterior] = useState(0);
+  const [receitasValor, setReceitasValor] = useState(0);
+  const [despesasValor, setDespesasValor] = useState(0);
+  const [investimentosValor, setInvestimentosValor] = useState(0);
+  const [cartoesValor, setCartoesValor] = useState(0);
+  const [cartoesDisplayTotal, setCartoesDisplayTotal] = useState(0);
+  const [cartoesPago, setCartoesPago] = useState(false);
+  const [receitasPago, setReceitasPago] = useState(0);
+  const [receitasPrevisto, setReceitasPrevisto] = useState(0);
+  const [despesasPago, setDespesasPago] = useState(0);
+  const [despesasPrevisto, setDespesasPrevisto] = useState(0);
+  const [investimentosPrevisto, setInvestimentosPrevisto] = useState(0);
+  const [economiaDespesas, setEconomiaDespesas] = useState(0);
+  const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
+
+  const [isCardsLoading, setIsCardsLoading] = useState(true);
+  const [isChartLoading, setIsChartLoading] = useState(true);
+  const [pendingProvisions, setPendingProvisions] = useState<any[]>([]);
+  const [lancamentosRapidos, setLancamentosRapidos] = useState<any[]>([]);
+
+  // Carregar dados dos Cards
+  useEffect(() => {
+    if (!activeProfileId) return;
+
+    const fetchCards = async () => {
+      setIsCardsLoading(true);
+      const ms = mesSelecionado;
+      const an = anoSelecionado;
+      const mesStr = ms.toString().padStart(2, '0');
+      const ultimoDia = new Date(an, ms, 0).getDate();
+
+      const { data: antDataAll } = await supabase
+        .from('transacoes')
+        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
+        .eq('profile_id', activeProfileId);
+
+      const cutoffDate = `${an}-${mesStr}-01`;
+      const antData = antDataAll?.filter(t => t.card_id === null && (t.data || '') < cutoffDate) || [];
+
+      let saldoAntCalcAcumulado = 0;
+      if (activeProfileType !== 'empresa' && antData) {
+          antData.forEach(t => {
+              if (t.status === 'ignorado') return;
+              const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
+              const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
+              const isFarmacia = activeProfileType === 'empresa' && (tagCat === 'farmácia popular' || tagCat === 'farmacia popular');
+              
+              if (!isFarmacia) {
+                if (tagCat === 'investimentos') {
+                    if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                    else saldoAntCalcAcumulado -= (vl || 0);
+                } else {
+                    if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                    else if (t.tipo === 'despesa') saldoAntCalcAcumulado -= (vl || 0);
+                }
+              }
+          });
+      }
+      // setSaldoAnterior será chamado no final, após contabilizar faturas
+
+      const { data: receitas } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'receita')
+        .is('card_id', null)
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
+      const { data: despesas } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'despesa')
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
+      const { data: transferencias } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'transferencia')
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
+      // Separar receitas por pago vs previsto
+      const recsArrOriginal = receitas || [];
+      const dspsArrOriginal = despesas || [];
+      const transfersArrOriginal = transferencias || [];
+
+      const isFarmaciaPopular = (catName?: string) => {
+        if (!catName || activeProfileType !== 'empresa') return false;
+        const lower = catName.toLowerCase();
+        return lower === 'farmácia popular' || lower === 'farmacia popular';
+      };
+
+      const recsArr = recsArrOriginal.filter(r => {
+        const catName = r.tags?.categories?.nome?.toLowerCase();
+        return catName !== 'investimentos' && !isFarmaciaPopular(r.tags?.categories?.nome);
+      });
+      const dspsArr = dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
+
+      const invesArr = [
+        ...recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
+        ...dspsArrOriginal.filter(d => !d.card_id && d.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
+        ...transfersArrOriginal.filter(t => t.tags?.categories?.nome?.toLowerCase() === 'investimentos' || t.descricao?.toLowerCase().includes('investimento'))
+      ];
+
+      const sumRecsPago = recsArr.filter(r => r.status !== 'previsto' && r.status !== 'ignorado' && !r.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumRecsPrev = recsArr.filter(r => r.status === 'previsto' && !r.card_id).reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+
+      const sumDspsPago = dspsArr.filter(d => d.status !== 'previsto' && d.status !== 'ignorado' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumDspsPrev = dspsArr.filter(d => d.status === 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+
+      // Separar investimentos por pago e previsto
+      const sumInvesPago = invesArr.filter(d => d.status !== 'previsto' && d.status !== 'ignorado').reduce((acc, obj) => {
+          if (obj.tipo === 'receita') return acc - (obj.valor || 0);
+          return acc + (obj.valor || 0);
+      }, 0);
+      const sumInvesPrev = invesArr.filter(d => d.status === 'previsto' && d.status !== 'ignorado' && d.tipo === 'despesa').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+      const sumInvesPrevRec = invesArr.filter(d => d.status === 'previsto' && d.status !== 'ignorado' && d.tipo === 'receita').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+
+      // Calcular economia (valor_previsto - valor) para despesas ja pagas
+      const paidDespesasWithPrev = dspsArr.filter(d => d.status !== 'previsto' && !d.card_id && d.valor_previsto !== undefined && d.valor_previsto !== null);
+      const calcEconomia = paidDespesasWithPrev.reduce((acc, d) => acc + ((d.valor_previsto || d.valor) - d.valor), 0);
+
+      // --- FETCH RECORRENTES PARA INCLUIR NA PROVISÃO ---
+      const { data: recorrentesRaw, error: recError } = await supabase
+        .from('transacoes_recorrentes')
+        .select('*, categories (id, nome, cor), tags (id, nome)')
+        .eq('profile_id', activeProfileId)
+        .eq('ativa', true);
+
+      if (recError) {
+        console.error("Error fetching recorrentes for dashboard:", recError);
+      }
+
+      let sumDspsPrevRecorrente = 0;
+      let sumRecsPrevRecorrente = 0;
+      let sumInvesPrevRecorrente = 0;
+      let pastRecorrentesDebt = 0;
+      const combinedPending: any[] = [];
+      const lancamentosRapidos: any[] = [];
+
+      const calculatePaymentData = (rec: any, tDay: number) => {
+          let paymentData = `${anoSelecionado}-${mesStr}-${String(tDay).padStart(2, '0')}`;
+          if (activeProfileType === 'empresa' && rec.dia_vencimento) {
+              let pYear = anoSelecionado;
+              let pMonth = mesSelecionado - 1;
+              let dVenc = Number(rec.dia_vencimento);
+              if (rec.dia_emissao && dVenc < Number(rec.dia_emissao)) {
+                  pMonth += 1;
+                  if (pMonth > 11) { pMonth = 0; pYear += 1; }
+              }
+              const maxD = new Date(pYear, pMonth + 1, 0).getDate();
+              if (dVenc > maxD) dVenc = maxD;
+              if (dVenc < 1) dVenc = 1;
+              paymentData = `${pYear}-${String(pMonth + 1).padStart(2, '0')}-${String(dVenc).padStart(2, '0')}`;
+          }
+          return paymentData;
+      };
+
+      if (recorrentesRaw) {
+          recorrentesRaw.forEach(rec => {
+              if (rec.lancamento_rapido) {
+                  lancamentosRapidos.push({
+                      id: `rec-${rec.id}`,
+                      recorrente_id: rec.id,
+                      descricao: rec.nome,
+                      valor: Number(rec.valor) || 0,
+                      tags: rec.tags,
+                      categories: rec.categories,
+                      isRecurrent: true,
+                      tipo: rec.tipo,
+                      recurrentSource: rec
+                  });
+                  return;
+              }
+              const recCatName = rec.categories?.nome || '';
+
+              const launchDateStr = rec.ultima_lancada;
+              let startYear = new Date().getFullYear();
+              let startMonth = new Date().getMonth();
+              let shouldRender = true;
+
+              if (!launchDateStr) {
+                  shouldRender = false;
+              } else {
+                  const launchDate = new Date(launchDateStr);
+                  startYear = launchDate.getFullYear();
+                  startMonth = launchDate.getMonth();
+              }
+
+              const activeYear = launchDateStr ? new Date(launchDateStr).getFullYear() : startYear;
+
+              const targetYear = anoSelecionado;
+              const monthIdx = mesSelecionado - 1;
+              const monthDiff = (targetYear - startYear) * 12 + (monthIdx - startMonth);
+
+              if (rec.num_parcelas && rec.num_parcelas > 1) {
+                  if (monthDiff < 0 || monthDiff >= rec.num_parcelas) shouldRender = false;
+              }
+              if (rec.frequencia === 'anual') {
+                  const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+                  if (monthIdx !== tMonth) shouldRender = false;
+              }
+
+              const effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
+              const effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
+              
+              for (let y = effStartYear; y <= targetYear; y++) {
+                  const mStart = (y === effStartYear) ? effStartMonth : 0;
+                  const mEnd = (y === targetYear) ? (monthIdx - 1) : 11;
+                  for (let m = mStart; m <= mEnd; m++) {
+                      let shouldExist = true;
+                      const diffM = (y - effStartYear) * 12 + (m - effStartMonth);
+                      if (rec.num_parcelas && rec.num_parcelas > 1) {
+                          if (diffM < 0 || diffM >= rec.num_parcelas) shouldExist = false;
+                      }
+                      if (rec.frequencia === 'anual') {
+                          const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+                          if (m !== tMonth) shouldExist = false;
+                      }
+                      if (!shouldExist) continue;
+
+                      const checkData = [...(antDataAll || []), ...recsArrOriginal, ...dspsArrOriginal, ...transfersArrOriginal];
+                      const isMatchedInPast = checkData.find(t => {
+                          const refTag = `(Ref: ${String(m + 1).padStart(2, '0')}/${y})`;
+                          if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                            return true;
+                          }
+
+                          if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                            return false;
+                          }
+
+                          if (!t.data) return false;
+                          const tDate = new Date(t.data + 'T12:00:00Z');
+                          if (tDate.getFullYear() !== y || tDate.getMonth() !== m) return false;
+                          
+                          if (t.recorrente_id === rec.id) {
+                              let currentParcela = 1;
+                              if (rec.num_parcelas && rec.num_parcelas > 1) {
+                                  currentParcela = diffM + 1;
+                              }
+                              if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                                  return false;
+                              }
+                              return true;
+                          }
+                          if (t.recorrente_id) return false;
+                          
+                          const safeDesc = t.descricao || '';
+                          const cleanRecName = rec.nome || '';
+                          const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                            cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                          if (nameMatch) {
+                              let diffOk = true;
+                              if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+                                  const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                                  if (diff > 0.01) diffOk = false;
+                              }
+                              
+                              if (diffOk) {
+                                  return true;
+                              }
+                          }
+                          return false;
+                      });
+
+                      if (!isMatchedInPast && activeProfileType !== 'empresa') {
+                          const isPastIgnored = (rec.exclusoes_pontuais || []).includes(`${y}_${m}`);
+                          if (!isPastIgnored) {
+                              let historicValue = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+                              if (rec.valor === null || rec.valor === 0) {
+                                  const realizadosAnteriores = (antDataAll || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                                  if (realizadosAnteriores.length > 0) {
+                                      const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+                                      historicValue = soma / realizadosAnteriores.length;
+                                  }
+                              }
+
+                              const recCatName = rec.categories?.nome?.toLowerCase() || '';
+                              if (recCatName !== 'investimentos') {
+                                  if (rec.tipo === 'despesa') pastRecorrentesDebt -= historicValue;
+                                  else if (rec.tipo === 'receita') pastRecorrentesDebt += historicValue;
+                              } else {
+                                  if (rec.tipo === 'receita') pastRecorrentesDebt += historicValue;
+                              }
+                          }
+                      }
+                  }
+              }
+
+              const projectedTimeId = targetYear * 12 + monthIdx;
+              const creationTimeId = effStartYear * 12 + effStartMonth;
+
+              if (projectedTimeId < creationTimeId) {
+                shouldRender = false;
+              }
+
+              if (!shouldRender) return;
+
+              const isIgnored = (rec.exclusoes_pontuais || []).includes(`${anoSelecionado}_${mesSelecionado - 1}`);
+              if (isIgnored) return;
+
+              let valorPrevisto = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+              if (rec.valor === null || rec.valor <= 0) {
+                const realizadosAnteriores = (antDataAll || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                if (realizadosAnteriores.length > 0) {
+                  const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+                  valorPrevisto = soma / realizadosAnteriores.length;
+                } else {
+                  valorPrevisto = Math.abs(Number(rec.valor)) || 0;
+                }
+              }
+
+              if (rec.tipo === 'despesa') {
+                  // Compare with existing dspsArrOriginal, transfersArrOriginal, and past transactions
+                  const checkArr = [...(antDataAll || []), ...dspsArrOriginal, ...transfersArrOriginal];
+                  const matched = checkArr.find(t => {
+                       const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
+                       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                         return true;
+                       }
+
+                       if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                         return false;
+                       }
+
+                       if (t.recorrente_id === rec.id) {
+                           let currentParcela = 1;
+                           if (rec.num_parcelas && rec.num_parcelas > 1) {
+                               currentParcela = monthDiff + 1;
+                           }
+                           if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                               return false;
+                           }
+                           return true;
+                       }
+                       if (t.recorrente_id) return false;
+                       
+                       const safeDesc = t.descricao || '';
+                       const cleanRecName = rec.nome || '';
+                       const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                         cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                       if (nameMatch) {
+                           let diffOk = true;
+                           if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+                               const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                               if (diff > 0.01) diffOk = false;
+                           }
+                           
+                           if (diffOk) {
+                               return true;
+                           }
+                       }
+                       return false;
+                  });
+
+                  if (!matched) {
+                      if (recCatName.toLowerCase() !== 'investimentos') {
+                          sumDspsPrevRecorrente += valorPrevisto;
+                      } else {
+                          sumInvesPrevRecorrente += valorPrevisto;
+                      }
+                      const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
+                      combinedPending.push({
+                          id: `rec-${rec.id}`,
+                          recorrente_id: rec.id,
+                          descricao: rec.nome,
+                          valor: valorPrevisto,
+                          data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
+                          payment_data: calculatePaymentData(rec, targetDay),
+                          tags: rec.tags,
+                          categories: rec.categories,
+                          isRecurrent: true,
+                          recurrentSource: rec
+                      });
+                  }
+              } else if (rec.tipo === 'receita') {
+                  // Compare with existing recsArrOriginal and past transactions
+                  const checkArr = [...(antDataAll || []), ...recsArrOriginal, ...transfersArrOriginal];
+                  const matched = checkArr.find(t => {
+                       const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
+                       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                         return true;
+                       }
+
+                       if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                         return false;
+                       }
+
+                       if (t.recorrente_id === rec.id) {
+                           let currentParcela = 1;
+                           if (rec.num_parcelas && rec.num_parcelas > 1) {
+                               currentParcela = monthDiff + 1;
+                           }
+                           if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                               return false;
+                           }
+                           return true;
+                       }
+                       if (t.recorrente_id) return false;
+
+                       const safeDesc = t.descricao || '';
+                       const cleanRecName = rec.nome || '';
+                       const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                         cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                       if (nameMatch) {
+                           let diffOk = true;
+                           if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+                               const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                               if (diff > 0.01) diffOk = false;
+                           }
+                           
+                           if (diffOk) {
+                               return true;
+                           }
+                       }
+                       return false;
+                  });
+
+                  if (!matched) {
+                      const recCatName = rec.categories?.nome?.toLowerCase() || '';
+                      if (recCatName !== 'investimentos') {
+                          sumRecsPrevRecorrente += valorPrevisto;
+                      } else {
+                          // we subtract from the investment prev as it's a negative investment (receipt)
+                          // wait, a receipt in investment should be in receitasPrevisto!
+                          // we can just keep sumInvesPrevRecorrente separate if needed but it's easier to add directly.
+                          sumRecsPrevRecorrente += valorPrevisto; 
+                      }
+                      const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
+                      combinedPending.push({
+                          id: `rec-${rec.id}`,
+                          recorrente_id: rec.id,
+                          descricao: rec.nome,
+                          valor: valorPrevisto,
+                          data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
+                          payment_data: calculatePaymentData(rec, targetDay),
+                          tags: rec.tags,
+                          categories: rec.categories,
+                          isRecurrent: true,
+                          recurrentSource: rec
+                      });
+                  }
+              }
+          });
+      }
+
+      setReceitasPago(sumRecsPago);
+      setReceitasPrevisto(sumRecsPrev + sumRecsPrevRecorrente + sumInvesPrevRec);
+      setDespesasPago(sumDspsPago);
+      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente);
+      setInvestimentosPrevisto(sumInvesPrev + sumInvesPrevRecorrente);
+      setEconomiaDespesas(calcEconomia);
+
+      // receitasValor e despesasValor representam o que de fato ocorreu para manter a integridade do saldo e graficos
+      // receitasValor será atualizado no final
+      setDespesasValor(sumDspsPago);
+      setInvestimentosValor(sumInvesPago);
+
+      // --- LOGICA DO CARTAO ---
+      const { data: userCards } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('profile_id', activeProfileId);
+
+      const { data: transacoesCardsRaw } = await supabase
+        .from('transacoes')
+        .select('*')
+        .eq('profile_id', activeProfileId)
+        .not('card_id', 'is', null);
+
+      let faturaTotalGasto = 0;
+      let unpaidTarget = 0;
+
+      if (userCards && transacoesCardsRaw) {
+        const cardDebts: Record<string, { pastDespesas: number, targetDespesas: number, receitas: number, targetTotalGasto: number }> = {};
+        
+        userCards.forEach(c => {
+           cardDebts[c.id] = { pastDespesas: 0, targetDespesas: 0, receitas: 0, targetTotalGasto: 0 };
+        });
+
+        transacoesCardsRaw.forEach(t => {
+          if (t.status === 'ignorado') return;
+          const cardInfo = userCards.find(c => c.id === t.card_id);
+          if (cardInfo) {
+            const debtObj = cardDebts[cardInfo.id];
+            const dateParts = t.data.split('-');
+            if(dateParts.length >= 3) {
+                const year = parseInt(dateParts[0], 10);
+                const month = parseInt(dateParts[1], 10);
+                const day = parseInt(dateParts[2], 10);
+                let mesFechamento = month;
+                let anoFechamento = year;
+                if (day > cardInfo.dia_fechamento_fatura) {
+                    mesFechamento++;
+                    if (mesFechamento > 12) {
+                        mesFechamento = 1;
+                        anoFechamento++;
+                    }
+                }
+                
+                let mesVencimento = mesFechamento;
+                let anoVencimento = anoFechamento;
+                if (cardInfo.dia_vencimento_fatura < cardInfo.dia_fechamento_fatura) {
+                    mesVencimento++;
+                    if (mesVencimento > 12) {
+                        mesVencimento = 1;
+                        anoVencimento++;
+                    }
+                }
+
+                let targetMesVencimento = mesSelecionado;
+                let targetAnoVencimento = anoSelecionado;
+                const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
+
+                if (t.tipo === 'receita') {
+                    debtObj.receitas += (vl || 0);
+                }
+
+                if (mesVencimento === targetMesVencimento && anoVencimento === targetAnoVencimento) {
+                    if (t.tipo === 'despesa') {
+                        debtObj.targetDespesas += (vl || 0);
+                        debtObj.targetTotalGasto += (vl || 0);
+                    }
+                } else if (anoVencimento < targetAnoVencimento || (anoVencimento === targetAnoVencimento && mesVencimento < targetMesVencimento)) {
+                    if (t.tipo === 'despesa') {
+                        debtObj.pastDespesas += (vl || 0);
+                    }
+                }
+
+                if (activeProfileType !== 'empresa' && (anoVencimento < targetAnoVencimento || (anoVencimento === targetAnoVencimento && mesVencimento < targetMesVencimento))) {
+                    if (t.tipo === 'despesa') {
+                        saldoAntCalcAcumulado -= (vl || 0);
+                    } else if (t.tipo === 'receita') {
+                        saldoAntCalcAcumulado += (vl || 0);
+                    }
+                }
+            }
+          }
+        });
+
+        Object.values(cardDebts).forEach(debt => {
+            let creditos = debt.receitas;
+            const unpaidPast = Math.max(0, debt.pastDespesas - creditos);
+            creditos = Math.max(0, creditos - debt.pastDespesas);
+            
+            const unpaidCurr = Math.max(0, debt.targetDespesas - creditos);
+            
+            unpaidTarget += unpaidCurr;
+            faturaTotalGasto += debt.targetTotalGasto;
+        });
+      }
+
+      setSaldoAnterior(saldoAntCalcAcumulado + pastRecorrentesDebt);
+      setReceitasValor(sumRecsPago + saldoAntCalcAcumulado + pastRecorrentesDebt);
+      
+      setCartoesValor(unpaidTarget);
+      
+      const isPaid = faturaTotalGasto > 0 && unpaidTarget <= 0.01;
+      setCartoesPago(isPaid);
+      setCartoesDisplayTotal(isPaid ? faturaTotalGasto : unpaidTarget);
+
+      if (dspsArr) {
+        dspsArr.forEach(d => {
+            if (d.status === 'previsto') combinedPending.push(d);
+        });
+      }
+      
+      if (recsArr) {
+        recsArr.forEach(d => {
+            if (d.status === 'previsto') combinedPending.push(d);
+        });
+      }
+      
+      if (invesArr) {
+        invesArr.forEach(d => {
+            // Only investments of type "despesa" that are predicted
+            if (d.status === 'previsto' && d.tipo === 'despesa') combinedPending.push(d);
+        });
+      }
+      combinedPending.sort((a, b) => new Date(a.data).getTime() - new Date(b.data).getTime());
+      setPendingProvisions(combinedPending);
+      setLancamentosRapidos(lancamentosRapidos);
+
+      setIsCardsLoading(false);
+    };
+
+    fetchCards();
+  }, [activeProfileId, mesSelecionado, anoSelecionado, isTransactionModalOpen, refreshTrigger]);
+
+  // Carregar dados do Gráfico Anual
+  useEffect(() => {
+    if (!activeProfileId) return;
+
+    const fetchGrafico = async () => {
+      setIsChartLoading(true);
+      const { data: transacoesAno } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( categories!tags_category_id_fkey ( nome ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .is('card_id', null)
+        .gte('data', `${anoSelecionado}-01-01`)
+        .lte('data', `${anoSelecionado}-12-31`);
+
+      const meses = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+      const dados = Array.from({ length: 12 }, (_, i) => ({
+        mes: meses[i],
+        mesIndex: i + 1,
+        receitas: 0,
+        despesas: 0,
+        investimentos: 0,
+        saldoFinal: 0,
+        mesCompleto: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'][i]
+      }));
+
+      (transacoesAno || []).forEach(t => {
+        // Ignorar previsões futuras do gráfico de fluxo financeiro realizado
+        if (t.status === 'previsto') return;
+        if (t.card_id) return;
+
+        const dateParts = t.data.split('-');
+        if (dateParts.length >= 2) {
+          const mes = parseInt(dateParts[1], 10) - 1;
+          if (mes >= 0 && mes < 12) {
+            const catName = t.tags?.categories?.nome;
+            const isFarmacia = activeProfileType === 'empresa' && catName && (catName.toLowerCase() === 'farmácia popular' || catName.toLowerCase() === 'farmacia popular');
+            
+            if (t.tipo === 'despesa' && catName?.toLowerCase() === 'investimentos') {
+               dados[mes].investimentos += t.valor || 0;
+            } else if (t.tipo === 'receita' && !isFarmacia) {
+              dados[mes].receitas += t.valor || 0;
+            } else if (t.tipo === 'despesa' && !isFarmacia) {
+              dados[mes].despesas += t.valor || 0;
+            }
+          }
+        }
+      });
+
+      dados.forEach(d => {
+        d.saldoFinal = d.receitas - d.despesas - d.investimentos;
+      });
+
+      setDadosGrafico(dados);
+      setIsChartLoading(false);
+    };
+
+    fetchGrafico();
+  }, [activeProfileId, anoSelecionado, isTransactionModalOpen, refreshTrigger]);
+  
+  const targetMesVencimento = mesSelecionado;
+  const targetAnoVencimento = anoSelecionado;
+  const nomesMeses = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
+
+  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto + receitasPrevisto - cartoesValor;
+
+  const formatarValor = (valor: number) =>
+    valor.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    });
+
+  const MESES = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
+  const mesesCompletos = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+
+  const CustomDot = (props: any) => {
+    const { cx, cy, payload, color } = props;
+    if (payload.mesIndex === mesSelecionado) {
+      let activeColor = color;
+      if (color === '#16A34A') activeColor = '#15803D';
+      if (color === '#EF4444') activeColor = '#DC2626';
+      
+      return (
+        <circle cx={cx} cy={cy} r={6} fill={activeColor} stroke="#fff" strokeWidth={2} className="cursor-pointer focus:outline-none" style={{ outline: 'none' }} />
+      );
+    }
+    return <circle cx={cx} cy={cy} r={4} fill={color} className="cursor-pointer focus:outline-none" style={{ outline: 'none' }} />;
+  };
+
+  const CustomTooltip = ({ active, payload, label }: any) => {
+    if (active && payload && payload.length) {
+      return (
+        <div className="bg-white dark:bg-[#1E293B] p-[12px] rounded-[12px] shadow-[0_4px_16px_rgba(0,0,0,0.1)] border border-[#E2E8F0] dark:border-[#334155] min-w-[200px]">
+          <p className="font-bold text-[#0F172A] dark:text-white mb-[8px]">{payload[0].payload.mesCompleto} {anoSelecionado}</p>
+          <div className="flex flex-col gap-[6px]">
+            <p className="text-[13px] text-[#16A34A] dark:text-green-400 font-semibold flex items-center justify-between gap-[16px]">
+              Receitas: <span>{formatarValor(payload[0].payload.receitas)}</span>
+            </p>
+            <p className="text-[13px] text-[#EF4444] dark:text-red-400 font-semibold flex items-center justify-between gap-[16px]">
+              Despesas: <span>{formatarValor(payload[0].payload.despesas)}</span>
+            </p>
+            <p className="text-[13px] text-[#CA8A04] dark:text-yellow-400 font-semibold flex items-center justify-between gap-[16px]">
+              Investimentos: <span>{formatarValor(payload[0].payload.investimentos)}</span>
+            </p>
+            <p className="text-[13px] text-[#3B82F6] dark:text-blue-400 font-semibold flex items-center justify-between gap-[16px]">
+              Saldo Final: <span>{formatarValor(payload[0].payload.saldoFinal)}</span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+    return null;
+  };
+
+  return (
+    <div className="p-[24px] max-w-[1200px] mx-auto flex flex-col gap-[24px] bg-[#F8FAFC] dark:bg-[#0F172A] min-h-screen">
+      {/* 1. CABEÇALHO */}
+      <div className="flex justify-between items-center mb-[24px]">
+        <div>
+          <h2 className="text-2xl font-black text-[#0F172A] dark:text-white tracking-tight flex items-center gap-3">
+            <LayoutDashboard size={28} className="text-[#3B82F6]" />
+            Dashboard
+          </h2>
+        </div>
+        <button
+          onClick={() => setIsTransactionModalOpen(true)}
+          className="btn-salvar !p-3 lg:!px-[24px] lg:!py-[12px] !rounded-full lg:!rounded-xl flex-shrink-0 ml-4"
+        >
+          <Plus size={20} strokeWidth={3} className="lg:w-[15px] lg:h-[15px] transition-transform group-hover:scale-110" />
+          <span className="hidden lg:inline uppercase">Nova Transação</span>
+        </button>
+      </div>
+
+      {/* 2. NAVEGAÇÃO TEMPORAL */}
+      <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[16px] p-[16px_20px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm mb-[24px]">
+        <div className="w-full">
+          <div className="flex justify-center items-center gap-[16px] mb-[14px]">
+            <button 
+              onClick={() => setAnoSelecionado(prev => prev - 1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white cursor-pointer transition-colors shadow-sm"
+            >
+              <ChevronLeft size={16} strokeWidth={2.5} />
+            </button>
+            <span className="text-[18px] font-black text-[#0F172A] dark:text-white tracking-tight">
+              {anoSelecionado}
+            </span>
+            <button 
+              onClick={() => setAnoSelecionado(prev => prev + 1)}
+              className="w-8 h-8 flex items-center justify-center rounded-full text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white cursor-pointer transition-colors shadow-sm"
+            >
+              <ChevronRight size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+
+          {/* Desktop Month Pills */}
+          <div className="hidden md:flex gap-[8px] justify-center w-full flex-wrap pb-1">
+            {MESES.map((nomeMes, index) => {
+              const ativo = index + 1 === mesSelecionado;
+              return (
+                <button
+                  key={nomeMes}
+                  onClick={() => selecionarMes(index)}
+                  className={`px-5 py-2 rounded-full font-bold text-[13px] transition-all whitespace-nowrap ${
+                    ativo 
+                      ? 'bg-[#F8FAFC] dark:bg-[#0B0F19] text-[#2563EB] dark:text-[#3B82F6] shadow-sm dark:shadow-lg border border-[#E2E8F0] dark:border-[#1E293B]' 
+                      : 'border border-transparent text-[#64748B] dark:text-[#94A3B8] hover:text-[#0F172A] dark:hover:text-white'
+                  }`}
+                >
+                  {nomeMes}
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Mobile Month Dropdown */}
+          <div className="md:hidden relative w-full" ref={dropdownRef}>
+            <button
+              onClick={() => setDropdownMesAberto(!dropdownMesAberto)}
+              className="w-full flex items-center justify-between px-4 py-3 bg-[#F8FAFC] dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] text-[14px] font-[600] text-[#0F172A] dark:text-white transition-all focus:border-[#2563EB]"
+            >
+              <span className="flex items-center gap-2">
+                {mesesCompletos[mesSelecionado - 1]}
+              </span>
+              <ChevronDown size={18} className={`text-[#64748B] dark:text-[#94A3B8] transition-transform duration-200 ${dropdownMesAberto ? 'rotate-180' : ''}`} />
+            </button>
+
+            <AnimatePresence>
+              {dropdownMesAberto && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                  transition={{ duration: 0.2 }}
+                  className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#0F172A] border-[1.5px] border-[#E2E8F0] dark:border-[#334155] rounded-[14px] shadow-lg overflow-hidden z-50 max-h-[250px] overflow-y-auto"
+                >
+                  {mesesCompletos.map((nome, i) => {
+                    const isActive = mesSelecionado === i + 1;
+                    return (
+                      <button
+                        key={nome}
+                        onClick={() => { selecionarMes(i); setDropdownMesAberto(false); }}
+                        className={`w-full flex items-center justify-between px-4 py-3 border-b border-[#E2E8F0] dark:border-[#1E293B] last:border-b-0 transition-colors ${
+                          isActive 
+                            ? 'bg-[#EFF6FF] dark:bg-[#1E293B] text-[#2563EB] dark:text-[#3B82F6]' 
+                            : 'text-[#64748B] dark:text-[#94A3B8] hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B]/50'
+                        }`}
+                      >
+                        <span className="font-[600] text-[14px]">{nome}</span>
+                        {isActive && <Check size={16} strokeWidth={3} />}
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. CARDS DE RESUMO */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[16px]">
+        {/* CARD 1 — RECEITAS */}
+        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#16A34A] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+          <div className="flex items-start justify-between mb-[16px] relative z-10">
+            <div className="p-[6px] bg-[#F0FDF4] dark:bg-green-900/20 rounded-full text-[#16A34A] dark:text-green-500 w-[32px] h-[32px] flex items-center justify-center">
+              <TrendingUp size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              Receitas
+            </span>
+          </div>
+          <div className="flex flex-col relative z-10">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 2 — INVESTIMENTOS */}
+        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#10B981] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+          <div className="flex items-start justify-between mb-[16px] relative z-10">
+            <div className="p-[6px] bg-[#ECFDF5] dark:bg-emerald-900/20 rounded-full text-[#10B981] dark:text-emerald-500 w-[32px] h-[32px] flex items-center justify-center">
+              <PieChart size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              Investimentos
+            </span>
+          </div>
+          <div className="flex flex-col relative z-10">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#10B981] dark:text-emerald-500 leading-tight flex-wrap break-all">{formatarValor(investimentosValor)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 3 — PROVISÃO */}
+        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#F59E0B] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+          <div className="flex items-start justify-between mb-[16px] relative z-10">
+            <div className="p-[6px] bg-amber-50 dark:bg-amber-900/20 rounded-full text-amber-500 dark:text-amber-400 w-[32px] h-[32px] flex items-center justify-center">
+              <Clock size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              Provisão
+            </span>
+          </div>
+          <div className="flex flex-col relative z-10">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-amber-500 dark:text-amber-400 leading-tight flex-wrap break-all">{formatarValor(despesasPrevisto)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 4 — CARTÃO */}
+        {currentProfile?.financeiro_show_cartoes !== false && (
+          <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#A855F7] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+            <div className="flex items-start justify-between mb-[16px] relative z-10">
+              <div className="p-[6px] bg-purple-50 dark:bg-purple-900/20 rounded-full text-purple-500 dark:text-purple-400 w-[32px] h-[32px] flex items-center justify-center">
+                <CreditCard size={18} />
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+                  {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
+                </span>
+                {!isCardsLoading && cartoesDisplayTotal > 0 && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${cartoesPago ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {cartoesPago ? 'PAGO' : 'NÃO PAGO'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col relative z-10">
+              {isCardsLoading ? (
+                 <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+              ) : (
+                <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesDisplayTotal)}</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* CARD 5 — DESPESAS */}
+        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#EF4444] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+          <div className="flex items-start justify-between mb-[16px] relative z-10">
+            <div className="p-[6px] bg-[#FEF2F2] dark:bg-red-900/20 rounded-full text-[#EF4444] dark:text-red-500 w-[32px] h-[32px] flex items-center justify-center">
+              <TrendingDown size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+              Despesas
+            </span>
+          </div>
+          <div className="flex flex-col relative z-10">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValor)}</span>
+            )}
+          </div>
+        </div>
+
+        {/* CARD 6 — SALDO TOTAL */}
+        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+          <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#2563EB] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+          <div className="flex items-start justify-between mb-[16px] relative z-10">
+            <div className="p-[6px] bg-[#EFF6FF] dark:bg-blue-900/20 rounded-full text-[#2563EB] dark:text-blue-500 w-[32px] h-[32px] flex items-center justify-center">
+              <Wallet size={18} />
+            </div>
+            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider whitespace-nowrap overflow-hidden text-ellipsis">
+              Saldo Final
+            </span>
+          </div>
+          <div className="flex flex-col relative z-10">
+            {isCardsLoading ? (
+               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+            ) : (
+              <span className={`text-[20px] 2xl:text-[24px] font-[800] leading-tight flex-wrap break-all ${saldoTotal === 0 ? 'text-slate-800 dark:text-white' : (saldoTotal < 0 ? 'text-[#EF4444] dark:text-red-500' : 'text-[#2563EB] dark:text-blue-500')}`}>
+                {formatarValor(saldoTotal)}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 items-stretch pt-2">
+        {currentProfile?.financeiro_show_cartoes !== false && (
+          <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} />
+        )}
+        <CardProvisoesDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} refreshTrigger={refreshTrigger} />
+      </div>
+
+      {/* 3. GRÁFICO ANUAL */}
+      <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm">
+        <div className="flex justify-between items-center flex-wrap gap-4 mb-[24px]">
+          <div>
+            <h3 className="text-[16px] font-[700] text-[#0F172A] dark:text-white">Resumo Financeiro</h3>
+            <p className="text-[12px] text-[#94A3B8] dark:text-[#64748B] dark:text-[#94A3B8]">{anoSelecionado}</p>
+          </div>
+
+          <div className="flex items-center gap-[16px] flex-wrap">
+            <div className="flex gap-[16px] flex-wrap">
+              <div className="flex items-center gap-[6px]">
+                <div className="w-[8px] h-[8px] rounded-full bg-[#16A34A] dark:bg-green-500"></div>
+                <span className="text-[12px] font-[600] text-[#64748B] dark:text-[#94A3B8]">— Receitas</span>
+              </div>
+              <div className="flex items-center gap-[6px]">
+                <div className="w-[8px] h-[8px] rounded-full bg-[#EF4444] dark:bg-red-500"></div>
+                <span className="text-[12px] font-[600] text-[#64748B] dark:text-[#94A3B8]">— Despesas</span>
+              </div>
+              <div className="flex items-center gap-[6px]">
+                <div className="w-[8px] h-[8px] rounded-full bg-[#CA8A04] dark:bg-yellow-500"></div>
+                <span className="text-[12px] font-[600] text-[#64748B] dark:text-[#94A3B8]">— Investimentos</span>
+              </div>
+              <div className="flex items-center gap-[6px]">
+                <div className="w-[8px] h-[8px] rounded-full bg-[#3B82F6] dark:bg-blue-500"></div>
+                <span className="text-[12px] font-[600] text-[#64748B] dark:text-[#94A3B8]">— Saldo Final</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <style>{`
+          .dashboard-chart-container .recharts-wrapper, 
+          .dashboard-chart-container .recharts-wrapper *, 
+          .dashboard-chart-container .recharts-surface, 
+          .dashboard-chart-container .recharts-surface:focus,
+          .dashboard-chart-container svg { 
+            outline: none !important; 
+          }
+        `}</style>
+        <div className="w-full dashboard-chart-container relative" style={{ height: 280, minHeight: 280 }}>
+          {isChartLoading ? (
+            <div className="absolute inset-0 flex items-end justify-between gap-2 px-1 pb-[30px] pt-4">
+              {[...Array(12)].map((_, i) => (
+                <div key={i} className="flex-1 w-full bg-slate-100 dark:bg-slate-800 animate-pulse rounded-t-md" style={{ height: `${Math.max(15, Math.random() * 85 + 15)}%`, opacity: 0.7 }}></div>
+              ))}
+              {/* x-axis fake labels */}
+              <div className="absolute bottom-0 left-0 right-0 h-6 flex justify-between px-2">
+                {[...Array(12)].map((_, i) => (
+                  <div key={i} className="w-6 h-3 bg-slate-100 dark:bg-slate-800 animate-pulse rounded"></div>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={280} minWidth={1} minHeight={1}>
+              <AreaChart 
+                data={dadosGrafico} 
+                onClick={(e) => {
+                  if (e && e.activeTooltipIndex !== undefined) {
+                    const clickMes = Number(e.activeTooltipIndex) + 1;
+                    setMesSelecionado(clickMes);
+                  }
+                }} 
+                margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+              >
+              <defs>
+                <linearGradient id="colorReceitas" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#F0FDF4" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#F0FDF4" stopOpacity={0.1}/>
+                </linearGradient>
+                <linearGradient id="colorDespesas" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FEF2F2" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#FEF2F2" stopOpacity={0.1}/>
+                </linearGradient>
+                <linearGradient id="colorInvestimentos" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#FEF9C3" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#FEF9C3" stopOpacity={0.1}/>
+                </linearGradient>
+                <linearGradient id="colorSaldoFinal" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#DBEAFE" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#DBEAFE" stopOpacity={0.1}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F5F9" />
+              <XAxis 
+                dataKey="mes" 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 12, fill: '#94A3B8' }} 
+                dy={10} 
+              />
+              <YAxis 
+                axisLine={false} 
+                tickLine={false} 
+                tick={{ fontSize: 11, fill: '#94A3B8' }} 
+                tickFormatter={(val) => `R$ ${val.toLocaleString('pt-BR')}`} 
+              />
+              <Tooltip cursor={{ stroke: '#E2E8F0', strokeWidth: 1, strokeDasharray: '4 4' }} content={<CustomTooltip />} />
+              
+              <Area 
+                type="monotone" 
+                dataKey="receitas" 
+                stroke="#16A34A" 
+                strokeWidth={2.5} 
+                fillOpacity={0.3} 
+                fill="url(#colorReceitas)" 
+                activeDot={{ r: 6 }}
+                dot={(props) => <CustomDot {...props} color="#16A34A" />}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="despesas" 
+                stroke="#EF4444" 
+                strokeWidth={2.5} 
+                fillOpacity={0.3} 
+                fill="url(#colorDespesas)" 
+                activeDot={{ r: 6 }}
+                dot={(props) => <CustomDot {...props} color="#EF4444" />}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="investimentos" 
+                stroke="#CA8A04" 
+                strokeWidth={2.5} 
+                fillOpacity={0.3} 
+                fill="url(#colorInvestimentos)" 
+                activeDot={{ r: 6 }}
+                dot={(props) => <CustomDot {...props} color="#CA8A04" />}
+              />
+              <Area 
+                type="monotone" 
+                dataKey="saldoFinal" 
+                stroke="#3B82F6" 
+                strokeWidth={2.5} 
+                fillOpacity={0.3} 
+                fill="url(#colorSaldoFinal)" 
+                activeDot={{ r: 6 }}
+                dot={(props) => <CustomDot {...props} color="#3B82F6" />}
+              />
+            </AreaChart>
+          </ResponsiveContainer>
+          )}
+        </div>
+      </div>
+
+      {activeProfileId && (
+        <TransactionModal
+          isOpen={isTransactionModalOpen}
+          onClose={() => setIsTransactionModalOpen(false)}
+          perfilId={activeProfileId}
+        />
+      )}
+    </div>
+  );
+};
+
+

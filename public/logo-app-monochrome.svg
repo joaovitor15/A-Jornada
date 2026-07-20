@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="80 50 370 370" width="512" height="512">
+  <g fill="black" stroke="black">
+    <!-- Top Left Swoosh -->
+    <path d="M 120 280 A 180 180 0 0 1 340 100" fill="none" stroke-width="40" stroke-linecap="round" />
+    
+    <!-- Bottom to Right Blue Swoosh with Arrow -->
+    <path d="M 140 350 A 180 180 0 0 0 420 256 A 180 180 0 0 0 380 130" fill="none" stroke-width="40" stroke-linecap="round" />
+    
+    <!-- Arrow Head -->
+    <path d="M 390 90 L 330 155 L 430 145 Z" stroke-width="4" stroke-linejoin="round" />
+
+    <!-- Bars -->
+    <rect x="180" y="270" width="40" height="90" rx="12" stroke="none" />
+    <rect x="236" y="210" width="40" height="150" rx="12" stroke="none" />
+    <rect x="292" y="150" width="40" height="210" rx="12" stroke="none" />
+  </g>
+</svg>

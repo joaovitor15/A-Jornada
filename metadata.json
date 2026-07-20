@@ -1,0 +1,6 @@
+{
+  "name": "Jornada",
+  "description": "Gestão financeira multi-perfil com interface profissional e moderna.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

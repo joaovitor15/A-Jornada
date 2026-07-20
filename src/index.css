@@ -1,0 +1,73 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --color-brand-light: #E8F4FD;
+  --color-brand-primary: #2196F3;
+  --color-brand-dark: #1565C0;
+  --color-bg-main: #F0F7FF;
+  
+  --radius-card: 16px;
+  --radius-button: 50px;
+}
+
+@layer base {
+  body {
+    @apply bg-[--color-bg-main] text-slate-800 antialiased dark:bg-slate-900 dark:text-slate-100;
+  }
+  
+  html.dark {
+    color-scheme: dark;
+  }
+}
+
+.card-shadow {
+  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+/* Custom horizontal scroll bar for mobile nav if needed */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 4px;
+}
+
+.recharts-wrapper *:focus {
+  outline: none !important;
+}
+
+/* Hide number input spinners */
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type=number] {
+  -moz-appearance: textfield;
+}
+
+@layer components {
+  .btn-cancelar {
+    @apply border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#64748B] dark:text-[#94A3B8] px-5 py-2.5 rounded-xl font-bold text-[13px] sm:text-sm shadow-sm transition-all hover:bg-gradient-to-br hover:from-[#FEF2F2] hover:to-[#FEE2E2] dark:hover:from-[#7F1D1D]/10 dark:hover:to-[#7F1D1D]/20 hover:text-[#EF4444] dark:hover:text-red-400 hover:border-[#FECACA] dark:hover:border-[#7F1D1D]/30 flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-salvar {
+    @apply border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0F172A] text-[#3B82F6] px-6 py-2.5 rounded-xl font-bold text-[13px] sm:text-sm shadow-sm transition-all flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+}
