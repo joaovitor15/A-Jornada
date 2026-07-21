@@ -407,7 +407,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
   const COLORS = ['#2563EB', '#16A34A', '#EF4444', '#EAB308', '#8B5CF6', '#EC4899', '#14B8A6', '#F97316', '#06B6D4', '#d946ef'];
 
   const getChartData = (tipoTransacao: 'receita' | 'despesa', agrupamento: 'categoria' | 'tag', selectedCategoryId?: string | null) => {
-    const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
+    const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito' || c.nome.toLowerCase() === 'ajuste de saldo').map(c => c.id);
     const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
 
     const txs = transacoes.filter(t => {
@@ -468,8 +468,8 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     return { data, total };
   };
 
-  const availableCategories = categories.filter(c => c.tipo === formTipo && c.nome.toLowerCase() !== 'cartão de crédito');
-  const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
+  const availableCategories = categories.filter(c => c.tipo === formTipo && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'ajuste de saldo');
+  const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito' || c.nome.toLowerCase() === 'ajuste de saldo').map(c => c.id);
   
   const totalReceitasPeriodo = transacoes.filter(t => {
     if (t.tipo !== 'receita') return false;
@@ -639,7 +639,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
       {/* SUMMARY CARDS */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-2">
         {(() => {
-           const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito').map(c => c.id);
+           const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito' || c.nome.toLowerCase() === 'ajuste de saldo').map(c => c.id);
            const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
            const validTxs = transacoes.filter(t => {
              if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
@@ -835,7 +835,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
         {/* GRÁFICO DESPESAS */}
         {(() => {
            const { data, total } = getChartData('despesa', graficoDespesasAgrupamento, selectedCategoriaDespesaTags);
-           const availableCategorias = categories.filter(c => c.tipo === 'despesa' && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'investimentos');
+           const availableCategorias = categories.filter(c => c.tipo === 'despesa' && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'investimentos' && c.nome.toLowerCase() !== 'ajuste de saldo');
            return (
              <div className="bg-white dark:bg-[#0B0F19] rounded-[16px] p-[20px] border border-[#F1F5F9] dark:border-[#1E293B] shadow-[0_2px_12px_rgba(0,0,0,0.04)] flex flex-col gap-[16px]">
                 <h3 className="text-[18px] font-[700] text-[#0F172A] dark:text-white">Despesas por Categoria/Tag</h3>
@@ -948,7 +948,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
            const availableCategorias = categories.filter(c => {
              if (c.tipo !== 'receita') return false;
              const cNome = c.nome.toLowerCase();
-             if (cNome === 'cartão de crédito' || cNome === 'investimentos') return false;
+             if (cNome === 'cartão de crédito' || cNome === 'investimentos' || cNome === 'ajuste de saldo') return false;
              if (isBusiness && (cNome === 'farmácia popular' || cNome === 'farmacia popular')) return false;
              return true;
            });

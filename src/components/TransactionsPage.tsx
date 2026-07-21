@@ -534,8 +534,8 @@ export function TransactionsPage({ activeProfileId }: TransactionsPageProps) {
 
       {/* MODAL DE CONFIRMAÇÃO DE EXCLUSÃO */}
       {confirmDeleteId && (
-        <div className="mt-8 flex justify-center">
-          <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[16px] p-[24px] w-full max-w-[360px] text-center shadow-[0_24px_48px_rgba(0,0,0,0.15)] flex flex-col items-center">
+        <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-50 flex items-center justify-center p-4">
+          <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] w-full max-w-[360px] text-center shadow-[0_24px_48px_rgba(0,0,0,0.15)] flex flex-col items-center border-[1.5px] border-[#F1F5F9] dark:border-[#334155]">
             <AlertTriangle size={40} className="text-[#EF4444] mb-[12px]" />
             <h3 className="text-[16px] font-[800] text-[#0F172A] dark:text-white mb-1">Excluir transação?</h3>
             <p className="text-[13px] text-[#64748B] dark:text-[#94A3B8] mb-6">

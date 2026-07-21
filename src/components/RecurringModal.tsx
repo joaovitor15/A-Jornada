@@ -315,7 +315,7 @@ export const RecurringModal = ({ isOpen, onClose, onSaved, recorrencia, activePr
                             <button
                               key={tag.id}
                               onClick={(e) => { e.stopPropagation(); setTagSelecionada({id: tag.id, nome: tag.nome}); setTagBusca(''); setMostrarDropdownTag(false); }}
-                              className="w-full p-[10px_14px] text-[14px] font-[500] rounded-[10px] text-left flex items-center gap-3 transition-colors hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0]"
+                              className="w-full p-[10px_14px] text-[14px] font-[500] rounded-[10px] text-left flex items-center gap-3 transition-colors hover:bg-[#F1F5F9] dark:hover:bg-[#475569] text-[#374151] dark:text-[#E2E8F0]"
                             >
                               <span className="w-[8px] h-[8px] rounded-full shrink-0" style={{ backgroundColor: categoria?.cor || '#CBD5E1' }} />
                               {tag.nome}

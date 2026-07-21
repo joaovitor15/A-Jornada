@@ -1375,12 +1375,14 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         {/* LIST COLUMN */}
         <div className="w-full h-full flex flex-col space-y-8">
         {listagemFiltrada.length === 0 ? (
-          <div className="text-center py-12 bg-white dark:bg-[#1E293B] rounded-2xl border border-[#E2E8F0] dark:border-[#1E293B]">
-            <Library size={48} className="mx-auto text-slate-300 dark:text-slate-600 mb-4" />
-            <h3 className="text-lg font-black text-slate-800 dark:text-white mb-2">Nenhum registro encontrado</h3>
-            <p className="text-sm text-slate-500 dark:text-slate-400">
-              Você ainda não tem lançamentos planejados nesta categoria.<br/>
-              Clique no botão "Planejar Conta" acima para começar.
+          <div className="flex flex-col items-center justify-center py-16 px-4 bg-transparent border-2 border-dashed border-[#E2E8F0] dark:border-[#334155] rounded-[24px]">
+            <div className="w-16 h-16 bg-[#F8FAFC] dark:bg-[#0F172A] rounded-[16px] flex items-center justify-center mb-5 shadow-sm border border-[#E2E8F0] dark:border-[#1E293B]">
+              <Library size={28} className="text-[#3B82F6]" />
+            </div>
+            <h3 className="text-[18px] font-bold text-[#0F172A] dark:text-white mb-2 tracking-tight">Nenhum registro encontrado</h3>
+            <p className="text-[14px] text-[#64748B] dark:text-[#94A3B8] text-center max-w-[320px] leading-relaxed">
+              Você ainda não tem lançamentos planejados nesta categoria.<br className="hidden sm:block"/>
+              Clique no botão <strong className="font-semibold text-[#0F172A] dark:text-white">Planejar Conta</strong> para começar.
             </p>
           </div>
         ) : (
@@ -1725,7 +1727,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                             className="btn-salvar flex-1"
                           >
                             <CheckCircle2 size={16} />
-                            {filtroNatureza === 'investimento' ? 'Lançar Aporte' : 'Lançar agora'}
+                            {filtroNatureza === 'investimento' ? 'Lançar Aporte' : 'Lançar'}
                           </button>
                         </div>
                       )}
@@ -1908,32 +1910,32 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
       {/* EFETIVAR / COMPROMISSO MODAL */}
       <AnimatePresence>
         {efetivarModal?.isOpen && (
-          <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-[110] flex items-center justify-center p-4">
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#E2E8F0] dark:border-[#334155] max-w-md w-full p-6 space-y-5 shadow-2xl relative overflow-hidden"
+              className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] max-w-[380px] w-full shadow-[0_24px_48px_rgba(0,0,0,0.15)] flex flex-col border-[1.5px] border-[#F1F5F9] dark:border-[#334155] relative overflow-hidden"
             >
-              <div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white leading-tight">Efetivar Provisão</h3>
-                <p className="text-xs text-slate-400 font-medium">Confirme o valor para o lançamento real no seu caixa.</p>
+              <div className="mb-4">
+                <h3 className="text-[16px] font-[800] text-[#0F172A] dark:text-white leading-tight">Efetivar Provisão</h3>
+                <p className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold mt-0.5">Confirme o valor para o lançamento real no seu caixa.</p>
               </div>
 
               {/* Form elements */}
               <div className="space-y-4">
                 {/* Description info */}
-                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-[#1E293B] p-3.5 rounded-2xl flex justify-between items-center gap-3">
+                <div className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] p-3 rounded-xl flex justify-between items-center gap-3">
                   <div>
-                    <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider block mb-0.5">Descrição</span>
-                    <p className="font-bold text-slate-800 dark:text-slate-200 text-sm leading-tight">
+                    <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] uppercase font-bold tracking-wider block mb-0.5">Descrição</span>
+                    <p className="font-[700] text-[13px] text-[#0F172A] dark:text-white line-clamp-1">
                       {efetivarModal.provisao.nome} {efetivarModal.provisao.num_parcelas > 1 ? `(${efetivarModal.parcelaNum}/${efetivarModal.provisao.num_parcelas})` : ''}
                     </p>
                   </div>
                   {efetivarModal.provisao.valor !== null && (
                     <div className="text-right">
-                      <span className="text-[9px] text-slate-400 uppercase font-black tracking-wider block mb-0.5">Valor Estimado</span>
-                      <p className="font-black text-blue-600 dark:text-blue-400 text-base whitespace-nowrap">
+                      <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] uppercase font-bold tracking-wider block mb-0.5">Valor Estimado</span>
+                      <p className="font-bold text-[13px] text-[#3B82F6] dark:text-[#60A5FA] whitespace-nowrap">
                         {formatCurrency(efetivarModal.provisao.valor)}
                       </p>
                     </div>
@@ -1941,13 +1943,13 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                 </div>
 
                 {/* Data de Pagamento Input */}
-                <div>
-                  <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Data do Pagamento</label>
+                <div className="space-y-1">
+                  <label className="text-[11px] text-[#64748B] dark:text-[#94A3B8] uppercase font-bold tracking-wider block">Data do Pagamento</label>
                   <input
                     type="date"
                     value={efetivarData}
                     onChange={e => setEfetivarData(e.target.value)}
-                    className="w-full bg-slate-50 dark:bg-slate-900 border border-[#E2E8F0] dark:border-[#1E293B] rounded-xl py-2.5 px-4 text-sm font-semibold text-slate-800 dark:text-white focus:outline-none focus:border-[#3B82F6]"
+                    className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-xl h-[42px] px-3 text-[14px] font-[600] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] dark:focus:border-[#3B82F6] transition-all"
                   />
                 </div>
 
@@ -2055,7 +2057,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                   onClick={handleExecuteEfetivacao}
                   className="btn-salvar flex-1"
                 >
-                  Confirmar Pagamento
+                  Confirmar
                 </button>
               </div>
             </motion.div>
@@ -2063,28 +2065,25 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
         )}
       </AnimatePresence>
 
-
-
       {/* DELETE DIALOG MODAL */}
       <AnimatePresence>
         {deleteModal?.isOpen && (
-          <div className="fixed inset-0 bg-black/50 z-[120] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-[120] flex items-center justify-center p-4">
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#1E293B] rounded-3xl border border-[#E2E8F0] dark:border-[#334155] max-w-sm w-full p-6 space-y-4 shadow-2xl text-center"
+              className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] max-w-[360px] w-full shadow-[0_24px_48px_rgba(0,0,0,0.15)] flex flex-col items-center border-[1.5px] border-[#F1F5F9] dark:border-[#334155] text-center"
             >
-              <div className="mx-auto w-12 h-12 rounded-full bg-red-100 dark:bg-red-950/40 text-red-500 flex items-center justify-center">
-                <Trash2 size={22} />
+              <div className="mx-auto mb-[12px] text-[#EF4444]">
+                <Trash2 size={40} />
               </div>
               
               <div>
-                <h3 className="text-base font-black text-slate-800 dark:text-white leading-tight">Remover Provisão?</h3>
-                <p className="text-xs text-slate-400 mt-1 font-medium">Deseja realmente excluir o modelo de provisão "{deleteModal.nome}"? Lançamentos futuros não serão mais exibidos.</p>
+                <h3 className="text-[16px] font-[800] text-[#0F172A] dark:text-white mb-1">Remover Provisão?</h3>
+                <p className="text-[13px] text-[#64748B] dark:text-[#94A3B8] mb-6">Deseja realmente excluir o modelo de provisão "{deleteModal.nome}"? Lançamentos futuros não serão mais exibidos.</p>
               </div>
-
-              <div className="flex items-center gap-2 pt-2">
+              <div className="flex gap-[10px] w-full pt-2">
                 <button
                   onClick={() => setDeleteModal(null)}
                   className="btn-cancelar flex-1"
@@ -2093,7 +2092,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                 </button>
                 <button
                   onClick={executeExcluirModelo}
-                  className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-700 rounded-xl text-xs font-black text-white hover:scale-102 transition-all active:scale-95"
+                  className="flex-1 bg-[#EF4444] text-white font-[600] text-[14px] py-[10px] rounded-[12px] hover:bg-[#DC2626] transition-colors"
                 >
                   Sim, Excluir
                 </button>

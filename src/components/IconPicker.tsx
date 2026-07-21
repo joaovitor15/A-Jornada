@@ -61,7 +61,7 @@ export default function IconPicker({ value, onChange, color, label = "Ícone", o
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="w-[calc(100%+40px)] -ml-[20px] sm:ml-0 sm:w-full min-w-[300px] sm:min-w-[340px] bg-[#FFFFFF] dark:bg-[#1E293B] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[10px] flex flex-col gap-[12px] overflow-hidden p-[14px] shadow-sm transform-origin-top absolute top-[100%] mt-[8px] z-[50]"
+            className="w-[calc(100%+40px)] -ml-[20px] sm:ml-0 sm:w-full min-w-[300px] sm:min-w-[340px] bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[16px] flex flex-col gap-[12px] overflow-hidden p-[14px] shadow-[0_12px_32px_rgba(0,0,0,0.12)] transform-origin-top absolute top-[100%] mt-[8px] z-[50]"
           >
             <div className="relative w-full">
               <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#94A3B8]" />
@@ -71,7 +71,7 @@ export default function IconPicker({ value, onChange, color, label = "Ícone", o
                 value={searchTerm}
                 onClick={(e) => e.stopPropagation()}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border-[1px] border-[#E2E8F0] dark:border-[#334155] rounded-[8px] py-[10px] pr-[12px] pl-[36px] text-[14px] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#2563EB] transition-all"
+                className="w-full bg-[#F8FAFC] dark:bg-[#0B0F19] border-[1.5px] border-[#E2E8F0] dark:border-[#1E293B] rounded-[12px] py-[10px] pr-[12px] pl-[36px] text-[14px] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#2563EB] focus:shadow-[0_0_0_3px_rgba(37,99,235,0.08)] transition-all"
               />
             </div>
             <div className="grid grid-cols-6 sm:grid-cols-7 gap-[8px] overflow-y-auto max-h-[220px] icons-grid-scroll">
@@ -89,13 +89,12 @@ export default function IconPicker({ value, onChange, color, label = "Ícone", o
                       setIsOpen(false);
                       setSearchTerm('');
                     }}
-                    className="aspect-square flex items-center justify-center rounded-[8px] transition-all cursor-pointer p-[8px]"
+                    className="aspect-square flex items-center justify-center rounded-[10px] transition-all cursor-pointer p-[8px] hover:bg-[#F1F5F9] dark:hover:bg-[#1E293B]"
                     style={isSelected ? {
                       backgroundColor: color || '#2563EB',
                       color: '#FFFFFF'
                     } : {
-                      backgroundColor: 'transparent',
-                      color: '#64748B'
+                      color: '#94A3B8'
                     }}
                   >
                     <IconComponent size={20} />

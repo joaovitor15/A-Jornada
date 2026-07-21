@@ -194,46 +194,55 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
       {/* EFETIVAR MODAL */}
       <AnimatePresence>
         {efetivarModal.isOpen && efetivarModal.conta && (
-          <div className="fixed inset-0 bg-black/50 z-[110] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-[#0F172A80] dark:bg-[#0F172AB3] backdrop-blur-[4px] z-[110] flex items-center justify-center p-4">
             <motion.div 
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white dark:bg-[#1E293B] rounded-3xl border border-slate-200 dark:border-[#334155] max-w-md w-full p-6 space-y-5 shadow-2xl relative overflow-hidden"
+              className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] max-w-[380px] w-full shadow-[0_24px_48px_rgba(0,0,0,0.15)] flex flex-col border-[1.5px] border-[#F1F5F9] dark:border-[#334155] relative overflow-hidden"
             >
-              <div>
-                <h3 className="text-lg font-black text-slate-800 dark:text-white leading-tight">Efetivar Provisão</h3>
-                <p className="text-xs text-slate-400 font-medium">Confirme o valor para o lançamento real no seu caixa.</p>
+              <div className="mb-4">
+                <h3 className="text-[16px] font-[800] text-[#0F172A] dark:text-white leading-tight">Efetivar Provisão</h3>
+                <p className="text-[12px] text-[#64748B] dark:text-[#94A3B8] font-bold mt-0.5">Confirme o valor para o lançamento real no seu caixa.</p>
               </div>
 
               <div className="space-y-4">
-                <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block">Descrição</span>
-                  <p className="font-extrabold text-slate-750 dark:text-slate-200 text-sm">
-                    {efetivarModal.conta.descricao}
-                    {efetivarModal.conta.valor !== 0 && ` - ${efetivarModal.conta.tipo === 'receita' || efetivarModal.conta.recurrentSource?.tipo === 'receita' ? '+' : ''}${formatarValor(efetivarModal.conta.valor)}`}
-                  </p>
+                <div className="bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] p-3 rounded-xl flex justify-between items-center gap-3">
+                  <div>
+                    <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] uppercase font-bold tracking-wider block mb-0.5">Descrição</span>
+                    <p className="font-[700] text-[13px] text-[#0F172A] dark:text-white line-clamp-1">
+                      {efetivarModal.conta.descricao}
+                    </p>
+                  </div>
+                  {efetivarModal.conta.valor !== 0 && (
+                    <div className="text-right">
+                      <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] uppercase font-bold tracking-wider block mb-0.5">Valor Estimado</span>
+                      <p className="font-bold text-[13px] text-[#3B82F6] dark:text-[#60A5FA] whitespace-nowrap">
+                        {efetivarModal.conta.tipo === 'receita' || efetivarModal.conta.recurrentSource?.tipo === 'receita' ? '+' : ''}{formatarValor(efetivarModal.conta.valor)}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 {efetivarModal.conta.valor === 0 && (
-                  <div>
-                    <label className="text-[10px] text-slate-400 uppercase font-extrabold tracking-wider block mb-1">Valor Efetivado (R$)</label>
+                  <div className="space-y-1">
+                    <label className="text-[11px] text-[#64748B] dark:text-[#94A3B8] uppercase font-bold tracking-wider block">Valor Efetivado (R$)</label>
                     <div className="relative">
-                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400 text-[16px]">
+                      <span className="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-black text-slate-400">
                         {efetivarModal.conta.tipo === 'receita' || efetivarModal.conta.recurrentSource?.tipo === 'receita' ? '+' : '-'} R$
                       </span>
                       <input 
                         type="text"
                         value={centsToFormattedCurrency(efetivarValorStr).replace('R$', '').trim()}
                         onChange={formatCentsChange}
-                        className="btn-salvar flex-1"
+                        className="w-full bg-[#F8FAFC] dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#334155] rounded-xl h-[42px] px-3 pl-10 text-[14px] font-[600] text-[#0F172A] dark:text-white focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] dark:focus:border-[#3B82F6] transition-all"
                       />
                     </div>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center justify-end gap-2.5 pt-3">
+              <div className="flex items-center justify-end gap-2.5 pt-6">
                 <button
                   onClick={() => setEfetivarModal({isOpen: false, conta: null})}
                   className="btn-cancelar flex-1"
@@ -245,7 +254,7 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
                   disabled={pagandoId !== null}
                   className="btn-salvar flex-1"
                 >
-                  {pagandoId ? <Loader2 size={16} className="animate-spin" /> : 'Confirmar'}
+                  {pagandoId ? <Loader2 size={16} className="animate-spin mx-auto" /> : 'Confirmar'}
                 </button>
               </div>
             </motion.div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import {
   Plus,
+  Settings,
   Pencil,
   Trash2,
   X,
@@ -66,6 +67,8 @@ export const COLORS = [
 ];
 
 export const ICONS: Array<{ name: string; label: string; component: any }> = [
+  { name: "Settings", label: "configuração ajuste engrenagem", component: Settings },
+  { name: "TrendingUp", label: "investimento investimentos gráfico subir", component: TrendingUp },
   { name: "User", label: "usuário perfil pessoa", component: User },
   { name: "Building2", label: "prédio empresa negócio", component: Building2 },
   { name: "Home", label: "casa moradia", component: Home },
@@ -314,6 +317,10 @@ export default function Categories({ activeProfile }: CategoriesProps) {
     .filter((c) => c.tipo === "receita")
     .sort((a, b) => {
       if (a.ordem != null && b.ordem != null) return a.ordem - b.ordem;
+      const aIsSys = a.nome.toLowerCase() === "ajuste de saldo";
+      const bIsSys = b.nome.toLowerCase() === "ajuste de saldo";
+      if (aIsSys && !bIsSys) return 1;
+      if (!aIsSys && bIsSys) return -1;
       return a.nome.localeCompare(b.nome);
     });
 
@@ -323,10 +330,12 @@ export default function Categories({ activeProfile }: CategoriesProps) {
       if (a.ordem != null && b.ordem != null) return a.ordem - b.ordem;
       const aIsSys =
         a.nome.toLowerCase() === "cartão de crédito" ||
-        a.nome.toLowerCase() === "investimentos";
+        a.nome.toLowerCase() === "investimentos" ||
+        a.nome.toLowerCase() === "ajuste de saldo";
       const bIsSys =
         b.nome.toLowerCase() === "cartão de crédito" ||
-        b.nome.toLowerCase() === "investimentos";
+        b.nome.toLowerCase() === "investimentos" ||
+        b.nome.toLowerCase() === "ajuste de saldo";
       if (aIsSys && !bIsSys) return 1;
       if (!aIsSys && bIsSys) return -1;
       return a.nome.localeCompare(b.nome);
@@ -503,7 +512,8 @@ export default function Categories({ activeProfile }: CategoriesProps) {
           {/* LADO DIREITO: TOPO DO CARD */}
           <div className="flex items-center gap-[2px] shrink-0">
             {category.nome.toLowerCase() === "cartão de crédito" ||
-            category.nome.toLowerCase() === "investimentos" ? (
+            category.nome.toLowerCase() === "investimentos" ||
+            category.nome.toLowerCase() === "ajuste de saldo" ? (
               <div
                 title="Categoria de Sistema"
                 className="p-[5px] rounded-[7px] text-[#CBD5E1] dark:text-[#475569]"
@@ -677,8 +687,8 @@ export default function Categories({ activeProfile }: CategoriesProps) {
       <div className="flex flex-col items-center justify-center gap-6 mb-10 w-full">
         {/* Title */}
         <div className="flex items-center gap-3 justify-center">
-          <div className="w-10 h-10 bg-[#3B82F6]/10 dark:bg-[#3B82F6]/20 rounded-xl flex items-center justify-center text-[#2563EB] dark:text-[#60A5FA]">
-            <LayoutPanelLeft size={20} strokeWidth={2.5} />
+          <div className="text-[#2563EB] dark:text-[#60A5FA]">
+            <LayoutPanelLeft size={24} strokeWidth={2.5} />
           </div>
           <h1 className="text-2xl md:text-3xl font-bold text-[#0F172A] dark:text-white tracking-tight">
             Categorias & Tags

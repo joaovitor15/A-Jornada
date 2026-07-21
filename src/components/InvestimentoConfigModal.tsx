@@ -95,7 +95,9 @@ export const InvestimentoConfigModal = ({ isOpen, onClose, onSaved, onLaunchNow,
     }, 50);
   };
 
+  const investCategory = categories.find(c => c.nome.toLowerCase() === 'investimentos');
   const tagsFiltradas = tags
+    .filter(t => t.category_id === investCategory?.id)
     .filter(t => t.nome.toLowerCase().includes(tagBusca.toLowerCase()))
     .slice(0, 15);
 
@@ -185,7 +187,7 @@ export const InvestimentoConfigModal = ({ isOpen, onClose, onSaved, onLaunchNow,
 
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1" ref={containerTagRef}>
-              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Tag / Categoria</label>
+              <label className="block text-[12px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-[6px]">Tag</label>
               <div className="relative">
                 {tagSelecionada ? (
                   <div className="inline-flex items-center gap-[6px] rounded-[100px] p-[6px_12px] text-[13px] font-[600] border-[1.5px] w-fit shadow-sm bg-[#FEF3C7] dark:bg-amber-900/30 text-[#D97706] border-[#D97706]">
@@ -201,7 +203,7 @@ export const InvestimentoConfigModal = ({ isOpen, onClose, onSaved, onLaunchNow,
                       value={tagBusca}
                       onChange={(e) => { setTagBusca(e.target.value); setMostrarDropdownTag(true); }}
                       onFocus={() => setMostrarDropdownTag(true)}
-                      placeholder="Nome Ativo"
+                      placeholder="Buscar tag..."
                       className="w-full bg-[#F8FAFC] dark:bg-[#0B0F19] border-[1.5px] border-[#E2E8F0] dark:border-[#1E293B] rounded-[12px] p-[10px_12px_10px_34px] text-[14px] font-[500] outline-none transition-all focus:border-amber-500 focus:shadow-[0_0_0_3px_rgba(245,158,11,0.08)]"
                     />
                   </div>
@@ -209,7 +211,7 @@ export const InvestimentoConfigModal = ({ isOpen, onClose, onSaved, onLaunchNow,
               </div>
 
               {mostrarDropdownTag && (
-                <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-[#FFFFFF] dark:bg-[#1E293B] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[16px] shadow-[0_12px_32px_rgba(0,0,0,0.12)] max-h-[220px] overflow-y-auto z-[60] p-[6px] space-y-[2px]">
+                <div className="absolute top-[calc(100%+4px)] left-0 right-0 bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[16px] shadow-[0_12px_32px_rgba(0,0,0,0.12)] max-h-[220px] overflow-y-auto z-[60] p-[6px] space-y-[2px]">
                   {tagsFiltradas.length > 0 ? (
                     tagsFiltradas.map((tag) => {
                       const categoria = categories.find(c => c.id === tag.category_id);
@@ -217,7 +219,7 @@ export const InvestimentoConfigModal = ({ isOpen, onClose, onSaved, onLaunchNow,
                         <button
                           key={tag.id}
                           onClick={(e) => { e.stopPropagation(); setTagSelecionada({id: tag.id, nome: tag.nome}); setTagBusca(''); setMostrarDropdownTag(false); }}
-                          className="w-full p-[10px_14px] text-[14px] font-[500] rounded-[10px] text-left flex items-center gap-3 transition-colors hover:bg-[#F1F5F9] dark:hover:bg-[#475569] dark:bg-[#334155] text-[#374151] dark:text-[#E2E8F0]"
+                          className="w-full p-[10px_14px] text-[14px] font-[500] rounded-[10px] text-left flex items-center gap-3 transition-colors hover:bg-[#F1F5F9] dark:hover:bg-[#475569] text-[#374151] dark:text-[#E2E8F0]"
                         >
                           <span className="w-[8px] h-[8px] rounded-full shrink-0" style={{ backgroundColor: categoria?.cor || '#CBD5E1' }} />
                           {tag.nome}

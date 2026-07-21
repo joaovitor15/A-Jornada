@@ -36,25 +36,131 @@ export function useCategories(profileId: string | undefined) {
 
   async function buscarCategorias() {
     setLoading(true);
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('categories')
       .select('*')
       .eq('profile_id', profileId)
       .order('created_at', { ascending: true });
       
     if (error) console.error("Erro ao buscar categorias:", error);
+    
+    if (data && profileId) {
+      const ajustesReceita = data.filter(c => c.nome.toLowerCase() === 'ajuste de saldo' && c.tipo === 'receita');
+      const ajustesDespesa = data.filter(c => c.nome.toLowerCase() === 'ajuste de saldo' && c.tipo === 'despesa');
+      
+      let needRefresh = false;
+
+      // Limpar duplicatas de receita
+      if (ajustesReceita.length > 1) {
+        const toDelete = ajustesReceita.slice(1).map(c => c.id);
+        await supabase.from('tags').delete().in('category_id', toDelete);
+        await supabase.from('tags').delete().in('categoria_id', toDelete);
+        await supabase.from('categories').delete().in('id', toDelete);
+        needRefresh = true;
+      }
+      
+      // Limpar duplicatas de despesa
+      if (ajustesDespesa.length > 1) {
+        const toDelete = ajustesDespesa.slice(1).map(c => c.id);
+        await supabase.from('tags').delete().in('category_id', toDelete);
+        await supabase.from('tags').delete().in('categoria_id', toDelete);
+        await supabase.from('categories').delete().in('id', toDelete);
+        needRefresh = true;
+      }
+
+      const ajusteReceita = ajustesReceita[0];
+      const ajusteDespesa = ajustesDespesa[0];
+      
+      if (!ajusteReceita) {
+        await supabase.from('categories').insert({ profile_id: profileId, nome: 'Ajuste de Saldo', tipo: 'receita', cor: '#10B981', icone: 'Settings' });
+        needRefresh = true;
+      } else if (ajusteReceita.icone !== 'Settings') {
+        await supabase.from('categories').update({ icone: 'Settings' }).eq('id', ajusteReceita.id);
+        needRefresh = true;
+      }
+
+      if (!ajusteDespesa) {
+        await supabase.from('categories').insert({ profile_id: profileId, nome: 'Ajuste de Saldo', tipo: 'despesa', cor: '#EF4444', icone: 'Settings' });
+        needRefresh = true;
+      } else if (ajusteDespesa.icone !== 'Settings') {
+        await supabase.from('categories').update({ icone: 'Settings' }).eq('id', ajusteDespesa.id);
+        needRefresh = true;
+      }
+      
+      if (needRefresh) {
+        const { data: newData } = await supabase
+          .from('categories')
+          .select('*')
+          .eq('profile_id', profileId)
+          .order('created_at', { ascending: true });
+        data = newData;
+      }
+    }
+
     setCategories(data || []);
     setLoading(false);
   }
 
   async function buscarTags() {
-    const { data, error } = await supabase
+    let { data, error } = await supabase
       .from('tags')
       .select('*')
       .eq('profile_id', profileId)
       .order('created_at', { ascending: true });
       
     if (error) console.error("Erro ao buscar tags:", error);
+
+    // Garantir que as tags de Ajuste de Saldo existam
+    if (data && profileId) {
+      const { data: catData } = await supabase
+        .from('categories')
+        .select('id, tipo, nome')
+        .eq('profile_id', profileId)
+        .ilike('nome', 'Ajuste de Saldo');
+
+      if (catData && catData.length > 0) {
+        let needRefresh = false;
+        for (const cat of catData) {
+          const expectedTagName = cat.tipo === 'receita' ? 'Ajuste Receita +' : 'Ajuste Despesa -';
+          const catTags = data.filter(t => t.category_id === cat.id);
+          
+          if (catTags.length === 0) {
+            await supabase.from('tags').insert({
+              profile_id: profileId,
+              category_id: cat.id,
+              categoria_id: cat.id,
+              nome: expectedTagName
+            });
+            needRefresh = true;
+          } else {
+            let keepId = catTags[0].id;
+            const existingExpected = catTags.find(t => t.nome === expectedTagName);
+            if (existingExpected) {
+              keepId = existingExpected.id;
+            } else {
+              await supabase.from('tags').update({ nome: expectedTagName }).eq('id', keepId);
+              needRefresh = true;
+            }
+            
+            const toDelete = catTags.filter(t => t.id !== keepId).map(t => t.id);
+            if (toDelete.length > 0) {
+              await supabase.from('tags').delete().in('id', toDelete);
+              needRefresh = true;
+            }
+          }
+        }
+
+        if (needRefresh) {
+          const { data: newData } = await supabase
+            .from('tags')
+            .select('*')
+            .eq('profile_id', profileId)
+            .order('created_at', { ascending: true });
+          data = newData;
+        }
+      }
+    }
+
     setTags(data || []);
   }
 
