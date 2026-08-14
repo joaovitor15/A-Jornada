@@ -33,6 +33,7 @@ import { supabase } from '../supabaseClient';
 import { InvestimentosDashboard } from './InvestimentosDashboard';
 import { InvestimentosMetas } from './InvestimentosMetas';
 import { ConfiguracaoMetasInline } from '../components/ConfiguracaoMetasInline';
+import { GraficosPosicoesModal } from '../components/GraficosPosicoesModal';
 
 interface InvestimentosAtivosProps {
   activeProfileId?: string;
@@ -96,7 +97,8 @@ const CustomDropdown = ({ value, onChange, options, placeholder = "Selecione..."
       >
         <span className="truncate pr-2">{selectedOption ? selectedOption.label : placeholder}</span>
         <ChevronDown size={16} className={`shrink-0 text-[#64748B] dark:text-[#94A3B8] transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-      </div>
+  
+    </div>
       
       {isOpen && (
         <div className="absolute z-[999] w-full mt-2 bg-white dark:bg-[#0B0F19] border border-[#E2E8F0] dark:border-[#1E293B] rounded-xl shadow-[0_10px_25px_-5px_rgba(0,0,0,0.1),0_8px_10px_-6px_rgba(0,0,0,0.1)] dark:shadow-[0_10px_25px_-5px_rgba(0,0,0,0.5)] overflow-y-auto max-h-60 flex flex-col py-1.5">
@@ -117,11 +119,14 @@ const CustomDropdown = ({ value, onChange, options, placeholder = "Selecione..."
                 }}
               >
                 {opt.label}
-              </div>
+          
+    </div>
             );
           })}
-        </div>
+    
+    </div>
       )}
+
     </div>
   );
 };
@@ -168,15 +173,18 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
     setDashboardMetas(newObjs);
   };
 
-  const handleObjectiveSave = async (id: string, valStr: string) => {
-    let val = parseFloat(valStr.replace(',', '.')) || 0;
-    const newObjs = { ...dashboardMetas, [id]: val };
+  const handleSaveAllObjectives = async () => {
     if (activeProfileId) {
       try {
-        await supabase
-          .from('profiles')
-          .update({ dashboard_metas_classes: newObjs })
-          .eq('id', activeProfileId);
+        if (updateProfileModules) {
+           await updateProfileModules(activeProfileId, { dashboard_metas_classes: dashboardMetas });
+        } else {
+           await supabase
+            .from('profiles')
+            .update({ dashboard_metas_classes: dashboardMetas })
+            .eq('id', activeProfileId);
+        }
+        setIsOpenObjetivos(false);
       } catch (err) {
         console.error('Erro ao atualizar metas', err);
       }
@@ -207,6 +215,7 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
   };
   const [filterClasse, setFilterClasse] = useState('todas');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isGraficosModalOpen, setIsGraficosModalOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [novoAtivo, setNovoAtivo] = useState({ classe: 'acoes-br', ticker: '', qtd: '' });
 
@@ -699,7 +708,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
               <Landmark className="text-[#0F172A] dark:text-white" size={28} strokeWidth={2.5} />
               Meus Investimentos
             </h2>
-          </div>
+      
+    </div>
           
           <div className="flex items-center gap-3 w-full sm:w-auto">
             {(activeTab === 'visao_geral' || activeTab === 'posicoes') && (
@@ -725,8 +735,10 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                 >
                   USD
                 </button>
-              </div>
-              </div>
+          
+    </div>
+          
+    </div>
             )}
             <div className="flex bg-[#F1F5F9] dark:bg-[#0F172A] rounded-2xl p-1.5 shrink-0">
               <button 
@@ -737,9 +749,12 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                 <RefreshCw size={16} className={cotacoesLoading ? 'animate-spin' : ''} />
                 {cotacoesLoading ? 'Sincronizando...' : 'Sincronizar'}
               </button>
-            </div>
-          </div>
-        </div>
+        
+    </div>
+      
+    </div>
+    
+    </div>
 
         {/* TABS */}
         {!isLoadingAtivos && displayData.length > 0 && (
@@ -763,9 +778,11 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                 {tab.label}
               </button>
             ))}
-          </div>
+      
+    </div>
         )}
-      </div>
+  
+    </div>
 
       {/* Error and Sync Controls */}
       {cotacoesError && (
@@ -774,22 +791,26 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
           <div className="flex-1">
             <h4 className="font-bold">Erro ao carregar cotações</h4>
             <p className="text-sm mt-1">{cotacoesError}</p>
-          </div>
-        </div>
+      
+    </div>
+    
+    </div>
       )}
 
       {isLoadingAtivos && (
         <div className="flex flex-col items-center justify-center py-20 text-[#64748B] dark:text-[#94A3B8]">
           <RefreshCw size={32} className="animate-spin mb-4 text-[#3B82F6]" />
           <p className="font-medium">Carregando seus ativos...</p>
-        </div>
+    
+    </div>
       )}
 
       {cotacoesLoading && !isLoadingAtivos && displayData.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-[#64748B] dark:text-[#94A3B8]">
           <RefreshCw size={32} className="animate-spin mb-4 text-[#3B82F6]" />
           <p className="font-medium">Sincronizando cotações do Google Sheets...</p>
-        </div>
+    
+    </div>
       )}
 
       {!cotacoesLoading && !isLoadingAtivos && displayData.length === 0 && !cotacoesError && (
@@ -797,7 +818,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-[#2563EB] rounded-full blur-3xl opacity-[0.03] group-hover:opacity-[0.06] transition-opacity duration-500"></div>
            <div className="mb-6 text-[#3B82F6] relative z-10">
              <Landmark size={48} strokeWidth={1.5} />
-           </div>
+       
+    </div>
            <h3 className="text-2xl font-black text-[#0F172A] dark:text-white mb-3 tracking-tight relative z-10">Nenhum ativo na carteira</h3>
            <p className="max-w-md mx-auto mb-8 text-[#64748B] dark:text-[#94A3B8] relative z-10 leading-relaxed">
              Sua carteira de investimentos está vazia. Comece adicionando o seu primeiro ativo para acompanhar a sua distribuição e cotações.
@@ -809,7 +831,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
               
               <span className="relative z-10 flex items-center gap-2"><Plus size={18} strokeWidth={3} /> Adicionar Primeiro Ativo</span>
            </button>
-        </div>
+    
+    </div>
       )}
 
 
@@ -851,7 +874,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                    <Settings size={16} className="text-[#3B82F6]" />
                    <span className="hidden md:inline">{isOpenObjetivos ? 'Cancelar' : 'Editar Objetivos'}</span>
                  </button>
-               </div>
+           
+    </div>
                
                <p className="text-sm text-[#64748B] dark:text-[#94A3B8]">
                  Configure as metas ideais para a distribuição do seu patrimônio.
@@ -861,10 +885,13 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                  <div className="mt-2 flex">
                    <div className={`px-3 py-1.5 rounded-lg text-[13px] sm:text-sm font-bold text-center border ${totalObjective === 100 ? 'bg-green-50 dark:bg-green-900/10 border-green-100 dark:border-green-800 text-green-700 dark:text-green-400' : 'bg-red-50 dark:bg-red-900/10 border-red-100 dark:border-red-800 text-red-700 dark:text-red-400'}`}>
                      Total: {totalObjective}% {totalObjective !== 100 && '(Ajuste para 100%)'}
-                   </div>
-                 </div>
+               
+    </div>
+             
+    </div>
                )}
-            </div>
+        
+    </div>
 
             <AnimatePresence>
               {isOpenObjetivos && (
@@ -880,12 +907,14 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                          <div className="flex items-center gap-3 w-40 shrink-0">
                             <div className="w-2.5 h-2.5 rounded-full" style={{backgroundColor: row.cor}}></div>
                             <span className="font-bold text-[#0F172A] dark:text-white text-sm">{row.nome}</span>
-                         </div>
+                     
+    </div>
                          
                          <div className="flex items-center gap-4 flex-1">
                            <div className="bg-white dark:bg-[#0B0F19] border border-[#E2E8F0] dark:border-[#334155] rounded-lg px-3 py-1.5 w-16 text-center shrink-0 shadow-sm">
                              <span className="font-bold text-sm text-[#0F172A] dark:text-white">{row.objetivo}%</span>
-                           </div>
+                       
+    </div>
                            
                            <input 
                               type="range"
@@ -894,21 +923,35 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                               step="1"
                               value={row.objetivo}
                               onChange={(e) => handleObjectiveChange(row.id, e.target.value)}
-                              onMouseUp={(e) => handleObjectiveSave(row.id, e.currentTarget.value)}
-                              onTouchEnd={(e) => handleObjectiveSave(row.id, e.currentTarget.value)}
                               className="w-full h-1.5 bg-[#E2E8F0] dark:bg-[#334155] rounded-lg appearance-none cursor-pointer accent-[#2563EB]"
                            />
-                         </div>
-                       </div>
+                     
+    </div>
+                   
+    </div>
                     ))}
-                  </div>
+                    
+                    <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#1E293B] flex justify-end">
+                      <button 
+                        onClick={handleSaveAllObjectives}
+                        disabled={totalObjective !== 100}
+                        className="btn-salvar w-full md:w-auto"
+                      >
+                        Salvar Configuração
+                      </button>
+                
+    </div>
+              
+    </div>
                 </motion.div>
               )}
             </AnimatePresence>
-          </div>
+      
+    </div>
           
           <ConfiguracaoMetasInline activeProfileId={activeProfileId} />
-        </div>
+    
+    </div>
       )}
 
       {/* Lista de Ativos Plana (Estilo Fundamentei) */}
@@ -924,7 +967,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                 autoComplete="off"
                 className="w-full border border-[#E2E8F0] dark:border-[#1E293B] rounded-xl px-4 py-2 bg-[#F8FAFC] dark:bg-[#0F172A] text-[#0F172A] dark:text-white font-medium outline-none focus:border-[#2563EB] dark:focus:border-[#3B82F6] transition-colors shadow-sm dark:[color-scheme:dark]"
               />
-            </div>
+        
+    </div>
             <div className="w-full sm:w-[200px]">
               <div className="relative z-[60]">
                 <CustomDropdown 
@@ -935,8 +979,10 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                     ...CLASSES_ATIVOS_OPCOES.map(opt => ({ value: opt.id, label: opt.nome }))
                   ]}
                 />
-              </div>
-            </div>
+          
+    </div>
+        
+    </div>
             <div className="w-full sm:w-[200px]">
               <div className="relative z-[55]">
                 <CustomDropdown 
@@ -949,18 +995,29 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                     { value: 'distancia', label: 'Distância %' }
                   ]}
                 />
-              </div>
-            </div>
-            <div className="w-full sm:w-auto">
+          
+    </div>
+        
+    </div>
+            <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+              <button 
+                onClick={() => setIsGraficosModalOpen(true)}
+                className="flex items-center justify-center border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#64748B] dark:text-[#94A3B8] hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-[#0F172A] dark:hover:text-white rounded-[100px] w-[44px] h-[44px] shadow-sm transition-all group cursor-pointer shrink-0"
+                title="Visualizar Gráficos"
+              >
+                <PieChart size={20} strokeWidth={2.5} className="transition-transform group-hover:scale-110" />
+              </button>
               <button 
                 onClick={() => { setNovoAtivo({ classe: "acoes-br", ticker: "", qtd: "" }); setIsModalOpen(true); }}
-                className="flex items-center justify-center gap-0 md:gap-[8px] border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent dark:bg-transparent text-[#2563EB] dark:text-[#3B82F6] hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-[#1D4ED8] dark:hover:text-[#60A5FA] rounded-[100px] w-full md:w-auto h-[44px] md:h-auto px-[22px] py-[10px] font-bold text-[14px] shadow-sm transition-all group cursor-pointer"
+                className="flex items-center justify-center border border-[#E2E8F0] dark:border-[#1E293B] bg-transparent text-[#2563EB] dark:text-[#3B82F6] hover:bg-slate-50 dark:hover:bg-slate-800/50 hover:text-[#1D4ED8] dark:hover:text-[#60A5FA] rounded-[100px] w-[44px] h-[44px] shadow-sm transition-all group cursor-pointer shrink-0"
+                title="Novo Ativo"
               >
-                <Plus size={20} strokeWidth={3} className="md:w-[15px] md:h-[15px] transition-transform group-hover:scale-110 mr-1 md:mr-0" />
-                <span className="uppercase">Novo Ativo</span>
+                <Plus size={20} strokeWidth={2.5} className="transition-transform group-hover:scale-110" />
               </button>
-            </div>
-          </div>
+        
+    </div>
+      
+    </div>
           
           {filteredAtivos.length > 0 ? (
           <>
@@ -1008,7 +1065,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                       <div className="text-left pl-2 flex flex-col gap-0.5">
                         <span className="font-bold text-[#0F172A] dark:text-white text-[14px]" style={{ color: ativo.classeCor }}>{ativo.ticker}</span>
                         <span className="text-[11px] font-medium text-[#64748B] dark:text-[#94A3B8]">{ativo.classeNome}</span>
-                      </div>
+                  
+    </div>
                       
                       <div className="text-center flex justify-center">
                         {ativo.classeId === 'renda-fixa' ? (
@@ -1025,7 +1083,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                               <span className="text-[14px] text-[#0F172A] dark:text-white font-bold">
                                 {formatQuantity(ativo.qtd)}
                               </span>
-                            </div>
+                        
+    </div>
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleOpenOrdemModal(ativo.id); }} 
                               className="border border-[#E2E8F0] dark:border-[#1E293B] rounded-full p-1.5 text-[#64748B] dark:text-[#94A3B8] hover:text-[#2563EB] dark:hover:text-blue-400 hover:bg-[#F8FAFC] dark:hover:bg-[#1E293B] bg-white dark:bg-[#0B0F19] transition-colors"
@@ -1033,21 +1092,25 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                             >
                               <ArrowRightLeft size={14} strokeWidth={3} />
                             </button>
-                          </div>
+                      
+    </div>
                         )}
-                      </div>
+                  
+    </div>
 
                       <div className="text-center">
                         <span className="text-[14px] text-[#0F172A] dark:text-white font-medium text-nowrap">
                           {ativo.classeId === 'renda-fixa' ? formatCurrency(ativo.qtd, moeda) : formatCurrency(ativo.cotacao, moeda)}
                         </span>
-                      </div>
+                  
+    </div>
 
                       <div className="text-center">
                         <span className="text-[14px] text-[#2563EB] dark:text-blue-400 font-bold text-nowrap">
                           {ativo.total === 0 && ativo.isSyncing ? '--' : formatCurrency(ativo.total, moeda)}
                         </span>
-                      </div>
+                  
+    </div>
 
                       <div className="flex flex-col justify-center items-center">
                         <div className="flex items-center justify-center gap-0.5 border border-[#E2E8F0] dark:border-[#1E293B] bg-[#F8FAFC] dark:bg-[#0F172A] rounded-full px-2 py-0.5">
@@ -1059,26 +1122,35 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                             onChange={(e) => handleObjetivoChange(ativo.id, e.target.value.replace(/[^0-9.]/g, ''))}
                             onBlur={(e) => handleObjetivoBlur(ativo.id, e.target.value)}
                           />
-                        </div>
-                      </div>
+                    
+    </div>
+                  
+    </div>
 
                       <div className="text-center flex justify-center">
                         <div className={`px-3 py-1 rounded-full font-bold text-[13px] whitespace-nowrap ${(ativo.diferenca ?? 0) >= 0 ? (totalFormat === 'financeiro' || totalFormat === 'quantidade' ? 'text-[#64748B] dark:text-[#94A3B8]' : 'bg-[#DCFCE7] dark:bg-green-900/20 text-[#16A34A] dark:text-green-400') : 'bg-[#FEE2E2] dark:bg-red-900/20 text-[#EF4444] dark:text-red-400'}`}>
                           {renderDiferenca(ativo)}
-                        </div>
-                      </div>
+                    
+    </div>
+                  
+    </div>
 
                       <div className="flex items-center justify-end gap-1">
                         <button onClick={(e) => { e.stopPropagation(); deleteAtivo(ativo.id); }} className="p-1.5 text-[#64748B] dark:text-[#94A3B8] hover:text-[#EF4444] dark:hover:text-red-400 hover:bg-[#FEE2E2] dark:hover:bg-red-900/20 rounded-lg transition-colors" title="Excluir">
                           <Trash2 size={16} />
                         </button>
-                      </div>
+                  
+    </div>
 
-                    </div>
+                
+    </div>
                   ))}
-                </div>
-              </div>
-            </div>
+            
+    </div>
+          
+    </div>
+        
+    </div>
 
             {/* Mobile Layout */}
             <div className="md:hidden flex flex-col gap-3">
@@ -1089,7 +1161,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                     <div className="flex items-center gap-2">
                       <span className="font-black text-[#0F172A] dark:text-white text-[16px]" style={{ color: ativo.classeCor }}>{ativo.ticker}</span>
                       <span className="text-[11px] font-medium text-[#64748B] dark:text-[#94A3B8] border border-[#E2E8F0] dark:border-[#1E293B] px-1.5 py-0.5 rounded-md">{ativo.classeNome}</span>
-                    </div>
+                
+    </div>
                     <div className="flex items-center gap-1">
                       <button 
                         onClick={(e) => { e.stopPropagation(); deleteAtivo(ativo.id); }} 
@@ -1097,33 +1170,42 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                       >
                         <Trash2 size={16} />
                       </button>
-                    </div>
-                  </div>
+                
+    </div>
+              
+    </div>
 
                   {/* Main Data */}
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <span className="block text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Preço Atual</span>
                       <span className="font-bold text-[#0F172A] dark:text-white">{ativo.classeId === 'renda-fixa' ? formatCurrency(ativo.qtd, moeda) : formatCurrency(ativo.cotacao, moeda)}</span>
-                    </div>
+                
+    </div>
                     <div>
                       <span className="block text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Posição</span>
                       <span className="font-bold text-[#0F172A] dark:text-white">{ativo.classeId === 'renda-fixa' ? '-' : formatQuantity(ativo.qtd)}</span>
-                    </div>
+                
+    </div>
                     <div>
                       <span className="block text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">Total ({moeda})</span>
                       <span className="font-black text-[#0F172A] dark:text-white">{ativo.total === 0 && ativo.isSyncing ? '--' : formatCurrency(ativo.total, moeda)}</span>
-                    </div>
+                
+    </div>
                     <div>
                       <span className="block text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-1">% Ideal</span>
                       <div className="flex items-center gap-2">
                         <div className="flex-1 h-1.5 bg-[#E2E8F0] dark:bg-[#334155] rounded-full overflow-hidden">
                           <div className="h-full rounded-full" style={{ width: `${Math.min(ativo.percentualIdeal || 0, 100)}%`, backgroundColor: ativo.classeCor }}></div>
-                        </div>
+                    
+    </div>
                         <span className="font-bold text-[#0F172A] dark:text-white">{formatPercent(ativo.percentualIdeal || 0)}</span>
-                      </div>
-                    </div>
-                  </div>
+                  
+    </div>
+                
+    </div>
+              
+    </div>
                   
                   {/* Footer Stats */}
                   <div className="pt-3 border-t border-[#E2E8F0] dark:border-[#1E293B] flex items-center justify-between">
@@ -1139,22 +1221,30 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                           onBlur={(e) => handleObjetivoBlur(ativo.id, e.target.value)}
                         />
                         <span className="text-[12px] font-bold text-[#64748B] dark:text-[#94A3B8]">%</span>
-                      </div>
-                    </div>
+                  
+    </div>
+                
+    </div>
                     <div className={`px-3 py-1.5 rounded-full font-bold text-[13px] whitespace-nowrap ${(ativo.diferenca ?? 0) >= 0 ? (totalFormat === 'financeiro' || totalFormat === 'quantidade' ? 'text-[#64748B] dark:text-[#94A3B8]' : 'bg-[#DCFCE7] dark:bg-green-900/20 text-[#16A34A] dark:text-green-400') : 'bg-[#FEE2E2] dark:bg-red-900/20 text-[#EF4444] dark:text-red-400'}`}>
                       {renderDiferenca(ativo)}
-                    </div>
-                  </div>
-                </div>
+                
+    </div>
+              
+    </div>
+            
+    </div>
               ))}
-            </div>
+        
+    </div>
           </>
           ) : (
             <div className="py-10 text-center text-[#64748B] dark:text-[#94A3B8]">
               Nenhum ativo encontrado nesta classe.
-            </div>
+        
+    </div>
           )}
-        </div>
+    
+    </div>
       )}
 
       {/* Modal Adicionar Novo Ativo */}
@@ -1173,7 +1263,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
               >
                 <X size={20} />
               </button>
-            </div>
+        
+    </div>
             
             <div className="p-6 space-y-4 overflow-visible relative z-20">
               <div>
@@ -1186,8 +1277,10 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                     onChange={(val) => setNovoAtivo({...novoAtivo, classe: val})}
                     options={CLASSES_ATIVOS_OPCOES.map(opt => ({ value: opt.id, label: opt.nome }))}
                   />
-                </div>
-              </div>
+            
+    </div>
+          
+    </div>
               <div>
                 <label className="block text-[11px] font-[700] text-[#64748B] dark:text-[#94A3B8] uppercase tracking-wider mb-2">
                   Nome
@@ -1201,8 +1294,10 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                   value={novoAtivo.ticker}
                   onChange={(e) => setNovoAtivo({...novoAtivo, ticker: e.target.value})}
                 />
-              </div>
-            </div>
+          
+    </div>
+        
+    </div>
             <div className="p-6 bg-transparent border-t border-[#E2E8F0] dark:border-[#1E293B] flex justify-end gap-3 relative z-10">
               <button 
                 onClick={() => setIsModalOpen(false)}
@@ -1226,9 +1321,11 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                   ) : 'Salvar Ativo' }
                 </span>
               </button>
-            </div>
+        
+    </div>
           </motion.div>
-        </div>
+    
+    </div>
       )}
 
       {/* Modal Nova Ordem */}
@@ -1247,7 +1344,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
               >
                 <X size={20} />
               </button>
-            </div>
+        
+    </div>
             
             <div className="p-5 space-y-[12px] overflow-y-auto">
               
@@ -1256,7 +1354,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                 <span className="text-[20px] font-black text-[#0F172A] dark:text-white tracking-tight">
                   {currentAtivoForOrdem?.ticker_original || currentAtivoForOrdem?.ticker || ''}
                 </span>
-              </div>
+          
+    </div>
 
               {/* Tipo de Ordem */}
               <div className="flex gap-[10px]">
@@ -1290,7 +1389,8 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                 >
                   {ordemClasse === 'renda-fixa' ? 'Total Atual' : 'Ajustar'}
                 </button>
-              </div>
+          
+    </div>
 
               {/* Input Valor / Quantidade */}
               <div>
@@ -1322,8 +1422,10 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                       }
                     }}
                   />
-                </div>
-              </div>
+            
+    </div>
+          
+    </div>
 
               {/* Preview Qtd / Valor */}
               <div className="w-full bg-gradient-to-br from-[#1E293B] to-[#0F172A] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-2xl p-4 flex justify-between items-center shadow-lg border border-[#334155] dark:border-[#1E293B]"> 
@@ -1332,13 +1434,16 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                   <span className="font-[800] text-white text-[18px]">
                     {ordemClasse === 'renda-fixa' ? formatCurrency(currentQtdForOrdem, moeda) : formatQuantity(currentQtdForOrdem)}
                   </span>
-                </div>
+            
+    </div>
                 
                 <div className="text-[#475569] flex items-center justify-center px-4">
                   <div className="w-8 h-8 rounded-full bg-[#334155] dark:bg-[#1E293B] flex items-center justify-center shadow-inner">
                     <ArrowRight size={14} className="text-[#94A3B8]" />
-                  </div>
-                </div>
+              
+    </div>
+            
+    </div>
                 
                 <div className="flex flex-col items-center flex-1">
                   <span className="text-[10px] font-[800] text-[#94A3B8] uppercase tracking-widest mb-1">
@@ -1349,10 +1454,13 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                   }`}>
                     {ordemAtivoId ? (ordemClasse === 'renda-fixa' ? formatCurrency(newQtdForOrdem < 0 ? 0 : newQtdForOrdem, moeda) : formatQuantity(newQtdForOrdem < 0 ? 0 : newQtdForOrdem)) : '0'}
                   </span>
-                </div>
-              </div>
+            
+    </div>
+          
+    </div>
 
-            </div>
+        
+    </div>
 
             <div className="p-4 bg-transparent border-t border-[#E2E8F0] dark:border-[#1E293B] flex justify-center gap-3 rounded-b-[24px]">
               <button 
@@ -1374,10 +1482,14 @@ export function InvestimentosAtivos({ activeProfileId, activeProfile, updateProf
                   </>
                 ) : 'Salvar Ordem'}
               </button>
-            </div>
+        
+    </div>
           </motion.div>
-        </div>
+    
+    </div>
       )}
+
+      <GraficosPosicoesModal isOpen={isGraficosModalOpen} onClose={() => setIsGraficosModalOpen(false)} cardData={cardData} />
     </div>
   );
 }
