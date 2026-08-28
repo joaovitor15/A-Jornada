@@ -5,7 +5,6 @@ import { supabase } from '../supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardFaturaDashboard } from './CardFaturaDashboard';
-import { CardFaturaMini } from './CardFaturaMini';
 import { CardProvisoesDashboard } from './CardProvisoesDashboard';
 import { useProfiles } from '../hooks/useProfiles';
 
@@ -55,19 +54,15 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
   const [saldoAnterior, setSaldoAnterior] = useState(0);
   const [receitasValor, setReceitasValor] = useState(0);
-  const [receitasNoMes, setReceitasNoMes] = useState(0);
   const [despesasValor, setDespesasValor] = useState(0);
   const [investimentosValor, setInvestimentosValor] = useState(0);
   const [cartoesValor, setCartoesValor] = useState(0);
   const [cartoesDisplayTotal, setCartoesDisplayTotal] = useState(0);
-  const [faturaCartaoPendente, setFaturaCartaoPendente] = useState(0);
   const [cartoesPago, setCartoesPago] = useState(false);
   const [receitasPago, setReceitasPago] = useState(0);
   const [receitasPrevisto, setReceitasPrevisto] = useState(0);
   const [despesasPago, setDespesasPago] = useState(0);
   const [despesasPrevisto, setDespesasPrevisto] = useState(0);
-  const [despesasValorExibicao, setDespesasValorExibicao] = useState(0);
-  const [despesasPrevistoExibicao, setDespesasPrevistoExibicao] = useState(0);
   const [investimentosPrevisto, setInvestimentosPrevisto] = useState(0);
   const [economiaDespesas, setEconomiaDespesas] = useState(0);
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
@@ -94,152 +89,140 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         .eq('profile_id', activeProfileId);
 
       const cutoffDate = `${an}-${mesStr}-01`;
-      const antDataAllToUse = antDataAll || [];
+      const antData = antDataAll?.filter(t => t.card_id === null && (t.data || '') < cutoffDate) || [];
+
+      let saldoAntCalcAcumulado = 0;
+      if (activeProfileType !== 'empresa' && antData) {
+          antData.forEach(t => {
+              if (t.status === 'ignorado') return;
+              if (t.status === 'previsto') return;
+              const vl = t.valor;
+              const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
+              const isFarmacia = activeProfileType === 'empresa' && (tagCat === 'farmácia popular' || tagCat === 'farmacia popular');
+              
+              if (!isFarmacia) {
+                if (tagCat === 'investimentos') {
+                    if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                    else saldoAntCalcAcumulado -= (vl || 0);
+                } else {
+                    if (t.tipo === 'receita') saldoAntCalcAcumulado += (vl || 0);
+                    else if (t.tipo === 'despesa') saldoAntCalcAcumulado -= (vl || 0);
+                }
+              }
+          });
+      }
+      // setSaldoAnterior será chamado no final, após contabilizar faturas
+
+      const { data: receitas } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'receita')
+        .is('card_id', null)
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
+      const { data: despesas } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'despesa')
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
+      const { data: transferencias } = await supabase
+        .from('transacoes')
+        .select(`
+          *,
+          tags ( id, nome, categories!tags_category_id_fkey ( id, nome, cor ) )
+        `)
+        .eq('profile_id', activeProfileId)
+        .eq('tipo', 'transferencia')
+        .gte('data', `${an}-${mesStr}-01`)
+        .lte('data', `${an}-${mesStr}-${ultimoDia}`);
+
+      // Separar receitas por pago vs previsto
+      const recsArrOriginal = receitas || [];
+      const dspsArrOriginal = despesas || [];
+      const transfersArrOriginal = transferencias || [];
+
+      const isFarmaciaPopular = (catName?: string) => {
+        if (!catName || activeProfileType !== 'empresa') return false;
+        const lower = catName.toLowerCase();
+        return lower === 'farmácia popular' || lower === 'farmacia popular';
+      };
+
+      const recsArr = recsArrOriginal.filter(r => {
+        const catName = r.tags?.categories?.nome?.toLowerCase();
+        return catName !== 'investimentos' && !isFarmaciaPopular(r.tags?.categories?.nome);
+      });
+      const dspsArr = dspsArrOriginal.filter(d => d.tags?.categories?.nome?.toLowerCase() !== 'investimentos');
+
+      const invesArr = [
+        ...recsArrOriginal.filter(r => r.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
+        ...dspsArrOriginal.filter(d => !d.card_id && d.tags?.categories?.nome?.toLowerCase() === 'investimentos'),
+        ...transfersArrOriginal.filter(t => t.tags?.categories?.nome?.toLowerCase() === 'investimentos' || t.descricao?.toLowerCase().includes('investimento'))
+      ];
+
+      const sumRecsPago = recsArr.filter(r => r.status !== 'previsto' && r.status !== 'ignorado' && !r.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumRecsPrev = recsArr.filter(r => r.status === 'previsto' && !r.card_id).reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+
+      const sumDspsPago = dspsArr.filter(d => d.status !== 'previsto' && d.status !== 'ignorado' && !d.card_id).reduce((acc, obj) => acc + (obj.valor || 0), 0);
+      const sumDspsPrev = dspsArr.filter(d => d.status === 'previsto' && !d.card_id).reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+
+      // Separar investimentos por pago e previsto
+      const sumInvesPago = invesArr.filter(d => d.status !== 'previsto' && d.status !== 'ignorado').reduce((acc, obj) => {
+          if (obj.tipo === 'receita') return acc - (obj.valor || 0);
+          return acc + (obj.valor || 0);
+      }, 0);
+      const sumInvesPrev = invesArr.filter(d => d.status === 'previsto' && d.status !== 'ignorado' && d.tipo === 'despesa').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+      const sumInvesPrevRec = invesArr.filter(d => d.status === 'previsto' && d.status !== 'ignorado' && d.tipo === 'receita').reduce((acc, obj) => acc + (obj.valor_previsto !== undefined && obj.valor_previsto !== null ? obj.valor_previsto : obj.valor || 0), 0);
+
+      // Calcular economia (valor_previsto - valor) para despesas ja pagas
+      const paidDespesasWithPrev = dspsArr.filter(d => d.status !== 'previsto' && !d.card_id && d.valor_previsto !== undefined && d.valor_previsto !== null);
+      const calcEconomia = paidDespesasWithPrev.reduce((acc, d) => acc + ((d.valor_previsto || d.valor) - d.valor), 0);
+
+      // --- FETCH RECORRENTES PARA INCLUIR NA PROVISÃO ---
       const { data: recorrentesRaw, error: recError } = await supabase
         .from('transacoes_recorrentes')
         .select('*, categories (id, nome, cor), tags (id, nome)')
         .eq('profile_id', activeProfileId)
         .eq('ativa', true);
 
-      
-      let pastRecPago = 0;
-      let pastDespPago = 0;
-      let pastInvestPago = 0;
-      let pastDespPrev = 0;
-      
-      // Calculate from all transactions before this month
-      antDataAllToUse.forEach(t => {
-          if (t.status === 'ignorado') return;
-          if (!t.data || t.data >= cutoffDate) return;
-          if (t.card_id !== null) return;
-          
-          const vl = Number(t.status === 'previsto' ? (t.valor_previsto || t.valor) : t.valor) || 0;
-          const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
-          const isFarmacia = activeProfileType === 'empresa' && (tagCat === 'farmácia popular' || tagCat === 'farmacia popular');
-          if (isFarmacia) return;
-          
-          if (t.status === 'previsto') {
-              if (t.tipo === 'despesa' && tagCat !== 'investimentos') {
-                  pastDespPrev += vl;
-              }
-          } else {
-              if (t.tipo === 'receita') pastRecPago += vl;
-              else if (t.tipo === 'despesa') {
-                  if (tagCat === 'investimentos') pastInvestPago += vl;
-                  else pastDespPago += vl;
-              }
-          }
-      });
-      
-      let pastDespPrevRec = 0;
-      if (recorrentesRaw) {
-          recorrentesRaw.forEach(rec => {
-              if (rec.lancamento_rapido) return;
-              if (rec.tipo !== 'despesa') return; // Only despesas deduct from Saldo Final
-              if (rec.card_id !== null) return;
-              
-              const recCat = rec.categories?.nome?.toLowerCase();
-              if (recCat === 'investimentos') return;
-              
-              const launchDateStr = rec.ultima_lancada || rec.created_at;
-              if (!launchDateStr) return;
-              
-              const launchDate = new Date(launchDateStr);
-              const startYear = launchDate.getFullYear();
-              const startMonth = launchDate.getMonth();
-              
-              const targetYear = an;
-              const targetMonth = ms - 1;
-              const totalMonths = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-              
-              for (let i = 0; i < totalMonths; i++) {
-                  const currM = (startMonth + i) % 12;
-                  const currY = startYear + Math.floor((startMonth + i) / 12);
-                  
-                  let shouldRender = true;
-                  if (rec.num_parcelas && rec.num_parcelas > 1) {
-                      if (i >= rec.num_parcelas) shouldRender = false;
-                  }
-                  if (rec.frequencia === 'anual') {
-                      const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
-                      if (currM !== tMonth) shouldRender = false;
-                  }
-                  
-                  if (shouldRender) {
-                      const dtPrefix = `${currY}-${String(currM+1).padStart(2, '0')}`;
-                      const launched = antDataAllToUse.find(t => t.recorrente_id === rec.id && t.data && t.data.startsWith(dtPrefix));
-                      if (!launched) {
-                          pastDespPrevRec += Number(rec.valor) || 0;
-                      }
-                  }
-              }
-          });
+      if (recError) {
+        console.error("Error fetching recorrentes for dashboard:", recError);
       }
-      
 
-      let unpaidTarget = 0;
-      let cartoesBeneficio = 0;
-      let faturaTotalGasto = 0;
-      
-      const combinedPending: any[] = [];
+      let sumDspsPrevRecorrente = 0;
+      let sumRecsPrevRecorrente = 0;
+      let sumInvesPrevRecorrente = 0;
+            const combinedPending: any[] = [];
       const lancamentosRapidos: any[] = [];
-      
-      const currentMonthPrefix = `${an}-${mesStr}`;
-      
-      const dspsArr = antDataAllToUse.filter(t => t.tipo === 'despesa' && t.card_id === null && t.data && t.data.startsWith(currentMonthPrefix) && t.status !== 'ignorado');
-      const recsArr = antDataAllToUse.filter(t => t.tipo === 'receita' && t.card_id === null && t.data && t.data.startsWith(currentMonthPrefix) && t.status !== 'ignorado');
-      const invesArr = dspsArr.filter(t => (t.tags as any)?.categories?.nome?.toLowerCase() === 'investimentos');
-      
-      let sumRecsPago = 0;
-      recsArr.forEach(t => {
-          if (t.status !== 'previsto') {
-              const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
-              const isFarmacia = activeProfileType === 'empresa' && (tagCat === 'farmácia popular' || tagCat === 'farmacia popular');
-              if (!isFarmacia) sumRecsPago += Number(t.valor) || 0;
+
+      const calculatePaymentData = (rec: any, tDay: number, tYear: number, tMonthIdx: number) => {
+          let paymentData = `${tYear}-${String(tMonthIdx + 1).padStart(2, '0')}-${String(tDay).padStart(2, '0')}`;
+          if (activeProfileType === 'empresa' && rec.dia_vencimento) {
+              let pYear = tYear;
+              let pMonth = tMonthIdx;
+              let dVenc = Number(rec.dia_vencimento);
+              if (rec.dia_emissao && dVenc < Number(rec.dia_emissao)) {
+                  pMonth += 1;
+                  if (pMonth > 11) { pMonth = 0; pYear += 1; }
+              }
+              const maxD = new Date(pYear, pMonth + 1, 0).getDate();
+              if (dVenc > maxD) dVenc = maxD;
+              if (dVenc < 1) dVenc = 1;
+              paymentData = `${pYear}-${String(pMonth + 1).padStart(2, '0')}-${String(dVenc).padStart(2, '0')}`;
           }
-      });
-      
+          return paymentData;
+      };
 
-      let currentRecsPago = 0;
-      let currentRecsPrev = 0;
-      let currentDspsPago = 0;
-      let currentDspsPrev = 0;
-      let currentInvesPago = 0;
-      let currentInvesPrev = 0;
-
-      recsArr.forEach(t => {
-          if (t.status === 'previsto') currentRecsPrev += (t.valor_previsto || t.valor || 0);
-          else currentRecsPago += (t.valor || 0);
-      });
-
-      const dspsArrFull = antDataAllToUse.filter(t => t.tipo === 'despesa' && t.data && t.data.startsWith(currentMonthPrefix) && t.status !== 'ignorado');
-      let currentDspsPagoExibicao = 0;
-      let currentDspsPrevExibicao = 0;
-      
-      dspsArrFull.forEach(t => {
-          const isInvest = (t.tags as any)?.categories?.nome?.toLowerCase() === 'investimentos';
-          if (!isInvest) {
-              if (t.status === 'previsto') currentDspsPrevExibicao += (t.valor_previsto || t.valor || 0);
-              else currentDspsPagoExibicao += (t.valor || 0);
-          }
-      });
-
-      dspsArr.forEach(t => {
-          const isInvest = (t.tags as any)?.categories?.nome?.toLowerCase() === 'investimentos';
-          if (isInvest) {
-              if (t.status === 'previsto') currentInvesPrev += (t.valor_previsto || t.valor || 0);
-              else currentInvesPago += (t.valor || 0);
-          } else {
-              if (t.status === 'previsto') currentDspsPrev += (t.valor_previsto || t.valor || 0);
-              else currentDspsPago += (t.valor || 0);
-          }
-      });
-      
-      let currentDspsPrevRec = 0;
-      let currentRecsPrevRec = 0;
-      let currentInvesPrevRec = 0;
-      let currentDspsPrevRecExibicao = 0;
-      
       if (recorrentesRaw) {
           recorrentesRaw.forEach(rec => {
               if (rec.lancamento_rapido) {
@@ -256,61 +239,265 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                   });
                   return;
               }
-              
-              const recCat = rec.categories?.nome?.toLowerCase();
-              const isInvest = recCat === 'investimentos';
+              const recCatName = rec.categories?.nome || '';
 
-              
-              const launchDateStr = rec.ultima_lancada || rec.created_at;
+              const launchDateStr = rec.ultima_lancada;
               let startYear = new Date().getFullYear();
               let startMonth = new Date().getMonth();
-              if (launchDateStr) {
+              let shouldRender = true;
+
+              if (!launchDateStr) {
+                  shouldRender = false;
+              } else {
                   const launchDate = new Date(launchDateStr);
                   startYear = launchDate.getFullYear();
                   startMonth = launchDate.getMonth();
               }
-              
-              const targetYear = an;
-              const targetMonth = ms - 1;
-              const monthDiff = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-              
-              let shouldRender = true;
+
+              const activeYear = launchDateStr ? new Date(launchDateStr).getFullYear() : startYear;
+
+              const targetYear = anoSelecionado;
+              const monthIdx = mesSelecionado - 1;
+              const monthDiff = (targetYear - startYear) * 12 + (monthIdx - startMonth);
+
               if (rec.num_parcelas && rec.num_parcelas > 1) {
                   if (monthDiff < 0 || monthDiff >= rec.num_parcelas) shouldRender = false;
               }
               if (rec.frequencia === 'anual') {
                   const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
-                  if (targetMonth !== tMonth) shouldRender = false;
+                  if (monthIdx !== tMonth) shouldRender = false;
               }
+
+              const effStartYear = isNaN(startYear) ? new Date().getFullYear() : startYear;
+              const effStartMonth = isNaN(startMonth) ? new Date().getMonth() : startMonth;
               
-              if (shouldRender) {
-                  const dtPrefix = `${targetYear}-${String(targetMonth+1).padStart(2, '0')}`;
-                  const launched = antDataAllToUse.find(t => t.recorrente_id === rec.id && t.data && t.data.startsWith(dtPrefix));
-                  if (!launched) {
-                      // For EXIBICAO (Includes cards)
-                      if (rec.tipo === 'despesa' && !isInvest) {
-                          currentDspsPrevRecExibicao += Number(rec.valor) || 0;
+              for (let y = effStartYear; y <= targetYear; y++) {
+                  const mStart = (y === effStartYear) ? effStartMonth : 0;
+                  const mEnd = (y === targetYear) ? (monthIdx - 1) : 11;
+                  for (let m = mStart; m <= mEnd; m++) {
+                      let shouldExist = true;
+                      const diffM = (y - effStartYear) * 12 + (m - effStartMonth);
+                      if (rec.num_parcelas && rec.num_parcelas > 1) {
+                          if (diffM < 0 || diffM >= rec.num_parcelas) shouldExist = false;
                       }
-                      
-                      // For Saldo Final (Excludes cards)
-                      if (rec.card_id === null) {
-                          if (rec.tipo === 'receita') currentRecsPrevRec += Number(rec.valor) || 0;
-                          else if (rec.tipo === 'despesa') {
-                              if (isInvest) currentInvesPrevRec += Number(rec.valor) || 0;
-                              else currentDspsPrevRec += Number(rec.valor) || 0;
+                      if (rec.frequencia === 'anual') {
+                          const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
+                          if (m !== tMonth) shouldExist = false;
+                      }
+                      if (!shouldExist) continue;
+
+                      const checkData = [...(antDataAll || []), ...recsArrOriginal, ...dspsArrOriginal, ...transfersArrOriginal];
+                      const isMatchedInPast = checkData.find(t => {
+                          const refTag = `(Ref: ${String(m + 1).padStart(2, '0')}/${y})`;
+                          if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                            return true;
+                          }
+
+                          if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                            return false;
+                          }
+
+                          if (!t.data) return false;
+                          const tDate = new Date(t.data + 'T12:00:00Z');
+                          if (tDate.getFullYear() !== y || tDate.getMonth() !== m) return false;
+                          
+                          if (t.recorrente_id === rec.id) {
+                              let currentParcela = 1;
+                              if (rec.num_parcelas && rec.num_parcelas > 1) {
+                                  currentParcela = diffM + 1;
+                              }
+                              if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                                  return false;
+                              }
+                              return true;
+                          }
+                          if (t.recorrente_id) return false;
+                          
+                          const safeDesc = t.descricao || '';
+                          const cleanRecName = rec.nome || '';
+                          const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                            cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                          if (nameMatch) {
+                              let diffOk = true;
+                              if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+                                  const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                                  if (diff > 0.01) diffOk = false;
+                              }
+                              
+                              if (diffOk) {
+                                  return true;
+                              }
+                          }
+                          return false;
+                      });
+
+                      if (!isMatchedInPast && activeProfileType !== 'empresa') {
+                          const isPastIgnored = (rec.exclusoes_pontuais || []).includes(`${y}_${m}`);
+                          if (!isPastIgnored) {
+                              let historicValue = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+                              if (rec.valor === null || rec.valor === 0) {
+                                  const realizadosAnteriores = (antDataAll || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                                  if (realizadosAnteriores.length > 0) {
+                                      const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+                                      historicValue = soma / realizadosAnteriores.length;
+                                  }
+                              }
+
+                              const recCatName = rec.categories?.nome?.toLowerCase() || '';
+                              if (recCatName !== 'investimentos') {
+                                                                }
                           }
                       }
-                      
-                      const tDay = rec.dia_vencimento || 1;
-                      if (true) {
-                        combinedPending.push({
+                  }
+              }
+
+              const projectedTimeId = targetYear * 12 + monthIdx;
+              const creationTimeId = effStartYear * 12 + effStartMonth;
+
+              if (projectedTimeId < creationTimeId) {
+                shouldRender = false;
+              }
+
+              if (!shouldRender) return;
+
+              const isIgnored = (rec.exclusoes_pontuais || []).includes(`${anoSelecionado}_${mesSelecionado - 1}`);
+              if (isIgnored) return;
+
+              let valorPrevisto = rec.valor !== null ? Math.abs(Number(rec.valor)) : 0;
+              if (rec.valor === null || rec.valor <= 0) {
+                const realizadosAnteriores = (antDataAll || []).filter(t => t.recorrente_id === rec.id && t.status !== 'previsto');
+                if (realizadosAnteriores.length > 0) {
+                  const soma = realizadosAnteriores.reduce((acc, t) => acc + Math.abs(Number(t.valor)), 0);
+                  valorPrevisto = soma / realizadosAnteriores.length;
+                } else {
+                  valorPrevisto = Math.abs(Number(rec.valor)) || 0;
+                }
+              }
+
+              if (rec.tipo === 'despesa') {
+                  // Compare with existing dspsArrOriginal, transfersArrOriginal, and past transactions
+                  const checkArr = [...(antDataAll || []), ...dspsArrOriginal, ...transfersArrOriginal];
+                  const matched = checkArr.find(t => {
+                       const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
+                       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                         return true;
+                       }
+
+                       if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                         return false;
+                       }
+
+                       if (t.recorrente_id === rec.id) {
+                           let currentParcela = 1;
+                           if (rec.num_parcelas && rec.num_parcelas > 1) {
+                               currentParcela = monthDiff + 1;
+                           }
+                           if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                               return false;
+                           }
+                           return true;
+                       }
+                       if (t.recorrente_id) return false;
+                       
+                       const safeDesc = t.descricao || '';
+                       const cleanRecName = rec.nome || '';
+                       const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                         cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                       if (nameMatch) {
+                           let diffOk = true;
+                           if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+                               const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                               if (diff > 0.01) diffOk = false;
+                           }
+                           
+                           if (diffOk) {
+                               return true;
+                           }
+                       }
+                       return false;
+                  });
+
+                  if (!matched) {
+                      if (recCatName.toLowerCase() !== 'investimentos') {
+                          sumDspsPrevRecorrente += valorPrevisto;
+                      } else {
+                          sumInvesPrevRecorrente += valorPrevisto;
+                      }
+                      const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
+                      combinedPending.push({
                           id: `rec-${rec.id}`,
                           recorrente_id: rec.id,
                           descricao: rec.nome,
-                          valor: Number(rec.valor) || 0,
-                          data: dtPrefix + '-' + String(tDay).padStart(2, '0'),
-                          tipo: rec.tipo,
-                          status: 'previsto',
+                          valor: valorPrevisto,
+                          data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
+                          payment_data: calculatePaymentData(rec, targetDay, anoSelecionado, Number(mesStr) - 1),
+                          tags: rec.tags,
+                          categories: rec.categories,
+                          isRecurrent: true,
+                          recurrentSource: rec
+                      });
+                  }
+              } else if (rec.tipo === 'receita') {
+                  // Compare with existing recsArrOriginal and past transactions
+                  const checkArr = [...(antDataAll || []), ...recsArrOriginal, ...transfersArrOriginal];
+                  const matched = checkArr.find(t => {
+                       const refTag = `(Ref: ${mesStr}/${anoSelecionado})`;
+                       if (t.recorrente_id === rec.id && t.descricao && t.descricao.includes(refTag)) {
+                         return true;
+                       }
+
+                       if (t.descricao && t.descricao.includes('(Ref:') && !t.descricao.includes(refTag)) {
+                         return false;
+                       }
+
+                       if (t.recorrente_id === rec.id) {
+                           let currentParcela = 1;
+                           if (rec.num_parcelas && rec.num_parcelas > 1) {
+                               currentParcela = monthDiff + 1;
+                           }
+                           if (t.num_parcelas && t.num_parcelas !== currentParcela) {
+                               return false;
+                           }
+                           return true;
+                       }
+                       if (t.recorrente_id) return false;
+
+                       const safeDesc = t.descricao || '';
+                       const cleanRecName = rec.nome || '';
+                       const nameMatch = safeDesc.toLowerCase().includes(cleanRecName.toLowerCase()) || 
+                                         cleanRecName.toLowerCase().includes(safeDesc.toLowerCase());
+                       if (nameMatch) {
+                           let diffOk = true;
+                           if (rec.valor !== null && rec.valor !== 0 && t.valor != null) {
+                               const diff = Math.abs((t.valor || 0) - Number(rec.valor));
+                               if (diff > 0.01) diffOk = false;
+                           }
+                           
+                           if (diffOk) {
+                               return true;
+                           }
+                       }
+                       return false;
+                  });
+
+                  if (!matched) {
+                      const recCatName = rec.categories?.nome?.toLowerCase() || '';
+                      if (recCatName !== 'investimentos') {
+                          sumRecsPrevRecorrente += valorPrevisto;
+                      } else {
+                          // we subtract from the investment prev as it's a negative investment (receipt)
+                          // wait, a receipt in investment should be in receitasPrevisto!
+                          // we can just keep sumInvesPrevRecorrente separate if needed but it's easier to add directly.
+                          sumRecsPrevRecorrente += valorPrevisto; 
+                      }
+                      const targetDay = activeProfileType === 'empresa' && rec.dia_emissao ? rec.dia_emissao : (rec.dia_vencimento || 1);
+                      combinedPending.push({
+                          id: `rec-${rec.id}`,
+                          recorrente_id: rec.id,
+                          descricao: rec.nome,
+                          valor: valorPrevisto,
+                          data: `${anoSelecionado}-${mesStr}-${String(targetDay).padStart(2, '0')}`,
+                          payment_data: calculatePaymentData(rec, targetDay, anoSelecionado, Number(mesStr) - 1),
                           tags: rec.tags,
                           categories: rec.categories,
                           isRecurrent: true,
@@ -318,30 +505,130 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
                       });
                   }
               }
-              }
           });
       }
-      
 
-      setDespesasValor(currentDspsPago);
-      setInvestimentosValor(currentInvesPago);
-      
-      setReceitasPago(currentRecsPago);
-      setReceitasPrevisto(currentRecsPrev + currentRecsPrevRec);
-      setDespesasPago(currentDspsPago);
-      setDespesasPrevisto(currentDspsPrev + currentDspsPrevRec);
-      
-      setDespesasValorExibicao(currentDspsPago);
-      setDespesasPrevistoExibicao(currentDspsPrevExibicao + currentDspsPrevRecExibicao);
-      
-      setInvestimentosPrevisto(currentInvesPrev + currentInvesPrevRec);
-      
-      setEconomiaDespesas(Math.max(0, (currentDspsPrev + currentDspsPrevRec) - currentDspsPago));
-      const finalSaldoAnterior = pastRecPago - pastDespPago - pastInvestPago - pastDespPrev - pastDespPrevRec;
+      setReceitasPago(sumRecsPago);
+      setReceitasPrevisto(sumRecsPrev + sumRecsPrevRecorrente + sumInvesPrevRec);
+      setDespesasPago(sumDspsPago);
+      setDespesasPrevisto(sumDspsPrev + sumDspsPrevRecorrente);
+      setInvestimentosPrevisto(sumInvesPrev + sumInvesPrevRecorrente);
+      setEconomiaDespesas(calcEconomia);
 
-      setSaldoAnterior(finalSaldoAnterior);
-      setReceitasValor(sumRecsPago + finalSaldoAnterior);
-      setReceitasNoMes(sumRecsPago);
+      // receitasValor e despesasValor representam o que de fato ocorreu para manter a integridade do saldo e graficos
+      // receitasValor será atualizado no final
+      setDespesasValor(sumDspsPago);
+      setInvestimentosValor(sumInvesPago);
+
+      // --- LOGICA DO CARTAO ---
+      const { data: userCards } = await supabase
+        .from('cards')
+        .select('*')
+        .eq('profile_id', activeProfileId);
+
+      const { data: transacoesCardsRaw } = await supabase
+        .from('transacoes')
+        .select('*')
+        .eq('profile_id', activeProfileId)
+        .not('card_id', 'is', null);
+
+      let faturaTotalGasto = 0;
+      let unpaidTarget = 0;
+      let cartoesBeneficio = 0;
+
+      if (userCards && transacoesCardsRaw) {
+        const cardDebts: Record<string, { pastDespesas: number, targetDespesas: number, receitas: number, currReceitas?: number, targetTotalGasto: number }> = {};
+        
+        userCards.forEach(c => {
+           cardDebts[c.id] = { pastDespesas: 0, targetDespesas: 0, receitas: 0, currReceitas: 0, targetTotalGasto: 0 };
+        });
+
+        transacoesCardsRaw.forEach(t => {
+          if (t.status === 'ignorado') return;
+          // DO NOT ignore previsto for cards, because we need them for targetDespesas. But wait, if they are previsto, do they affect saldoAntCalcAcumulado?
+
+          const cardInfo = userCards.find(c => c.id === t.card_id);
+          if (cardInfo) {
+            const debtObj = cardDebts[cardInfo.id];
+            const dateParts = t.data.split('-');
+            if(dateParts.length >= 3) {
+                const year = parseInt(dateParts[0], 10);
+                const month = parseInt(dateParts[1], 10);
+                const day = parseInt(dateParts[2], 10);
+                let mesFechamento = month;
+                let anoFechamento = year;
+                if (t.tipo === 'despesa' && day > cardInfo.dia_fechamento_fatura) {
+                    mesFechamento++;
+                    if (mesFechamento > 12) {
+                        mesFechamento = 1;
+                        anoFechamento++;
+                    }
+                }
+                
+                let mesVencimento = mesFechamento;
+                let anoVencimento = anoFechamento;
+                if (t.tipo === 'despesa' && cardInfo.dia_vencimento_fatura < cardInfo.dia_fechamento_fatura) {
+                    mesVencimento++;
+                    if (mesVencimento > 12) {
+                        mesVencimento = 1;
+                        anoVencimento++;
+                    }
+                }
+
+                let targetMesVencimento = mesSelecionado;
+                let targetAnoVencimento = anoSelecionado;
+                const vl = t.status === 'previsto' && t.valor_previsto !== undefined && t.valor_previsto !== null ? t.valor_previsto : t.valor;
+
+                if (t.tipo === 'receita') {
+                    if (anoVencimento < targetAnoVencimento || (anoVencimento === targetAnoVencimento && mesVencimento <= targetMesVencimento)) {
+                        debtObj.receitas += (vl || 0);
+                    }
+                    if (anoVencimento === targetAnoVencimento && mesVencimento === targetMesVencimento) {
+                        debtObj.currReceitas = (debtObj.currReceitas || 0) + (vl || 0);
+                    }
+                }
+
+                if (mesVencimento === targetMesVencimento && anoVencimento === targetAnoVencimento) {
+                    if (t.tipo === 'despesa') {
+                        debtObj.targetDespesas += (vl || 0);
+                        debtObj.targetTotalGasto += (vl || 0);
+                    }
+                } else if (anoVencimento < targetAnoVencimento || (anoVencimento === targetAnoVencimento && mesVencimento < targetMesVencimento)) {
+                    if (t.tipo === 'despesa') {
+                        debtObj.pastDespesas += (vl || 0);
+                    }
+                }
+
+                if (activeProfileType !== 'empresa' && (anoVencimento < targetAnoVencimento || (anoVencimento === targetAnoVencimento && mesVencimento < targetMesVencimento))) {
+                    if (t.status !== 'previsto') {
+                        if (t.tipo === 'despesa') {
+                            saldoAntCalcAcumulado -= (vl || 0);
+                        } else if (t.tipo === 'receita') {
+                            saldoAntCalcAcumulado += (vl || 0);
+                        }
+                    }
+                }
+            }
+          }
+        });
+
+        Object.values(cardDebts).forEach(debt => {
+            let creditos = debt.receitas;
+            const unpaidPast = Math.max(0, debt.pastDespesas - creditos);
+            creditos = Math.max(0, creditos - debt.pastDespesas);
+            
+            const unpaidCurr = Math.max(0, debt.targetDespesas - creditos);
+            
+            unpaidTarget += unpaidCurr;
+            faturaTotalGasto += debt.targetTotalGasto;
+            const currPayments = debt.currReceitas || 0;
+            const extraBenefit = unpaidCurr + currPayments - debt.targetDespesas;
+            cartoesBeneficio += extraBenefit;
+        });
+      }
+
+      setSaldoAnterior(saldoAntCalcAcumulado + pastRecorrentesDebt);
+      setReceitasValor(sumRecsPago + saldoAntCalcAcumulado + pastRecorrentesDebt);
       
       setCartoesValor(unpaidTarget - cartoesBeneficio);
       
@@ -349,8 +636,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       setCartoesPago(isPaid);
       setCartoesDisplayTotal(isPaid ? faturaTotalGasto : unpaidTarget);
 
-      if (dspsArrFull) {
-        dspsArrFull.forEach(d => {
+      if (dspsArr) {
+        dspsArr.forEach(d => {
             if (d.status === 'previsto') combinedPending.push(d);
         });
       }
@@ -446,7 +733,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto - faturaCartaoPendente;
+  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto - cartoesValor;
 
   const formatarValor = (valor: number) =>
     valor.toLocaleString('pt-BR', {
@@ -618,10 +905,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
             {isCardsLoading ? (
                <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <>
-                <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
-                <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] mt-1 font-medium flex items-center gap-[4px]"><span className="w-1 h-1 rounded-full bg-[#16A34A]"></span> Mês: {formatarValor(receitasNoMes)} <span className="ml-1 w-1 h-1 rounded-full bg-slate-400"></span> Ant: {formatarValor(saldoAnterior)}</span>
-              </>
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
             )}
           </div>
         </div>
@@ -661,13 +945,38 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
             {isCardsLoading ? (
                <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[20px] 2xl:text-[24px] font-[800] text-amber-500 dark:text-amber-400 leading-tight flex-wrap break-all">{formatarValor(despesasPrevistoExibicao)}</span>
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-amber-500 dark:text-amber-400 leading-tight flex-wrap break-all">{formatarValor(despesasPrevisto)}</span>
             )}
           </div>
         </div>
 
+        {/* CARD 4 — CARTÃO */}
         {currentProfile?.financeiro_show_cartoes !== false && (
-          <CardFaturaMini activeProfileId={activeProfileId} anoSelecionado={anoSelecionado} mesSelecionado={mesSelecionado} onTotalChange={setFaturaCartaoPendente} />
+          <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+            <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#A855F7] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
+            <div className="flex items-start justify-between mb-[16px] relative z-10">
+              <div className="p-[6px] bg-purple-50 dark:bg-purple-900/20 rounded-full text-purple-500 dark:text-purple-400 w-[32px] h-[32px] flex items-center justify-center">
+                <CreditCard size={18} />
+              </div>
+              <div className="flex flex-col items-end gap-1">
+                <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+                  {`Fatura de ${nomesMeses[targetMesVencimento - 1]} de ${targetAnoVencimento}`}
+                </span>
+                {!isCardsLoading && cartoesDisplayTotal > 0 && (
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${cartoesPago ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                    {cartoesPago ? 'PAGO' : 'NÃO PAGO'}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="flex flex-col relative z-10">
+              {isCardsLoading ? (
+                 <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
+              ) : (
+                <span className="text-[20px] 2xl:text-[24px] font-[800] text-purple-500 dark:text-purple-400 leading-tight flex-wrap break-all">{formatarValor(cartoesDisplayTotal)}</span>
+              )}
+            </div>
+          </div>
         )}
 
         {/* CARD 5 — DESPESAS */}
@@ -685,7 +994,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
             {isCardsLoading ? (
                <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValorExibicao)}</span>
+              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValor)}</span>
             )}
           </div>
         </div>

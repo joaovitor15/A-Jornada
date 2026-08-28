@@ -58,3 +58,31 @@ export const calcularPeriodoFatura = (diaFechamento: number, diaVencimento: numb
 
   return { ...periodo, status };
 };
+
+export const helperCalcularPeriodoParaMes = (diaFechamento: number, diaVencimento: number, anoRef: number, mesRef: number) => {
+  const mesIndex = mesRef - 1;
+  const dataVencimento = new Date(anoRef, mesIndex, diaVencimento);
+  let dataFim: Date;
+  if (diaVencimento < diaFechamento) {
+      dataFim = new Date(anoRef, mesIndex - 1, diaFechamento);
+  } else {
+      dataFim = new Date(anoRef, mesIndex, diaFechamento);
+  }
+  const dataInicio = new Date(dataFim.getFullYear(), dataFim.getMonth() - 1, diaFechamento + 1);
+
+  const label = `${dataInicio.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} - ${dataFim.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}`;  
+  const toLocalISO = (d: Date) => {
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+  return { 
+     inicio: dataInicio, 
+     fim: dataFim, 
+     vencimento: dataVencimento, 
+     label,
+    inicioStr: toLocalISO(dataInicio),
+    fimStr: toLocalISO(dataFim)
+  };
+};
