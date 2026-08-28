@@ -37,7 +37,7 @@ export function CardFaturaMini({ activeProfileId, anoSelecionado, mesSelecionado
   
   if (cards.length > 0) {
     const card = cards[0];
-    const transacoesAtivas = transacoesCard.filter(t => t.status !== 'ignorado');
+    const transacoesAtivas = transacoesCard.filter(t => t.status !== 'ignorado' && t.status !== 'previsto');
 
     const globalDespesas = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor), 0);
     const fimDoMesSelecionado = new Date(anoSelecionado, mesSelecionado, 0).toISOString().split('T')[0];
@@ -105,7 +105,7 @@ export function CardFaturaMini({ activeProfileId, anoSelecionado, mesSelecionado
       </div>
       <div className="flex flex-col relative z-10">
         <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#8B5CF6] dark:text-violet-500 leading-tight flex-wrap break-all">
-          {formatarValor(Math.max(0, unpaidPassado + valorFaturaAtualView))}
+          {formatarValor(valorFaturaAtualView)}
         </span>
       </div>
     </div>

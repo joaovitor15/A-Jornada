@@ -87,13 +87,15 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       const an = anoSelecionado;
       const mesStr = ms.toString().padStart(2, '0');
       const ultimoDia = new Date(an, ms, 0).getDate();
+      const currentMonthPrefix = `${an}-${mesStr}`;
 
+      
       const { data: antDataAll } = await supabase
         .from('transacoes')
         .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
-        .eq('profile_id', activeProfileId);
+        .eq('profile_id', activeProfileId)
+        .gte('data', `${currentMonthPrefix}-01`).lte('data', `${currentMonthPrefix}-${ultimoDia}`);
 
-      const cutoffDate = `${an}-${mesStr}-01`;
       const antDataAllToUse = antDataAll || [];
       const { data: recorrentesRaw, error: recError } = await supabase
         .from('transacoes_recorrentes')
@@ -102,89 +104,12 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         .eq('ativa', true);
 
       
-      let pastRecPago = 0;
-      let pastDespPago = 0;
-      let pastInvestPago = 0;
-      let pastDespPrev = 0;
       
-      // Calculate from all transactions before this month
-      antDataAllToUse.forEach(t => {
-          if (t.status === 'ignorado') return;
-          if (!t.data || t.data >= cutoffDate) return;
-          if (t.card_id !== null) return;
-          
-          const vl = Number(t.status === 'previsto' ? (t.valor_previsto || t.valor) : t.valor) || 0;
-          const tagCat = (t.tags as any)?.categories?.nome?.toLowerCase();
-          const isFarmacia = activeProfileType === 'empresa' && (tagCat === 'farmácia popular' || tagCat === 'farmacia popular');
-          if (isFarmacia) return;
-          
-          if (t.status === 'previsto') {
-              if (t.tipo === 'despesa' && tagCat !== 'investimentos') {
-                  pastDespPrev += vl;
-              }
-          } else {
-              if (t.tipo === 'receita') pastRecPago += vl;
-              else if (t.tipo === 'despesa') {
-                  if (tagCat === 'investimentos') pastInvestPago += vl;
-                  else pastDespPago += vl;
-              }
-          }
-      });
-      
-      let pastDespPrevRec = 0;
-      if (recorrentesRaw) {
-          recorrentesRaw.forEach(rec => {
-              if (rec.lancamento_rapido) return;
-              if (rec.tipo !== 'despesa') return; // Only despesas deduct from Saldo Final
-              if (rec.card_id !== null) return;
-              
-              const recCat = rec.categories?.nome?.toLowerCase();
-              if (recCat === 'investimentos') return;
-              
-              const launchDateStr = rec.ultima_lancada || rec.created_at;
-              if (!launchDateStr) return;
-              
-              const launchDate = new Date(launchDateStr);
-              const startYear = launchDate.getFullYear();
-              const startMonth = launchDate.getMonth();
-              
-              const targetYear = an;
-              const targetMonth = ms - 1;
-              const totalMonths = (targetYear - startYear) * 12 + (targetMonth - startMonth);
-              
-              for (let i = 0; i < totalMonths; i++) {
-                  const currM = (startMonth + i) % 12;
-                  const currY = startYear + Math.floor((startMonth + i) / 12);
-                  
-                  let shouldRender = true;
-                  if (rec.num_parcelas && rec.num_parcelas > 1) {
-                      if (i >= rec.num_parcelas) shouldRender = false;
-                  }
-                  if (rec.frequencia === 'anual') {
-                      const tMonth = rec.mes_vencimento ? (rec.mes_vencimento - 1) : 0;
-                      if (currM !== tMonth) shouldRender = false;
-                  }
-                  
-                  if (shouldRender) {
-                      const dtPrefix = `${currY}-${String(currM+1).padStart(2, '0')}`;
-                      const launched = antDataAllToUse.find(t => t.recorrente_id === rec.id && t.data && t.data.startsWith(dtPrefix));
-                      if (!launched) {
-                          pastDespPrevRec += Number(rec.valor) || 0;
-                      }
-                  }
-              }
-          });
-      }
-      
-
-      let unpaidTarget = 0;
-      let cartoesBeneficio = 0;
-      let faturaTotalGasto = 0;
       
       const combinedPending: any[] = [];
       const lancamentosRapidos: any[] = [];
       
-      const currentMonthPrefix = `${an}-${mesStr}`;
+      
       
       const dspsArr = antDataAllToUse.filter(t => t.tipo === 'despesa' && t.card_id === null && t.data && t.data.startsWith(currentMonthPrefix) && t.status !== 'ignorado');
       const recsArr = antDataAllToUse.filter(t => t.tipo === 'receita' && t.card_id === null && t.data && t.data.startsWith(currentMonthPrefix) && t.status !== 'ignorado');
@@ -337,17 +262,15 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       setInvestimentosPrevisto(currentInvesPrev + currentInvesPrevRec);
       
       setEconomiaDespesas(Math.max(0, (currentDspsPrev + currentDspsPrevRec) - currentDspsPago));
-      const finalSaldoAnterior = pastRecPago - pastDespPago - pastInvestPago - pastDespPrev - pastDespPrevRec;
-
-      setSaldoAnterior(finalSaldoAnterior);
-      setReceitasValor(sumRecsPago + finalSaldoAnterior);
-      setReceitasNoMes(sumRecsPago);
       
-      setCartoesValor(unpaidTarget - cartoesBeneficio);
+      setReceitasValor(sumRecsPago);
       
-      const isPaid = faturaTotalGasto > 0 && unpaidTarget <= 0.01;
-      setCartoesPago(isPaid);
-      setCartoesDisplayTotal(isPaid ? faturaTotalGasto : unpaidTarget);
+      
+      setCartoesValor(0);
+      
+      
+      setCartoesPago(false);
+      setCartoesDisplayTotal(0);
 
       if (dspsArrFull) {
         dspsArrFull.forEach(d => {
@@ -446,7 +369,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto - faturaCartaoPendente;
+  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevistoExibicao - faturaCartaoPendente;
 
   const formatarValor = (valor: number) =>
     valor.toLocaleString('pt-BR', {
@@ -620,7 +543,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
             ) : (
               <>
                 <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#16A34A] dark:text-green-500 leading-tight flex-wrap break-all">{formatarValor(receitasValor)}</span>
-                <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8] mt-1 font-medium flex items-center gap-[4px]"><span className="w-1 h-1 rounded-full bg-[#16A34A]"></span> Mês: {formatarValor(receitasNoMes)} <span className="ml-1 w-1 h-1 rounded-full bg-slate-400"></span> Ant: {formatarValor(saldoAnterior)}</span>
+                
               </>
             )}
           </div>
@@ -698,7 +621,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               <Wallet size={18} />
             </div>
             <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider whitespace-nowrap overflow-hidden text-ellipsis">
-              Saldo Final
+              Saldo do Mês
             </span>
           </div>
           <div className="flex flex-col relative z-10">
@@ -715,7 +638,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 items-stretch pt-2">
         {currentProfile?.financeiro_show_cartoes !== false && (
-          <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} />
+          <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} />
         )}
         <CardProvisoesDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} refreshTrigger={refreshTrigger} />
       </div>
@@ -744,7 +667,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
               </div>
               <div className="flex items-center gap-[6px]">
                 <div className="w-[8px] h-[8px] rounded-full bg-[#3B82F6] dark:bg-blue-500"></div>
-                <span className="text-[12px] font-[600] text-[#64748B] dark:text-[#94A3B8]">— Saldo Final</span>
+                <span className="text-[12px] font-[600] text-[#64748B] dark:text-[#94A3B8]">— Saldo do Mês</span>
               </div>
             </div>
           </div>

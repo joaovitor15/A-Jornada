@@ -1,32 +1,32 @@
 import fs from 'fs';
 let code = fs.readFileSync('src/components/Dashboard.tsx', 'utf-8');
 
-// 1. Simplify saldoTotal calculation
-code = code.replace(
-    'const saldoTotal = saldoAnterior + receitasValor - despesasValor - investimentosValor - despesasPrevisto - cartoesValor;',
-    'const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto;'
-);
+// Replace the main query to only fetch current month's data
+const queryOld = `const { data: antDataAll } = await supabase
+        .from('transacoes')
+        .select(\`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )\`)
+        .eq('profile_id', activeProfileId);
 
-// 2. Remove CARD 4 — CARTÃO
-const card4Start = code.indexOf('{/* CARD 4 — CARTÃO */}');
-if (card4Start !== -1) {
-    const card5Start = code.indexOf('{/* CARD 5 — DESPESAS */}');
-    if (card5Start !== -1) {
-        // Find the condition `if (activeProfileType === 'empresa')` or something, let's just remove the block
-        code = code.substring(0, card4Start) + code.substring(card5Start);
-    }
-}
+      const cutoffDate = \`\${an}-\${mesStr}-01\`;
+      const antDataAllToUse = antDataAll || [];`;
 
-// 3. Remove "Ant: ..."
-code = code.replace(
-    '<span className="text-[10px] text-slate-400 font-medium">Ant: {formatarValor(saldoAnterior)}</span>',
-    ''
-);
-code = code.replace(
-    '<div className="flex flex-col items-end">\n              <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider whitespace-nowrap overflow-hidden text-ellipsis">\n                Saldo Final\n              </span>\n              \n            </div>',
-    '<span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider whitespace-nowrap overflow-hidden text-ellipsis">\n              Saldo Final\n            </span>'
-);
+const queryNew = `const currentMonthPrefix = \`\${an}-\${mesStr}\`;
+      const { data: antDataAll } = await supabase
+        .from('transacoes')
+        .select(\`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )\`)
+        .eq('profile_id', activeProfileId)
+        .like('data', \`\${currentMonthPrefix}%\`);
 
+      const antDataAllToUse = antDataAll || [];`;
+
+code = code.replace(queryOld, queryNew);
+
+// Remove the `let pastRecPago = 0; ... ` down to `let faturaTotalGasto = 0;` (inclusive)
+// We'll use a regex replacement
+const blockToRemove = /let pastRecPago = 0;[\s\S]*?let faturaTotalGasto = 0;/;
+code = code.replace(blockToRemove, '');
+
+// Also remove `const currentMonthPrefix = \`\${an}-\${mesStr}\`;` from later in the file since we declared it early
+code = code.replace(/const currentMonthPrefix = `\$\{an\}-\$\{mesStr\}`;/g, '');
 
 fs.writeFileSync('src/components/Dashboard.tsx', code);
-console.log('Simplification done');

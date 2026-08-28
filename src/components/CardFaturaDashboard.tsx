@@ -8,9 +8,11 @@ import { calcularPeriodoFatura, helperCalcularPeriodo } from '../utils/faturaUti
 interface CardFaturaDashboardProps {
   activeProfileId: string;
   setActivePage?: (page: string) => void;
+  mesSelecionado?: number;
+  anoSelecionado?: number;
 }
 
-export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFaturaDashboardProps) {
+export function CardFaturaDashboard({ activeProfileId, setActivePage, mesSelecionado, anoSelecionado }: CardFaturaDashboardProps) {
   const { cards, loading, refresh: refreshCards } = useCards(activeProfileId);
   const [transacoesCard, setTransacoesCard] = useState<any[]>([]);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -23,7 +25,15 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
   const [faturaVisualizar, setFaturaVisualizar] = useState<Card | null>(null);
   const [faturaVisualizarTab, setFaturaVisualizarTab] = useState<'PROXIMAS' | 'HISTORICO'>('PROXIMAS');
   const [faturaOffsetVisualizar, setFaturaOffsetVisualizar] = useState<number | null>(null);
-  const [viewingOffset, setViewingOffset] = useState(0);
+    const [viewingOffset, setViewingOffset] = useState(0);
+
+  useEffect(() => {
+    if (mesSelecionado && anoSelecionado) {
+      const today = new Date();
+      const diff = (anoSelecionado - today.getFullYear()) * 12 + (mesSelecionado - (today.getMonth() + 1));
+      setViewingOffset(diff);
+    }
+  }, [mesSelecionado, anoSelecionado]);
   const [confirmarPagamento, setConfirmarPagamento] = useState<{cardId: string, valor: number, nome?: string} | null>(null);
 
   const getOrCreateFaturaTags = async () => {
@@ -152,7 +162,7 @@ export function CardFaturaDashboard({ activeProfileId, setActivePage }: CardFatu
 
   // Constantes de visualização e estados
   const card = cards[0];
-  const transacoesAtivas = transacoesCard.filter(t => t.status !== 'ignorado');
+  const transacoesAtivas = transacoesCard.filter(t => t.status !== 'ignorado' && t.status !== 'previsto');
 
   // 1. DADOS GLOBAIS DE CRÉDITO E LIMITE DO CARTÃO
   const globalDespesas = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor), 0);
