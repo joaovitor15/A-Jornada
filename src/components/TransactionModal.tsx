@@ -16,6 +16,7 @@ import { useCards } from "../hooks/useCards";
 import { useProfiles } from "../hooks/useProfiles";
 
 import { AnimatePresence, motion } from "motion/react";
+import { supabase } from "../supabaseClient";
 
 interface TransactionModalProps {
   isOpen: boolean;
@@ -53,6 +54,7 @@ export function TransactionModal({
   const [digitosValor, setDigitosValor] = useState("0");
   const [formaPagamento, setFormaPagamento] = useState("dinheiro");
   const [cardId, setCardId] = useState<string>("");
+  const [lancarAdicional, setLancarAdicional] = useState(false);
   const [erro, setErro] = useState<{ campo: string; mensagem: string } | null>(
     null,
   );
@@ -104,6 +106,7 @@ export function TransactionModal({
       setCardId("");
       setParcelas("1");
       setStatus("pago");
+      setLancarAdicional(false);
       setErro(null);
     }
   }, [isOpen, transacaoParaEditar]);
@@ -256,13 +259,37 @@ export function TransactionModal({
        dadosSalvar.status = "pago"; // Forçar pago para lançamentos novos (já que ocultamos o campo)
     }
 
+    const processarLancarAdicional = async (val: number) => {
+      if (lancarAdicional && tipo === 'despesa' && val > 0) {
+        const [y, m] = data.split("-").map(Number);
+        let nextMonth = m + 1;
+        let nextYear = y;
+        if (nextMonth > 12) {
+          nextMonth = 1;
+          nextYear += 1;
+        }
+        const nextMonthStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+        const dbDescricao = `[VAR:${nextMonthStr}] Adicional: ${descricao}`;
+        
+        await supabase.from('salario_composicao').insert({
+          profile_id: perfilId,
+          descricao: dbDescricao,
+          valor: val,
+          tipo: 'receita'
+        });
+      }
+    };
+
     if (transacaoParaEditar) {
       const { success, error } = await editarTransacao(
         transacaoParaEditar.id,
         dadosSalvar,
       );
       if (error) setErro({ campo: "descricao", mensagem: error });
-      else onClose();
+      else {
+        await processarLancarAdicional(valorNumerico);
+        onClose();
+      }
     } else {
       const parcelasInt = parseInt(parcelas);
       const isCard = formaPagamento !== "dinheiro";
@@ -287,11 +314,17 @@ export function TransactionModal({
           if (error) errorOcorreu = error;
         }
         if (errorOcorreu) setErro({ campo: "descricao", mensagem: errorOcorreu });
-        else onClose();
+        else {
+          await processarLancarAdicional(valorParcela);
+          onClose();
+        }
       } else {
         const { success, error } = await criarTransacao(dadosSalvar);
         if (error) setErro({ campo: "descricao", mensagem: error });
-        else onClose();
+        else {
+          await processarLancarAdicional(valorNumerico);
+          onClose();
+        }
       }
     }
   };
@@ -572,6 +605,24 @@ export function TransactionModal({
             </div>
           )}
 
+          {tipo === 'despesa' && (
+            <label className="flex items-center gap-2.5 cursor-pointer mt-4 group bg-[#F8FAFC] dark:bg-[#0F172A] p-2.5 rounded-xl border border-transparent hover:border-[#E2E8F0] dark:hover:border-[#334155] transition-all">
+              <input
+                type="checkbox"
+                checked={lancarAdicional}
+                onChange={(e) => setLancarAdicional(e.target.checked)}
+                className="w-4 h-4 rounded text-[#3B82F6] focus:ring-[#3B82F6] border-[#CBD5E1] dark:border-[#475569] dark:bg-[#1E293B]"
+              />
+              <div className="flex flex-col">
+                <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white group-hover:text-[#3B82F6] transition-colors">
+                  Cobrar no próximo Salário
+                </span>
+                <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                  Lança como um "Adicional" na Composição Salarial do próximo mês
+                </span>
+              </div>
+            </label>
+          )}
 
         </div>
 

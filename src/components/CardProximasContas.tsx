@@ -38,18 +38,21 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
   const validContas = contas;
   const displayLimit = 5;
   const filteredContas = validContas.slice(0, displayLimit);
+  const [lancarAdicional, setLancarAdicional] = useState<boolean>(false);
 
   const abrirModalEfetivar = (conta: any, e: React.MouseEvent) => {
     e.stopPropagation();
     setEfetivarModal({ isOpen: true, conta });
     const val = Number(conta.valor) || 0;
     setEfetivarValorStr((val * 100).toFixed(0));
+    setLancarAdicional(false);
   };
 
   const handleConfirmarPagamento = async () => {
     if (!efetivarModal.conta) return;
     const conta = efetivarModal.conta;
     const finalValue = parseCentsToNumber(efetivarValorStr);
+    const resolvedValue = conta.valor === 0 ? finalValue : conta.valor;
 
     try {
       setPagandoId(conta.id);
@@ -60,7 +63,7 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
         const { error } = await supabase.from('transacoes').insert([{
            profile_id: activeProfileId,
            tipo: conta.recurrentSource.tipo || 'despesa',
-           valor: conta.valor === 0 ? finalValue : conta.valor,
+           valor: resolvedValue,
            descricao: conta.descricao,
            data: insertData,
            status: 'pago',
@@ -77,6 +80,24 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
           .update(payload)
           .eq('id', conta.id);
         if (error) throw error;
+      }
+
+      if (lancarAdicional && resolvedValue > 0) {
+        let nextMonth = mes + 1;
+        let nextYear = ano;
+        if (nextMonth > 12) {
+          nextMonth = 1;
+          nextYear += 1;
+        }
+        const nextMonthStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+        const dbDescricao = `[VAR:${nextMonthStr}] Adicional: ${conta.descricao}`;
+        
+        await supabase.from('salario_composicao').insert({
+          profile_id: activeProfileId,
+          descricao: dbDescricao,
+          valor: resolvedValue,
+          tipo: 'receita'
+        });
       }
       
       setEfetivarModal({ isOpen: false, conta: null });
@@ -239,6 +260,25 @@ export function CardProximasContas({ activeProfileId, ano, mes, contas = [], isL
                       />
                     </div>
                   </div>
+                )}
+                
+                {efetivarModal.conta.tipo !== 'receita' && efetivarModal.conta.recurrentSource?.tipo !== 'receita' && (
+                  <label className="flex items-center gap-2.5 cursor-pointer mt-4 group bg-[#F8FAFC] dark:bg-[#0F172A] p-2.5 rounded-xl border border-transparent hover:border-[#E2E8F0] dark:hover:border-[#334155] transition-all">
+                    <input
+                      type="checkbox"
+                      checked={lancarAdicional}
+                      onChange={(e) => setLancarAdicional(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#3B82F6] focus:ring-[#3B82F6] border-[#CBD5E1] dark:border-[#475569] dark:bg-[#1E293B]"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white group-hover:text-[#3B82F6] transition-colors">
+                        Cobrar no próximo Salário
+                      </span>
+                      <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                        Lança como um "Adicional" na Composição Salarial do próximo mês
+                      </span>
+                    </div>
+                  </label>
                 )}
               </div>
 

@@ -106,6 +106,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
   const [efetivarParcelas, setEfetivarParcelas] = useState(1);
   const [efetivarMostrarOpcoes, setEfetivarMostrarOpcoes] = useState(false);
   const [efetivarData, setEfetivarData] = useState('');
+  const [efetivarLancarAdicional, setEfetivarLancarAdicional] = useState(false);
 
 
   
@@ -824,6 +825,7 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
     });
 
     setEfetivarMostrarOpcoes(false);
+    setEfetivarLancarAdicional(false);
 
     const valorCentavos = (p.valor === null || p.valor <= 0) ? '' : (p.valorPrevisto ? Math.round(p.valorPrevisto * 100).toString() : '');
     setEfetivarValorStr(valorCentavos);
@@ -1046,6 +1048,24 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
 
       // Do NOT update ultima_lancada on the parent model here. 
       // ultima_lancada is strictly used as the projection generation anchor when creating or 'launching for the year'.
+
+      if (efetivarLancarAdicional && valorNum > 0) {
+        let nextMonth = targetMonth + 2; // targetMonth is 0-indexed, so +2 means next calendar month
+        let nextYear = targetYear;
+        if (nextMonth > 12) {
+          nextMonth = 1;
+          nextYear += 1;
+        }
+        const nextMonthStr = `${nextYear}-${String(nextMonth).padStart(2, '0')}`;
+        const dbDescricao = `[VAR:${nextMonthStr}] Adicional: ${provisao.nome}`;
+        
+        await supabase.from('salario_composicao').insert({
+          profile_id: activeProfileId,
+          descricao: dbDescricao,
+          valor: valorNum,
+          tipo: 'receita' // As per request, this adds to additions
+        });
+      }
 
       setEfetivarModal(null);
       triggerRefresh();
@@ -2067,6 +2087,25 @@ export const RecorrentesPage = ({ activeProfileId }: RecorrentesPageProps) => {
                       </div>
                     )}
                   </div>
+                )}
+                
+                {efetivarModal.provisao?.tipo !== 'receita' && (
+                  <label className="flex items-center gap-2.5 cursor-pointer mt-4 group bg-[#F8FAFC] dark:bg-[#0F172A] p-2.5 rounded-xl border border-transparent hover:border-[#E2E8F0] dark:hover:border-[#334155] transition-all">
+                    <input
+                      type="checkbox"
+                      checked={efetivarLancarAdicional}
+                      onChange={(e) => setEfetivarLancarAdicional(e.target.checked)}
+                      className="w-4 h-4 rounded text-[#3B82F6] focus:ring-[#3B82F6] border-[#CBD5E1] dark:border-[#475569] dark:bg-[#1E293B]"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-[13px] font-[600] text-[#0F172A] dark:text-white group-hover:text-[#3B82F6] transition-colors">
+                        Cobrar no próximo Salário
+                      </span>
+                      <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                        Lança como um "Adicional" na Composição Salarial do próximo mês
+                      </span>
+                    </div>
+                  </label>
                 )}
               </div>
 

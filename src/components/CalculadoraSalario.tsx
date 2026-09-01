@@ -21,15 +21,6 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
   const [divNome, setDivNome] = useState('');
   const [divValor, setDivValor] = useState('');
   
-  const [recFixo, setRecFixo] = useState(true);
-  const [recNext, setRecNext] = useState(false);
-  
-  const [descFixo, setDescFixo] = useState(true);
-  const [descNext, setDescNext] = useState(false);
-
-  const [divFixo, setDivFixo] = useState(true);
-  const [divNext, setDivNext] = useState(false);
-  
   const [isLancando, setIsLancando] = useState(false);
   const [lancadoSucesso, setLancadoSucesso] = useState(false);
   const [jaLancadoMes, setJaLancadoMes] = useState(false);
@@ -86,39 +77,6 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
 
   const yearMonth = `${selectedDate.getFullYear()}-${selectedDate.getMonth()}`;
 
-  // Parse and filter by current month
-  const currentMonthStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
-
-  const processedItems = items.map(i => {
-    let clean = i.descricao;
-    let isDesconto = false;
-    let isVar = false;
-    let varMonth = '';
-
-    if (clean.includes('[DESC] ')) {
-      isDesconto = true;
-      clean = clean.replace('[DESC] ', '');
-    }
-
-    if (clean.includes('[FIXO] ')) {
-      clean = clean.replace('[FIXO] ', '');
-    } else {
-      const varMatch = clean.match(/\[VAR:(\d{4}-\d{2})\]\s*/);
-      if (varMatch) {
-        isVar = true;
-        varMonth = varMatch[1];
-        clean = clean.replace(varMatch[0], '');
-      }
-    }
-
-    return { ...i, originalDescricao: i.descricao, descricao: clean, isDesconto, isVar, varMonth };
-  }).filter(i => {
-    if (i.isVar) {
-      return i.varMonth === currentMonthStr;
-    }
-    return true; // Fixed items show up in all months
-  });
-
   useEffect(() => {
     if (activeProfileId) {
       fetchItems();
@@ -129,24 +87,16 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
   const handleAddItem = async (tipo: 'receita' | 'desconto' | 'despesa') => {
     let nome = '';
     let valor = '';
-    let isFixo = true;
-    let inclNext = false;
     
     if (tipo === 'receita') {
       nome = recNome;
       valor = recValor;
-      isFixo = recFixo;
-      inclNext = recNext;
     } else if (tipo === 'desconto') {
       nome = descNome;
       valor = descValor;
-      isFixo = descFixo;
-      inclNext = descNext;
     } else {
       nome = divNome;
       valor = divValor;
-      isFixo = divFixo;
-      inclNext = divNext;
     }
 
     if (!nome || !valor) return;
@@ -156,12 +106,8 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
     let dbDescricao = nome;
     let dbTipo = tipo === 'receita' ? 'receita' : 'despesa';
     
-    const currentMonthStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
-    const nextDate = new Date(selectedDate);
-    nextDate.setMonth(nextDate.getMonth() + 1);
-    const nextMonthStr = `${nextDate.getFullYear()}-${String(nextDate.getMonth() + 1).padStart(2, '0')}`;
-
-    if (!isFixo) {
+    if (nome.toLowerCase().includes('adicional') || nome.toLowerCase().includes('adicionais')) {
+      const currentMonthStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
       dbDescricao = `[VAR:${currentMonthStr}] ${dbDescricao}`;
     }
 
@@ -169,40 +115,20 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
       dbDescricao = `[DESC] ${dbDescricao}`;
     }
 
-    const inserts = [];
-    inserts.push({
-      profile_id: activeProfileId,
-      descricao: dbDescricao,
-      valor: valorNum,
-      tipo: dbTipo
-    });
-
-    if (!isFixo && inclNext) {
-      let nextNome = nome;
-      if (!nome.toLowerCase().includes('adicional')) {
-         nextNome = `Adicional: ${nome}`;
-      }
-      let nextDbDescricao = `[VAR:${nextMonthStr}] ${nextNome}`;
-      if (tipo === 'desconto') {
-        nextDbDescricao = `[DESC] ${nextDbDescricao}`;
-      }
-      inserts.push({
-        profile_id: activeProfileId,
-        descricao: nextDbDescricao,
-        valor: valorNum,
-        tipo: dbTipo
-      });
-    }
-
     const { data, error } = await supabase
       .from('salario_composicao')
-      .insert(inserts)
+      .insert({
+        profile_id: activeProfileId,
+        descricao: dbDescricao,
+        valor: valorNum,
+        tipo: dbTipo
+      })
       .select();
 
     if (!error) {
-      if (tipo === 'receita') { setRecNome(''); setRecValor(''); setRecFixo(true); setRecNext(false); }
-      if (tipo === 'desconto') { setDescNome(''); setDescValor(''); setDescFixo(true); setDescNext(false); }
-      if (tipo === 'despesa') { setDivNome(''); setDivValor(''); setDivFixo(true); setDivNext(false); }
+      if (tipo === 'receita') { setRecNome(''); setRecValor(''); }
+      if (tipo === 'desconto') { setDescNome(''); setDescValor(''); }
+      if (tipo === 'despesa') { setDivNome(''); setDivValor(''); }
       fetchItems();
     }
   };
@@ -228,16 +154,15 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
 
     let dbDescricao = editNome;
 
-    if (originalItem.isVar) {
+    // Se mudou para "adicional", adiciona a tag do mes atual se não tiver
+    if (!originalItem.isVar && editNome.toLowerCase().includes('adicional')) {
+      const currentMonthStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
+      dbDescricao = `[VAR:${currentMonthStr}] ${dbDescricao}`;
+    } else if (originalItem.isVar) {
       dbDescricao = `[VAR:${originalItem.varMonth}] ${dbDescricao}`;
-    } else if (originalItem.originalDescricao.includes('[FIXO] ')) {
-      dbDescricao = `[FIXO] ${dbDescricao}`;
-    } else if (!originalItem.originalDescricao.includes('[VAR:')) {
-      // It was an old implicit fixed item, let's just make it explicit
-      dbDescricao = `[FIXO] ${dbDescricao}`;
     }
 
-    if (originalItem.isDesconto) {
+    if (originalItem.descricao.startsWith('[DESC] ') || (items.find(i => i.id === editingId)?.descricao.startsWith('[DESC] '))) {
       dbDescricao = `[DESC] ${dbDescricao}`;
     }
 
@@ -248,7 +173,6 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
         valor: valorNum
       })
       .eq('id', editingId);
-
     setEditingId(null);
     fetchItems();
   };
@@ -256,10 +180,37 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
   const formatarValor = (valor: number) => 
     valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+  // Filter items for the selected month
+  const currentMonthStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth() + 1).padStart(2, '0')}`;
+  
+  const processedItems = items.map(i => {
+    let clean = i.descricao;
+    let isVar = false;
+    let varMonth = '';
+
+    const varMatch = clean.match(/\[VAR:(\d{4}-\d{2})\]\s*/);
+    if (varMatch) {
+      isVar = true;
+      varMonth = varMatch[1];
+      clean = clean.replace(varMatch[0], '');
+    } else if (clean.toLowerCase().includes('adicional') || clean.toLowerCase().includes('adicionais')) {
+      isVar = true;
+      const createdDate = new Date(i.created_at || Date.now());
+      varMonth = `${createdDate.getFullYear()}-${String(createdDate.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    return { ...i, descricao: clean, isVar, varMonth };
+  }).filter(i => {
+    if (i.isVar) {
+      return i.varMonth === currentMonthStr;
+    }
+    return true; // Fixed items show up everywhere
+  });
+
   // Cálculos
   const receitas = processedItems.filter(i => i.tipo === 'receita');
-  const descontos = processedItems.filter(i => (i.tipo === 'despesa' || i.tipo === 'divisao') && i.isDesconto);
-  const divisoes = processedItems.filter(i => (i.tipo === 'despesa' || i.tipo === 'divisao') && !i.isDesconto);
+  const descontos = processedItems.filter(i => (i.tipo === 'despesa' || i.tipo === 'divisao') && i.descricao.startsWith('[DESC] ')).map(i => ({...i, descricao: i.descricao.replace('[DESC] ', '')}));
+  const divisoes = processedItems.filter(i => (i.tipo === 'despesa' || i.tipo === 'divisao') && !i.descricao.startsWith('[DESC] '));
 
   const totalBruto = receitas.reduce((acc, i) => acc + Number(i.valor), 0);
   const totalDescontos = descontos.reduce((acc, i) => acc + Number(i.valor), 0);
@@ -408,22 +359,10 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
               ))}
             </div>
 
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               <input type="text" placeholder="Ex: Piso Farmacêutico, Adicionais" value={recNome} onChange={e=>setRecNome(e.target.value)} className="flex-1 bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               <input type="text" placeholder="R$ 0,00" value={recValor} onChange={e=>setRecValor(e.target.value)} className="w-28 bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-emerald-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               <button onClick={() => handleAddItem('receita')} className="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-xl p-2.5 hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors flex items-center justify-center min-w-[44px]"><Plus size={18}/></button>
-            </div>
-            <div className="flex items-center gap-4 px-1">
-              <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">
-                <input type="checkbox" checked={recFixo} onChange={e => setRecFixo(e.target.checked)} className="rounded border-slate-300 dark:border-slate-700 text-emerald-500 focus:ring-emerald-500 bg-[#F8FAFC] dark:bg-[#0F172A]" />
-                Fixo todo mês
-              </label>
-              {!recFixo && (
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">
-                  <input type="checkbox" checked={recNext} onChange={e => setRecNext(e.target.checked)} className="rounded border-slate-300 dark:border-slate-700 text-emerald-500 focus:ring-emerald-500 bg-[#F8FAFC] dark:bg-[#0F172A]" />
-                  Incluir no mês seguinte
-                </label>
-              )}
             </div>
           </div>
 
@@ -464,22 +403,10 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
               ))}
             </div>
 
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               <input type="text" placeholder="Ex: Mari, INSS" value={descNome} onChange={e=>setDescNome(e.target.value)} className="flex-1 bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-red-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               <input type="text" placeholder="R$ 0,00" value={descValor} onChange={e=>setDescValor(e.target.value)} className="w-28 bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-red-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               <button onClick={() => handleAddItem('desconto')} className="bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl p-2.5 hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors flex items-center justify-center min-w-[44px]"><Plus size={18}/></button>
-            </div>
-            <div className="flex items-center gap-4 px-1">
-              <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">
-                <input type="checkbox" checked={descFixo} onChange={e => setDescFixo(e.target.checked)} className="rounded border-slate-300 dark:border-slate-700 text-red-500 focus:ring-red-500 bg-[#F8FAFC] dark:bg-[#0F172A]" />
-                Fixo todo mês
-              </label>
-              {!descFixo && (
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">
-                  <input type="checkbox" checked={descNext} onChange={e => setDescNext(e.target.checked)} className="rounded border-slate-300 dark:border-slate-700 text-red-500 focus:ring-red-500 bg-[#F8FAFC] dark:bg-[#0F172A]" />
-                  Incluir no mês seguinte
-                </label>
-              )}
             </div>
           </div>
 
@@ -521,22 +448,10 @@ export function CalculadoraSalario({ activeProfileId, selectedDate = new Date() 
               ))}
             </div>
 
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2">
               <input type="text" placeholder="Ex: Pró-Labore" value={divNome} onChange={e=>setDivNome(e.target.value)} className="flex-1 bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               <input type="text" placeholder="R$ 0,00" value={divValor} onChange={e=>setDivValor(e.target.value)} className="w-28 bg-[#F8FAFC] dark:bg-[#0F172A] border border-slate-200 dark:border-slate-800 rounded-xl px-3 py-2.5 text-sm font-bold text-slate-800 dark:text-white outline-none focus:border-blue-500 placeholder:text-slate-400 dark:placeholder:text-slate-600" />
               <button onClick={() => handleAddItem('despesa')} className="bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-xl p-2.5 hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors flex items-center justify-center min-w-[44px]"><Plus size={18}/></button>
-            </div>
-            <div className="flex items-center gap-4 px-1">
-              <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">
-                <input type="checkbox" checked={divFixo} onChange={e => setDivFixo(e.target.checked)} className="rounded border-slate-300 dark:border-slate-700 text-blue-500 focus:ring-blue-500 bg-[#F8FAFC] dark:bg-[#0F172A]" />
-                Fixo todo mês
-              </label>
-              {!divFixo && (
-                <label className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400 cursor-pointer hover:text-slate-700 dark:hover:text-slate-300">
-                  <input type="checkbox" checked={divNext} onChange={e => setDivNext(e.target.checked)} className="rounded border-slate-300 dark:border-slate-700 text-blue-500 focus:ring-blue-500 bg-[#F8FAFC] dark:bg-[#0F172A]" />
-                  Incluir no mês seguinte
-                </label>
-              )}
             </div>
           </div>
 
