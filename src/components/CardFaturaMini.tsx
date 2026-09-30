@@ -2,9 +2,19 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { CreditCard } from 'lucide-react';
 import { useCards } from '../hooks/useCards';
-import { helperCalcularPeriodo, helperCalcularPeriodoParaMes } from '../utils/faturaUtils';
+import { calcularFaturaCard } from '../utils/faturaUtils';
 
-export function CardFaturaMini({ activeProfileId, anoSelecionado, mesSelecionado, onTotalChange }: { activeProfileId: string, anoSelecionado: number, mesSelecionado: number, onTotalChange?: (total: number) => void }) {
+export function CardFaturaMini({
+  activeProfileId,
+  anoSelecionado,
+  mesSelecionado,
+  onTotalChange
+}: {
+  activeProfileId: string;
+  anoSelecionado: number;
+  mesSelecionado: number;
+  onTotalChange?: (total: number) => void;
+}) {
   const { cards, loading } = useCards(activeProfileId);
   const [transacoesCard, setTransacoesCard] = useState<any[]>([]);
   const [transacoesLoading, setTransacoesLoading] = useState(true);
@@ -15,75 +25,56 @@ export function CardFaturaMini({ activeProfileId, anoSelecionado, mesSelecionado
         setTransacoesLoading(false);
         return;
       }
-      
+
       const { data, error } = await supabase
-        .from("transacoes")
-        .select("*")
+        .from('transacoes')
+        .select('*')
         .eq('profile_id', activeProfileId)
         .not('card_id', 'is', null);
 
       if (!error && data) {
-         setTransacoesCard(data);
+        setTransacoesCard(data);
       }
       setTransacoesLoading(false);
     }
     fetchTodosGastos();
   }, [activeProfileId, cards]);
 
-  // Compute total before any early returns to respect Rules of Hooks
+  // Calcula o total pendente de TODOS os cartões para o mês selecionado
   let totalPendente = 0;
-  let valorFaturaAtualView = 0;
-  let unpaidPassado = 0;
-  
+  let totalDespesasFatura = 0;
+
   if (cards.length > 0) {
-    const card = cards[0];
-    const transacoesAtivas = transacoesCard.filter(t => t.status !== 'ignorado' && t.status !== 'previsto');
-
-    const globalDespesas = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa').reduce((acc, t) => acc + Number(t.valor), 0);
-    const fimDoMesSelecionado = new Date(anoSelecionado, mesSelecionado, 0).toISOString().split('T')[0];
-  const globalCreditos = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'receita' && t.data <= fimDoMesSelecionado).reduce((acc, t) => acc + Number(t.valor), 0);
-
-    const periodoCardAtual = helperCalcularPeriodoParaMes(card.dia_fechamento_fatura, card.dia_vencimento_fatura, anoSelecionado, mesSelecionado);
-
-    const despesasPassado = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data < periodoCardAtual.inicioStr).reduce((acc, t) => acc + Number(t.valor), 0);
-    const despesasAberto = transacoesAtivas.filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data >= periodoCardAtual.inicioStr && t.data <= periodoCardAtual.fimStr).reduce((acc, t) => acc + Number(t.valor), 0);
-
-    let creditosRestantes = globalCreditos;
-    unpaidPassado = Math.max(0, despesasPassado - creditosRestantes);
-    creditosRestantes = Math.max(0, creditosRestantes - despesasPassado);
-
-    const unpaidAberto = Math.max(0, despesasAberto - creditosRestantes);
-    creditosRestantes = Math.max(0, creditosRestantes - despesasAberto);
-
-    const excedenteCredito = creditosRestantes;
-    valorFaturaAtualView = excedenteCredito > 0 ? -excedenteCredito : unpaidAberto;
-    totalPendente = unpaidPassado + valorFaturaAtualView;
+    cards.forEach((c) => {
+      const f = calcularFaturaCard(c, transacoesCard, anoSelecionado, mesSelecionado);
+      totalPendente += f.valorPendente;
+      totalDespesasFatura += f.totalFatura;
+    });
   }
 
-  // Hook ALWAYS executed in the same order
+  // Notificar Dashboard sobre o total pendente para abater no saldo do mês
   useEffect(() => {
     if (onTotalChange) {
-      // Avoid passing back values during loading to prevent janky calculations
       if (loading || transacoesLoading) {
-         onTotalChange(0);
+        onTotalChange(0);
       } else {
-         onTotalChange(Math.max(0, valorFaturaAtualView));
+        onTotalChange(Math.max(0, totalPendente));
       }
     }
-  }, [valorFaturaAtualView, onTotalChange, loading, transacoesLoading]);
+  }, [totalPendente, onTotalChange, loading, transacoesLoading]);
 
   if (loading || transacoesLoading) {
     return (
-        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
-            <div className="flex flex-col relative z-10">
-               <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-8"></div>
-            </div>
+      <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+        <div className="flex flex-col relative z-10">
+          <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-8"></div>
         </div>
+      </div>
     );
   }
 
   if (cards.length === 0) {
-    return null; // Do not render if no cards
+    return null;
   }
 
   const formatarValor = (valor: number) =>
@@ -100,13 +91,18 @@ export function CardFaturaMini({ activeProfileId, anoSelecionado, mesSelecionado
           <CreditCard size={18} />
         </div>
         <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
-          Fatura Cartão
+          {cards.length > 1 ? `Faturas (${cards.length} cartões)` : 'Fatura Cartão'}
         </span>
       </div>
       <div className="flex flex-col relative z-10">
         <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#8B5CF6] dark:text-violet-500 leading-tight flex-wrap break-all">
-          {formatarValor(valorFaturaAtualView)}
+          {formatarValor(totalPendente)}
         </span>
+        {totalPendente === 0 && totalDespesasFatura > 0 && (
+          <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+            Faturas pagas
+          </span>
+        )}
       </div>
     </div>
   );

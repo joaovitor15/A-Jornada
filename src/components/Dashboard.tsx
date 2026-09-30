@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard, LayoutDashboard } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard, LayoutDashboard, X } from 'lucide-react';
 import { TransactionModal } from './TransactionModal';
 import { supabase } from '../supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
@@ -68,6 +68,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
   const [despesasPrevisto, setDespesasPrevisto] = useState(0);
   const [despesasValorExibicao, setDespesasValorExibicao] = useState(0);
   const [despesasPrevistoExibicao, setDespesasPrevistoExibicao] = useState(0);
+  const [despesasDetalhadas, setDespesasDetalhadas] = useState<any[]>([]);
+  const [modalDespesasAberto, setModalDespesasAberto] = useState(false);
   const [investimentosPrevisto, setInvestimentosPrevisto] = useState(0);
   const [economiaDespesas, setEconomiaDespesas] = useState(0);
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
@@ -259,6 +261,14 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       setDespesasValorExibicao(currentDspsPago);
       setDespesasPrevistoExibicao(currentDspsPrevExibicao + currentDspsPrevRecExibicao);
       
+      const dspsLista = dspsArr
+        .filter(t => {
+          const isInvest = (t.tags as any)?.categories?.nome?.toLowerCase() === 'investimentos';
+          return !isInvest && t.status !== 'previsto';
+        })
+        .sort((a, b) => (b.data || '').localeCompare(a.data || ''));
+      setDespesasDetalhadas(dspsLista);
+      
       setInvestimentosPrevisto(currentInvesPrev + currentInvesPrevRec);
       
       setEconomiaDespesas(Math.max(0, (currentDspsPrev + currentDspsPrevRec) - currentDspsPago));
@@ -369,7 +379,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevistoExibicao - faturaCartaoPendente;
+  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto - faturaCartaoPendente;
 
   const formatarValor = (valor: number) =>
     valor.toLocaleString('pt-BR', {
@@ -594,21 +604,32 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
         )}
 
         {/* CARD 5 — DESPESAS */}
-        <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
+        <div 
+          onClick={() => setModalDespesasAberto(true)}
+          className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group cursor-pointer hover:border-red-300 dark:hover:border-red-900/50 transition-all hover:shadow-md"
+        >
           <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#EF4444] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
           <div className="flex items-start justify-between mb-[16px] relative z-10">
             <div className="p-[6px] bg-[#FEF2F2] dark:bg-red-900/20 rounded-full text-[#EF4444] dark:text-red-500 w-[32px] h-[32px] flex items-center justify-center">
               <TrendingDown size={18} />
             </div>
-            <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
-              Despesas
-            </span>
+            <div className="flex items-center gap-1">
+              <span className="uppercase text-[11px] text-[#94A3B8] dark:text-[#64748B] font-bold tracking-wider">
+                Despesas
+              </span>
+              <ChevronRight size={14} className="text-[#94A3B8] group-hover:translate-x-0.5 transition-transform" />
+            </div>
           </div>
           <div className="flex flex-col relative z-10">
             {isCardsLoading ? (
                <div className="h-9 w-24 bg-slate-200 dark:bg-slate-700 animate-pulse rounded-lg mt-1"></div>
             ) : (
-              <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValorExibicao)}</span>
+              <>
+                <span className="text-[20px] 2xl:text-[24px] font-[800] text-[#EF4444] dark:text-red-500 leading-tight flex-wrap break-all">{formatarValor(despesasValorExibicao)}</span>
+                <span className="text-[11px] font-semibold text-[#64748B] dark:text-[#94A3B8] mt-1 group-hover:text-red-500 transition-colors">
+                  Clique para conferir os itens ({despesasDetalhadas.length})
+                </span>
+              </>
             )}
           </div>
         </div>
@@ -786,6 +807,103 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
           )}
         </div>
       </div>
+
+      {/* MODAL DE DETALHAMENTO DE DESPESAS */}
+      <AnimatePresence>
+        {modalDespesasAberto && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[24px] max-w-lg w-full p-6 shadow-2xl max-h-[85vh] flex flex-col"
+            >
+              <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] dark:border-[#1E293B]">
+                <div>
+                  <h3 className="text-lg font-black text-[#0F172A] dark:text-white flex items-center gap-2">
+                    <TrendingDown size={20} className="text-[#EF4444]" />
+                    Detalhamento das Despesas
+                  </h3>
+                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
+                    {mesesCompletos[mesSelecionado - 1]} de {anoSelecionado} • Total: <strong className="text-[#EF4444] font-bold">{formatarValor(despesasValorExibicao)}</strong>
+                  </p>
+                </div>
+                <button
+                  onClick={() => setModalDespesasAberto(false)}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:text-[#0F172A] dark:text-[#94A3B8] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1E293B] transition-colors"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="py-2.5 px-3 text-[12px] text-[#64748B] dark:text-[#94A3B8] bg-slate-50 dark:bg-[#1E293B]/40 rounded-xl my-3 border border-slate-100 dark:border-slate-800">
+                💡 Este valor soma todas as despesas lançadas na conta (dinheiro, débito, Pix ou transferência) dentro deste mês, excluindo compras no cartão de crédito (que são agrupadas na Fatura do Cartão).
+              </div>
+
+              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                {despesasDetalhadas.length === 0 ? (
+                  <div className="text-center py-8 text-sm text-[#94A3B8]">
+                    Nenhuma despesa de conta registrada neste mês.
+                  </div>
+                ) : (
+                  despesasDetalhadas.map((t, idx) => {
+                    const dataFormatada = t.data ? t.data.split('-').reverse().slice(0, 2).join('/') : '--/--';
+                    const isFaturaPag = (t.descricao || '').toLowerCase().includes('fatura') || (t.tags as any)?.nome?.toLowerCase()?.includes('fatura');
+                    const catNome = (t.tags as any)?.categories?.nome || (t.tags as any)?.nome || 'Geral';
+                    return (
+                      <div
+                        key={t.id || idx}
+                        className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#1E293B]/50 border border-[#E2E8F0] dark:border-[#334155]/40 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <span className="text-[11px] font-bold text-[#64748B] dark:text-[#94A3B8] bg-slate-200/60 dark:bg-slate-800 px-2 py-1 rounded-md shrink-0">
+                            {dataFormatada}
+                          </span>
+                          <div className="min-w-0">
+                            <p className="text-sm font-bold text-[#0F172A] dark:text-white truncate">
+                              {t.descricao || 'Sem descrição'}
+                            </p>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
+                                {catNome}
+                              </span>
+                              {isFaturaPag && (
+                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
+                                  Pagamento Fatura
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                        <span className="text-sm font-extrabold text-[#EF4444] shrink-0 ml-2">
+                          -{formatarValor(Number(t.valor) || 0)}
+                        </span>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#1E293B] flex justify-between items-center mt-3">
+                <span className="text-xs text-[#94A3B8]">
+                  {despesasDetalhadas.length} {despesasDetalhadas.length === 1 ? 'lançamento' : 'lançamentos'}
+                </span>
+                {setActivePage && (
+                  <button
+                    onClick={() => {
+                      setModalDespesasAberto(false);
+                      setActivePage('transactions');
+                    }}
+                    className="text-xs font-bold text-[#2563EB] dark:text-[#3B82F6] hover:underline flex items-center gap-1"
+                  >
+                    Abrir página de Transações →
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {activeProfileId && (
         <TransactionModal

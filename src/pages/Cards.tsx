@@ -11,6 +11,7 @@ import {
   CreditCard,
 } from "lucide-react";
 import * as LucideIcons from "lucide-react";
+import { calcularFaturaCard } from "../utils/faturaUtils";
 
 interface CardsPageProps {
   activeProfileId?: string;
@@ -102,6 +103,7 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
       const { data, error } = await supabase
         .from("transacoes")
         .select("*")
+        .eq('profile_id', activeProfileId)
         .not('card_id', 'is', null);
 
       if (!error && data) {
@@ -114,43 +116,29 @@ export function CardsPage({ activeProfileId }: CardsPageProps) {
   useEffect(() => {
     if (!activeProfileId || cards.length === 0) return;
     const dadosCalculados: Record<string, any> = {};
+    const hoje = new Date();
+    const anoAtual = hoje.getFullYear();
+    const mesAtual = hoje.getMonth() + 1;
 
     cards.forEach(card => {
-      const periodo = calcularPeriodoFatura(
-        card.dia_fechamento_fatura,
-        card.dia_vencimento_fatura
-      );
-
-      const transacoesFaturaAtual = transacoesCard.filter(t => t.card_id === card.id && t.data <= (periodo as any).fimStr);
-      
-      const despesasFatura = transacoesFaturaAtual
-        .filter(t => t.tipo === 'despesa')
-        .reduce((acc, t) => acc + Number(t.valor), 0);
-        
-      const creditosFatura = transacoesFaturaAtual
-        .filter(t => t.tipo === 'receita')
-        .reduce((acc, t) => acc + Number(t.valor), 0);
-
-      const valorFatura = despesasFatura - creditosFatura;
+      const fatura = calcularFaturaCard(card, transacoesCard, anoAtual, mesAtual);
 
       const valorFuturo = transacoesCard
-        .filter(t => t.card_id === card.id && t.data > (periodo as any).fimStr)
-        .reduce((acc, t) => t.tipo === 'despesa' ? acc + Number(t.valor) : acc - Number(t.valor), 0);
-
-      const saldoTotalHistorico = transacoesCard
-        .filter(t => t.card_id === card.id)
-        .reduce((acc, t) => t.tipo === 'despesa' ? acc + Number(t.valor) : acc - Number(t.valor), 0);
-      const globalCredit = saldoTotalHistorico < 0 ? Math.abs(saldoTotalHistorico) : 0;
-      const limitUsed = saldoTotalHistorico;
+        .filter(t => t.card_id === card.id && t.tipo === 'despesa' && t.data > fatura.periodo.fimStr && t.status !== 'ignorado')
+        .reduce((acc, t) => acc + Number(t.valor), 0);
 
       dadosCalculados[card.id] = {
-        ...periodo,
-        valor: valorFatura,
-        despesas: despesasFatura,
-        creditos: creditosFatura,
+        inicio: fatura.periodo.inicio,
+        fim: fatura.periodo.fim,
+        vencimento: fatura.periodo.vencimento,
+        label: fatura.periodo.label,
+        status: fatura.status,
+        valor: fatura.status === 'PAGA' ? 0 : fatura.valorPendente,
+        despesas: fatura.despesasTotal,
+        creditos: fatura.pago,
         valorFuturo: valorFuturo,
-        globalCredit: globalCredit,
-        limitUsed: limitUsed
+        globalCredit: fatura.creditoDisponivel,
+        limitUsed: fatura.limiteUsado
       };
     });
 
