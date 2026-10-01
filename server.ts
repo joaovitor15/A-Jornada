@@ -44,6 +44,36 @@ async function startServer() {
     }
   });
 
+  app.post("/api/debug-fatura", (req, res) => {
+    try {
+      import("fs").then(fs => {
+        fs.writeFileSync("/tmp/debug_fatura.json", JSON.stringify(req.body, null, 2));
+      });
+    } catch(e) {}
+    console.log("=== [DEBUG FATURA RECEIVED] ===");
+    console.log("Card Info:", req.body.card);
+    console.log("Periodo:", req.body.fatura?.periodo);
+    console.log("Total Fatura:", req.body.fatura?.totalFatura);
+    console.log("Valor Pendente:", req.body.fatura?.valorPendente);
+    console.log("Despesas Total:", req.body.fatura?.despesasTotal);
+    console.log("Saldo Anterior Nao Pago:", req.body.fatura?.saldoAnteriorNaoPago);
+    console.log("Pago:", req.body.fatura?.pago);
+    console.log("Despesas Ciclo:", req.body.fatura?.despesasCiclo?.map((t: any) => ({
+      data: t.data,
+      descricao: t.descricao,
+      valor: t.valor
+    })));
+    console.log("All Card Txs:", req.body.transacoesCard?.map((t: any) => ({
+      id: t.id,
+      data: t.data,
+      descricao: t.descricao,
+      valor: t.valor,
+      tipo: t.tipo,
+      status: t.status
+    })));
+    res.json({ success: true });
+  });
+
   // Serve Vite static files
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

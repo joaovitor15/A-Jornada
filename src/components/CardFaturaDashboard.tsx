@@ -411,15 +411,14 @@ export function CardFaturaDashboard({
               className="cursor-pointer group/label"
               onClick={() => {
                 setFaturaVisualizar(activeCard);
-                setFaturaAnoMesVisualizar(null);
-                setFaturaVisualizarTab('PROXIMAS');
+                setFaturaAnoMesVisualizar({ ano: anoRef, mes: mesRef });
               }}
             >
               <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 flex items-center gap-1 group-hover/label:text-blue-500 transition-colors">
                 Fatura de {nomeMes} <ReceiptText size={12} />
               </span>
               <div className="text-[13px] font-semibold text-slate-600 dark:text-slate-300 transition-colors">
-                Vencimento: {new Date(fatura.periodo.vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                Vencimento: {new Date(fatura.periodo.vencimento).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })} • <span className="text-slate-400 dark:text-slate-500 text-xs font-normal">Ciclo: {fatura.periodo.label}</span>
               </div>
             </div>
             <div
@@ -449,6 +448,16 @@ export function CardFaturaDashboard({
                     minimumFractionDigits: 2
                   }).format(valorExibido)}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFaturaVisualizar(activeCard);
+                    setFaturaAnoMesVisualizar({ ano: anoRef, mes: mesRef });
+                  }}
+                  className="text-[11px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 mt-1 cursor-pointer"
+                >
+                  Conferir as {fatura.despesasCiclo.length} compras desta fatura →
+                </button>
                 {fatura.saldoAnteriorNaoPago > 0 && fatura.status !== 'PAGA' && (
                   <span className="text-[10px] text-amber-600 dark:text-amber-400 font-bold block mt-0.5">
                     Inclui R$ {fatura.saldoAnteriorNaoPago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })} em aberto anterior
