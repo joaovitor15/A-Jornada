@@ -379,7 +379,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
     'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
   ];
 
-  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevisto - faturaCartaoPendente;
+  const saldoTotal = receitasValor - despesasValor - investimentosValor - despesasPrevistoExibicao - faturaCartaoPendente;
 
   const formatarValor = (valor: number) =>
     valor.toLocaleString('pt-BR', {
