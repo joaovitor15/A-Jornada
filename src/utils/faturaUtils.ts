@@ -189,6 +189,7 @@ export const calcularFaturaCard = (
   let targetDespesas = 0;
   let targetPaid = 0;
   let targetUnpaid = 0;
+  const hoje = new Date();
 
   for (let mId = minTime; mId <= targetId; mId++) {
     const curAno = Math.floor((mId - 1) / 12);
@@ -210,8 +211,17 @@ export const calcularFaturaCard = (
         remainingPayments -= needed;
         pastUnpaid = 0;
       } else {
-        pastUnpaid = needed - remainingPayments;
+        const unpaidDifference = needed - remainingPayments;
         remainingPayments = 0;
+        // Uma fatura anterior só acumula como saldo em aberto para meses futuros
+        // se a data de vencimento dela já tiver passado (hoje > curP.vencimento)!
+        // Se ainda não venceu (hoje <= curP.vencimento), a fatura será paga no vencimento
+        // e não deve ser empurrada para os meses futuros como débito.
+        if (hoje > curP.vencimento) {
+          pastUnpaid = unpaidDifference;
+        } else {
+          pastUnpaid = 0;
+        }
       }
     } else {
       targetDespesas = d;
@@ -221,7 +231,6 @@ export const calcularFaturaCard = (
     }
   }
 
-  const hoje = new Date();
   let status: 'ABERTA' | 'FECHADA' | 'VENCIDA' | 'PAGA' | 'FUTURA' = 'ABERTA';
 
   if (targetUnpaid <= 0.001 && (targetDespesas > 0 || pastUnpaid > 0)) {

@@ -8,6 +8,7 @@ import { useTransacoes } from '../hooks/useTransacoes';
 import { useProfiles } from '../hooks/useProfiles';
 import { COLORS, ICONS } from '../pages/Categories';
 import IconPicker from './IconPicker';
+import { repararTransacoesSalarioErradas } from '../utils/salarioTagHelper';
 
 
 const CategoryDropdown = ({ 
@@ -223,6 +224,9 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
   useEffect(() => {
     fetchRelatorios();
+    if (activeProfileId) {
+      repararTransacoesSalarioErradas(activeProfileId);
+    }
   }, [activeProfileId]);
 
   useEffect(() => {
@@ -408,12 +412,19 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
 
   const getChartData = (tipoTransacao: 'receita' | 'despesa', agrupamento: 'categoria' | 'tag', selectedCategoryId?: string | null) => {
     const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito' || c.nome.toLowerCase() === 'ajuste de saldo').map(c => c.id);
-    const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
 
     const txs = transacoes.filter(t => {
       if (t.tipo !== tipoTransacao) return false;
-      if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+      if (tipoTransacao === 'despesa' && t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
       
+      if (tipoTransacao === 'receita') {
+        // Exclui estornos/pagamentos de fatura internos de cartão de crédito
+        if (t.card_id) return false;
+        if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+        const tagNome = t.tags?.nome?.toLowerCase();
+        if (tagNome === 'pagamento fatura' || tagNome === 'antecipação') return false;
+      }
+
       if (tipoTransacao === 'receita' && isBusiness && t.tags?.categories?.nome) {
          const catNome = t.tags.categories.nome.toLowerCase();
          if (catNome === 'farmácia popular' || catNome === 'farmacia popular') return false;
@@ -468,12 +479,20 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
     return { data, total };
   };
 
-  const availableCategories = categories.filter(c => c.tipo === formTipo && c.nome.toLowerCase() !== 'cartão de crédito' && c.nome.toLowerCase() !== 'ajuste de saldo');
+  const availableCategories = categories.filter(c => {
+    if (c.tipo !== formTipo) return false;
+    const cNome = c.nome.toLowerCase();
+    if (cNome === 'cartão de crédito' || cNome === 'ajuste de saldo') return false;
+    return true;
+  });
   const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito' || c.nome.toLowerCase() === 'ajuste de saldo').map(c => c.id);
   
   const totalReceitasPeriodo = transacoes.filter(t => {
     if (t.tipo !== 'receita') return false;
+    if (t.card_id) return false;
     if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+    const tagNome = t.tags?.nome?.toLowerCase();
+    if (tagNome === 'pagamento fatura' || tagNome === 'antecipação') return false;
     if (isBusiness && t.tags?.categories?.nome) {
       const catNome = t.tags.categories.nome.toLowerCase();
       if (catNome === 'farmácia popular' || catNome === 'farmacia popular') return false;
@@ -640,21 +659,26 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-[16px] mb-2">
         {(() => {
            const cardCatIds = categories.filter(c => c.nome.toLowerCase() === 'cartão de crédito' || c.nome.toLowerCase() === 'ajuste de saldo').map(c => c.id);
-           const investCatIds = categories.filter(c => c.nome.toLowerCase() === 'investimentos').map(c => c.id);
-           const validTxs = transacoes.filter(t => {
+           const validDespesas = transacoes.filter(t => {
+             if (t.tipo !== 'despesa') return false;
              if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
              return true;
            });
-
-           const totalReceitas = validTxs.filter(t => {
+           const validReceitas = transacoes.filter(t => {
              if (t.tipo !== 'receita') return false;
+             if (t.card_id) return false;
+             if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+             const tagNome = t.tags?.nome?.toLowerCase();
+             if (tagNome === 'pagamento fatura' || tagNome === 'antecipação') return false;
              if (isBusiness && t.tags?.categories?.nome) {
                 const catNome = t.tags.categories.nome.toLowerCase();
                 if (catNome === 'farmácia popular' || catNome === 'farmacia popular') return false;
              }
              return true;
-           }).reduce((acc, curr) => acc + Number(curr.valor), 0);
-           const totalDespesas = validTxs.filter(t => t.tipo === 'despesa').reduce((acc, curr) => acc + Number(curr.valor), 0);
+           });
+
+           const totalReceitas = validReceitas.reduce((acc, curr) => acc + Number(curr.valor), 0);
+           const totalDespesas = validDespesas.reduce((acc, curr) => acc + Number(curr.valor), 0);
            const saldoTotal = totalReceitas - totalDespesas;
            
            return (
@@ -714,21 +738,34 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
                 let displayCats = '';
                 
                 if (rel.tipo_relatorio === 'lucro') {
-                   const validTxs = transacoes.filter(t => {
+                   const desps = transacoes.filter(t => {
+                     if (t.tipo !== 'despesa') return false;
                      const catId = t.tags?.categories?.id;
                      const catNome = t.tags?.categories?.nome?.toLowerCase();
                      if (catId && cardCatIds.includes(catId)) return false;
                      if (catNome === 'investimentos') return false;
-                     if (isBusiness && (catNome === 'farmácia popular' || catNome === 'farmacia popular')) return false;
                      return true;
-                   });
-                   const recs = validTxs.filter(t => t.tipo === 'receita').reduce((acc, curr) => acc + Number(curr.valor), 0);
-                   const desps = validTxs.filter(t => t.tipo === 'despesa').reduce((acc, curr) => acc + Number(curr.valor), 0);
+                   }).reduce((acc, curr) => acc + Number(curr.valor), 0);
+                   const recs = transacoes.filter(t => {
+                     if (t.tipo !== 'receita') return false;
+                     if (t.card_id) return false;
+                     if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+                     const tagNome = t.tags?.nome?.toLowerCase();
+                     if (tagNome === 'pagamento fatura' || tagNome === 'antecipação') return false;
+                     if (isBusiness && (t.tags?.categories?.nome?.toLowerCase() === 'farmácia popular' || t.tags?.categories?.nome?.toLowerCase() === 'farmacia popular')) return false;
+                     return true;
+                   }).reduce((acc, curr) => acc + Number(curr.valor), 0);
                    sum = recs - desps;
                    displayCats = 'Receitas - Despesas (Margem baseada nas Receitas)';
                 } else {
                    const txs = transacoes.filter(t => {
                       if (t.tipo !== rel.tipo_relatorio) return false;
+                      if (rel.tipo_relatorio === 'receita') {
+                        if (t.card_id) return false;
+                        if (t.tags?.categories?.id && cardCatIds.includes(t.tags.categories.id)) return false;
+                        const tagNome = t.tags?.nome?.toLowerCase();
+                        if (tagNome === 'pagamento fatura' || tagNome === 'antecipação') return false;
+                      }
                       const txCatId = t.tags?.categories?.id;
                       return txCatId && catIds.includes(txCatId);
                    });
@@ -948,7 +985,7 @@ export const RelatoriosPage = ({ activeProfileId }: RelatoriosPageProps) => {
            const availableCategorias = categories.filter(c => {
              if (c.tipo !== 'receita') return false;
              const cNome = c.nome.toLowerCase();
-             if (cNome === 'cartão de crédito' || cNome === 'investimentos' || cNome === 'ajuste de saldo') return false;
+             if (cNome === 'cartão de crédito' || cNome === 'ajuste de saldo') return false;
              if (isBusiness && (cNome === 'farmácia popular' || cNome === 'farmacia popular')) return false;
              return true;
            });

@@ -5,7 +5,6 @@ import { supabase } from '../supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardFaturaDashboard } from './CardFaturaDashboard';
-import { CardFaturaMini } from './CardFaturaMini';
 import { CardProvisoesDashboard } from './CardProvisoesDashboard';
 import { useProfiles } from '../hooks/useProfiles';
 
@@ -535,7 +534,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       </div>
 
       {/* 2. CARDS DE RESUMO */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-[16px]">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-[16px]">
         {/* CARD 1 — RECEITAS */}
         <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#16A34A] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
@@ -599,11 +598,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
           </div>
         </div>
 
-        {currentProfile?.financeiro_show_cartoes !== false && (
-          <CardFaturaMini activeProfileId={activeProfileId} anoSelecionado={anoSelecionado} mesSelecionado={mesSelecionado} onTotalChange={setFaturaCartaoPendente} />
-        )}
-
-        {/* CARD 5 — DESPESAS */}
+        {/* CARD 4 — DESPESAS */}
         <div 
           onClick={() => setModalDespesasAberto(true)}
           className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group cursor-pointer hover:border-red-300 dark:hover:border-red-900/50 transition-all hover:shadow-md"
@@ -634,7 +629,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
           </div>
         </div>
 
-        {/* CARD 6 — SALDO TOTAL */}
+        {/* CARD 5 — SALDO TOTAL */}
         <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#2563EB] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
           <div className="flex items-start justify-between mb-[16px] relative z-10">
@@ -659,7 +654,13 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 items-stretch pt-2">
         {currentProfile?.financeiro_show_cartoes !== false && (
-          <CardFaturaDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} />
+          <CardFaturaDashboard
+            activeProfileId={activeProfileId}
+            setActivePage={setActivePage}
+            mesSelecionado={mesSelecionado}
+            anoSelecionado={anoSelecionado}
+            onTotalChange={setFaturaCartaoPendente}
+          />
         )}
         <CardProvisoesDashboard activeProfileId={activeProfileId} setActivePage={setActivePage} mesSelecionado={mesSelecionado} anoSelecionado={anoSelecionado} refreshTrigger={refreshTrigger} />
       </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { supabase } from '../supabaseClient';
+import { repararTransacoesSalarioErradas, getOrCreateSalarioTag } from '../utils/salarioTagHelper';
 
 export interface Transacao {
   id: string;
@@ -31,6 +32,69 @@ export interface Transacao {
       cor: string;
     }
   };
+}
+
+function normalizeSalaryTransactions(result: Transacao[], profileId: string) {
+  if (!result || !profileId) return;
+  const isSalarioDesc = (desc?: string) => {
+    if (!desc) return false;
+    const d = desc.toLowerCase();
+    return d.startsWith('pix:') || 
+           d.includes('salário') || 
+           d.includes('salario') || 
+           d.includes('piso farmacêutico') || 
+           d.includes('pro labore') || 
+           d.includes('pró labore') || 
+           d.includes('pro-labore') || 
+           d.includes('pró-labore') || 
+           d.includes('prolabore') || 
+           d.includes('prólabore') || 
+           d.includes('restante');
+  };
+
+  const hasMislabeledSalary = result.some(t => {
+    if (t.tipo !== 'receita' || t.card_id) return false;
+    if (!isSalarioDesc(t.descricao)) return false;
+    const tagNome = (t.tags?.nome || '').toLowerCase();
+    const catNome = (t.tags?.categories?.nome || '').toLowerCase();
+    return tagNome === 'pagamento fatura' || 
+           tagNome.includes('mari') || 
+           catNome === 'cartão de crédito' || 
+           (tagNome !== 'pagamento' && catNome !== 'salário' && catNome !== 'salario') ||
+           !t.tags;
+  });
+
+  if (hasMislabeledSalary) {
+    getOrCreateSalarioTag(profileId).then(salarioInfo => {
+      if (salarioInfo) {
+        repararTransacoesSalarioErradas(profileId);
+      }
+    });
+
+    result.forEach(t => {
+      if (t.tipo === 'receita' && !t.card_id && isSalarioDesc(t.descricao)) {
+        const tagNome = (t.tags?.nome || '').toLowerCase();
+        const catNome = (t.tags?.categories?.nome || '').toLowerCase();
+        const isWrong = tagNome === 'pagamento fatura' || 
+                        tagNome.includes('mari') || 
+                        catNome === 'cartão de crédito' || 
+                        !t.tags || 
+                        tagNome !== 'pagamento';
+        if (isWrong) {
+          t.tags = {
+            id: t.tags?.id || 'tag-pagamento-salario',
+            nome: 'Pagamento',
+            categories: {
+              id: t.tags?.categories?.id || 'cat-salario',
+              nome: 'Salário',
+              icone: 'DollarSign',
+              cor: '#10B981'
+            }
+          };
+        }
+      }
+    });
+  }
 }
 
 export function useTransacoes() {
@@ -75,6 +139,7 @@ export function useTransacoes() {
       }
 
       const result = (data || []) as any as Transacao[];
+      normalizeSalaryTransactions(result, profileId);
       setTransacoes(result);
       return result;
     } catch (err: any) {
@@ -121,6 +186,7 @@ export function useTransacoes() {
       }
 
       const result = (data || []) as any as Transacao[];
+      normalizeSalaryTransactions(result, profileId);
       setTransacoes(result);
       return result;
     } catch (err: any) {
