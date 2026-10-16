@@ -25,8 +25,8 @@ export function CardFaturaDashboard({
 
   const [selectedCardId, setSelectedCardId] = useState<string | null>(null);
 
-  // Modo de visualização: AUTO (inteligente: mostra fechada se houver a pagar, ou aberta se já paga), ABERTA ou FECHADA
-  const [viewMode, setViewMode] = useState<'AUTO' | 'ABERTA' | 'FECHADA'>('AUTO');
+  // Modo de visualização: ABERTA por padrão (sempre exibe a fatura em aberto), com opção de inspecionar FECHADA
+  const [viewMode, setViewMode] = useState<'AUTO' | 'ABERTA' | 'FECHADA'>('ABERTA');
 
   const [anteciparFaturaModal, setAnteciparFaturaModal] = useState<Card | null>(null);
   const [anteciparValor, setAnteciparValor] = useState("0");
@@ -200,25 +200,15 @@ export function CardFaturaDashboard({
   let faturaExibidaAno = anoRef;
   let faturaExibidaMes = mesRef;
 
-  if (viewMode === 'ABERTA') {
-    faturaExibida = faturaAberta;
-    faturaExibidaAno = abertaAno;
-    faturaExibidaMes = abertaMes;
-  } else if (viewMode === 'FECHADA') {
+  if (viewMode === 'FECHADA') {
     faturaExibida = faturaMes;
     faturaExibidaAno = anoRef;
     faturaExibidaMes = mesRef;
   } else {
-    // AUTO:
-    if (temFaturaFechadaPendente) {
-      faturaExibida = faturaMes;
-      faturaExibidaAno = anoRef;
-      faturaExibidaMes = mesRef;
-    } else {
-      faturaExibida = faturaAberta;
-      faturaExibidaAno = abertaAno;
-      faturaExibidaMes = abertaMes;
-    }
+    // Sempre exibe a Fatura em Aberto (independente do mês selecionado)
+    faturaExibida = faturaAberta;
+    faturaExibidaAno = abertaAno;
+    faturaExibidaMes = abertaMes;
   }
 
   // Notificar Dashboard sobre o total pendente dos cartões no mês selecionado
@@ -265,7 +255,43 @@ export function CardFaturaDashboard({
     );
   }
 
-  if (cards.length === 0 || !activeCard || !faturaExibida.periodo) return null;
+  if (cards.length === 0 || !activeCard) {
+    return (
+      <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm overflow-hidden flex flex-col h-full min-h-[280px]">
+        <div className="p-6 flex items-center justify-between border-b border-[#E2E8F0] dark:border-[#1E293B] relative z-10">
+          <h3 className="font-bold text-slate-800 dark:text-slate-100 text-lg flex items-center gap-2">
+            <CreditCard size={20} className="text-[#8B5CF6]" />
+            Faturas de Cartão
+          </h3>
+          <span className="px-2.5 py-1 rounded-full uppercase text-[10px] font-black tracking-widest border bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700">
+            Cartões
+          </span>
+        </div>
+        <div className="p-6 flex flex-col items-center justify-center flex-1 text-center relative z-10 gap-3">
+          <div className="w-12 h-12 rounded-full bg-violet-50 dark:bg-violet-900/20 text-[#8B5CF6] dark:text-violet-400 flex items-center justify-center shadow-inner">
+            <CreditCard size={24} />
+          </div>
+          <div>
+            <h4 className="font-bold text-slate-800 dark:text-slate-200 text-sm">Nenhum cartão cadastrado</h4>
+            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mt-1">
+              Cadastre seus cartões de crédito para acompanhar faturas, limites e pagamentos diretamente aqui ao lado das provisões.
+            </p>
+          </div>
+          {setActivePage && (
+            <button
+              onClick={() => setActivePage('cartoes')}
+              className="mt-2 px-4 py-2 bg-[#8B5CF6] hover:bg-violet-600 text-white rounded-xl font-bold text-xs shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+            >
+              <span>+ Gerenciar Cartões</span>
+              <ChevronRight size={14} />
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (!faturaExibida.periodo) return null;
 
   const statusColors = {
     ABERTA: "bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800",

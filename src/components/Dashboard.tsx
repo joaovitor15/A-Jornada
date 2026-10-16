@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard, LayoutDashboard, X } from 'lucide-react';
+import { Plus, Wallet, TrendingUp, TrendingDown, ChevronLeft, ChevronRight, ChevronDown, Check, PieChart, Clock, CreditCard, LayoutDashboard, X, Search, Info, CheckCircle2 } from 'lucide-react';
 import { TransactionModal } from './TransactionModal';
 import { supabase } from '../supabaseClient';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { motion, AnimatePresence } from 'motion/react';
 import { CardFaturaDashboard } from './CardFaturaDashboard';
+import { CardFaturaMini } from './CardFaturaMini';
 import { CardProvisoesDashboard } from './CardProvisoesDashboard';
 import { useProfiles } from '../hooks/useProfiles';
 
@@ -69,6 +70,8 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
   const [despesasPrevistoExibicao, setDespesasPrevistoExibicao] = useState(0);
   const [despesasDetalhadas, setDespesasDetalhadas] = useState<any[]>([]);
   const [modalDespesasAberto, setModalDespesasAberto] = useState(false);
+  const [termoBuscaDespesas, setTermoBuscaDespesas] = useState('');
+  const [categoriaFiltroDespesas, setCategoriaFiltroDespesas] = useState<string | null>(null);
   const [investimentosPrevisto, setInvestimentosPrevisto] = useState(0);
   const [economiaDespesas, setEconomiaDespesas] = useState(0);
   const [dadosGrafico, setDadosGrafico] = useState<any[]>([]);
@@ -93,7 +96,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       
       const { data: antDataAll } = await supabase
         .from('transacoes')
-        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, tags ( categories!tags_category_id_fkey ( nome, cor ) )`)
+        .select(`valor, valor_previsto, tipo, status, descricao, data, recorrente_id, num_parcelas, card_id, forma_pagamento, tags ( id, nome, categories!tags_category_id_fkey ( nome, cor ) )`)
         .eq('profile_id', activeProfileId)
         .gte('data', `${currentMonthPrefix}-01`).lte('data', `${currentMonthPrefix}-${ultimoDia}`);
 
@@ -534,7 +537,7 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
       </div>
 
       {/* 2. CARDS DE RESUMO */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-[16px]">
+      <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${currentProfile?.financeiro_show_cartoes !== false ? 'xl:grid-cols-6' : 'xl:grid-cols-5'} gap-[16px]`}>
         {/* CARD 1 — RECEITAS */}
         <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group">
           <div className="absolute top-0 right-0 -mt-16 -mr-16 w-64 h-64 bg-[#16A34A] rounded-full blur-3xl opacity-[0.15] group-hover:opacity-[0.25] dark:opacity-[0.15] dark:group-hover:opacity-[0.25] transition-opacity duration-700"></div>
@@ -598,7 +601,18 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
           </div>
         </div>
 
-        {/* CARD 4 — DESPESAS */}
+        {/* CARD 4 — FATURA CARTÃO */}
+        {currentProfile?.financeiro_show_cartoes !== false && (
+          <CardFaturaMini
+            activeProfileId={activeProfileId}
+            anoSelecionado={anoSelecionado}
+            mesSelecionado={mesSelecionado}
+            setActivePage={setActivePage}
+            onTotalChange={setFaturaCartaoPendente}
+          />
+        )}
+
+        {/* CARD 5 — DESPESAS */}
         <div 
           onClick={() => setModalDespesasAberto(true)}
           className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0B0F19] dark:to-[#0F172A] rounded-[20px] p-[24px] border border-[#E2E8F0] dark:border-[#1E293B] shadow-sm relative overflow-hidden group cursor-pointer hover:border-red-300 dark:hover:border-red-900/50 transition-all hover:shadow-md"
@@ -811,99 +825,256 @@ export const Dashboard = ({ activeProfileName, activeProfileId, activeProfileTyp
 
       {/* MODAL DE DETALHAMENTO DE DESPESAS */}
       <AnimatePresence>
-        {modalDespesasAberto && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white dark:bg-[#0F172A] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[24px] max-w-lg w-full p-6 shadow-2xl max-h-[85vh] flex flex-col"
-            >
-              <div className="flex items-center justify-between pb-4 border-b border-[#E2E8F0] dark:border-[#1E293B]">
-                <div>
-                  <h3 className="text-lg font-black text-[#0F172A] dark:text-white flex items-center gap-2">
-                    <TrendingDown size={20} className="text-[#EF4444]" />
-                    Detalhamento das Despesas
-                  </h3>
-                  <p className="text-xs text-[#64748B] dark:text-[#94A3B8]">
-                    {mesesCompletos[mesSelecionado - 1]} de {anoSelecionado} • Total: <strong className="text-[#EF4444] font-bold">{formatarValor(despesasValorExibicao)}</strong>
-                  </p>
-                </div>
-                <button
-                  onClick={() => setModalDespesasAberto(false)}
-                  className="w-8 h-8 rounded-full flex items-center justify-center text-[#64748B] hover:text-[#0F172A] dark:text-[#94A3B8] dark:hover:text-white hover:bg-slate-100 dark:hover:bg-[#1E293B] transition-colors"
-                >
-                  <X size={18} />
-                </button>
-              </div>
+        {modalDespesasAberto && (() => {
+          const categoriasDisponiveis = Array.from(
+            new Set(
+              despesasDetalhadas
+                .map(t => (t.tags as any)?.categories?.nome || (t.tags as any)?.nome || 'Geral')
+                .filter(Boolean)
+            )
+          );
 
-              <div className="py-2.5 px-3 text-[12px] text-[#64748B] dark:text-[#94A3B8] bg-slate-50 dark:bg-[#1E293B]/40 rounded-xl my-3 border border-slate-100 dark:border-slate-800">
-                💡 Este valor soma todas as despesas lançadas na conta (dinheiro, débito, Pix ou transferência) dentro deste mês, excluindo compras no cartão de crédito (que são agrupadas na Fatura do Cartão).
-              </div>
+          const despesasFiltradas = despesasDetalhadas.filter(t => {
+            const catNome = (t.tags as any)?.categories?.nome || (t.tags as any)?.nome || 'Geral';
+            const tagNome = (t.tags as any)?.nome || '';
+            const desc = t.descricao || '';
+            
+            const matchesBusca = termoBuscaDespesas.trim() === '' || 
+              desc.toLowerCase().includes(termoBuscaDespesas.toLowerCase()) ||
+              catNome.toLowerCase().includes(termoBuscaDespesas.toLowerCase()) ||
+              tagNome.toLowerCase().includes(termoBuscaDespesas.toLowerCase());
+              
+            const matchesCategoria = !categoriaFiltroDespesas || catNome === categoriaFiltroDespesas;
+            
+            return matchesBusca && matchesCategoria;
+          });
 
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
-                {despesasDetalhadas.length === 0 ? (
-                  <div className="text-center py-8 text-sm text-[#94A3B8]">
-                    Nenhuma despesa de conta registrada neste mês.
+          return (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white dark:bg-[#0B0F19] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[28px] max-w-xl w-full p-6 shadow-2xl max-h-[88vh] flex flex-col relative overflow-hidden"
+              >
+                {/* Glow decorativo de fundo */}
+                <div className="absolute top-0 right-0 -mt-16 -mr-16 w-56 h-56 bg-red-500 rounded-full blur-3xl opacity-[0.08] dark:opacity-[0.14] pointer-events-none"></div>
+
+                {/* Header */}
+                <div className="flex items-center justify-between pb-3 border-b border-[#E2E8F0] dark:border-[#1E293B] relative z-10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-red-50 dark:bg-red-950/40 text-[#EF4444] border border-red-100 dark:border-red-900/40 flex items-center justify-center shrink-0 shadow-2xs">
+                      <TrendingDown size={20} strokeWidth={2.5} />
+                    </div>
+                    <div>
+                      <h3 className="text-[17px] font-black text-[#0F172A] dark:text-white tracking-tight">
+                        Detalhamento das Despesas
+                      </h3>
+                      <p className="text-xs text-[#64748B] dark:text-[#94A3B8] font-medium">
+                        {mesesCompletos[mesSelecionado - 1]} de {anoSelecionado}
+                      </p>
+                    </div>
                   </div>
-                ) : (
-                  despesasDetalhadas.map((t, idx) => {
-                    const dataFormatada = t.data ? t.data.split('-').reverse().slice(0, 2).join('/') : '--/--';
-                    const isFaturaPag = (t.descricao || '').toLowerCase().includes('fatura') || (t.tags as any)?.nome?.toLowerCase()?.includes('fatura');
-                    const catNome = (t.tags as any)?.categories?.nome || (t.tags as any)?.nome || 'Geral';
-                    return (
-                      <div
-                        key={t.id || idx}
-                        className="flex items-center justify-between p-3 rounded-xl bg-[#F8FAFC] dark:bg-[#1E293B]/50 border border-[#E2E8F0] dark:border-[#334155]/40 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
-                      >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <span className="text-[11px] font-bold text-[#64748B] dark:text-[#94A3B8] bg-slate-200/60 dark:bg-slate-800 px-2 py-1 rounded-md shrink-0">
-                            {dataFormatada}
-                          </span>
-                          <div className="min-w-0">
-                            <p className="text-sm font-bold text-[#0F172A] dark:text-white truncate">
-                              {t.descricao || 'Sem descrição'}
-                            </p>
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <span className="text-[11px] text-[#64748B] dark:text-[#94A3B8]">
-                                {catNome}
-                              </span>
-                              {isFaturaPag && (
-                                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300">
-                                  Pagamento Fatura
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                        <span className="text-sm font-extrabold text-[#EF4444] shrink-0 ml-2">
-                          -{formatarValor(Number(t.valor) || 0)}
-                        </span>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
-
-              <div className="pt-4 border-t border-[#E2E8F0] dark:border-[#1E293B] flex justify-between items-center mt-3">
-                <span className="text-xs text-[#94A3B8]">
-                  {despesasDetalhadas.length} {despesasDetalhadas.length === 1 ? 'lançamento' : 'lançamentos'}
-                </span>
-                {setActivePage && (
                   <button
                     onClick={() => {
                       setModalDespesasAberto(false);
-                      setActivePage('transactions');
+                      setTermoBuscaDespesas('');
+                      setCategoriaFiltroDespesas(null);
                     }}
-                    className="text-xs font-bold text-[#2563EB] dark:text-[#3B82F6] hover:underline flex items-center gap-1"
+                    className="w-9 h-9 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white bg-slate-100 dark:bg-slate-800/60 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors cursor-pointer"
                   >
-                    Abrir página de Transações →
+                    <X size={18} />
                   </button>
+                </div>
+
+                {/* Hero Card de Resumo das Despesas */}
+                <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] dark:from-[#0E1424] dark:to-[#131B2E] border border-[#E2E8F0] dark:border-[#1E293B] rounded-[22px] p-4.5 my-3.5 relative overflow-hidden shadow-2xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 relative z-10">
+                    <div>
+                      <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        Total Debitado em Conta
+                      </span>
+                      <div className="text-[28px] font-black text-[#EF4444] tracking-tight leading-none mt-1">
+                        {formatarValor(despesasValorExibicao)}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-extrabold text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-2xs">
+                        {despesasDetalhadas.length} {despesasDetalhadas.length === 1 ? 'despesa' : 'despesas'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-3 pt-2.5 border-t border-slate-200/70 dark:border-slate-800/80 flex items-start gap-2 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                    <Info size={14} className="text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
+                    <span>
+                      Soma os pagamentos debitados da conta (Pix, transferências e dinheiro). Compras parceladas ou no crédito constam separadamente na Fatura do Cartão.
+                    </span>
+                  </div>
+                </div>
+
+                {/* Barra de Busca e Filtros Rápidos */}
+                {despesasDetalhadas.length > 2 && (
+                  <div className="space-y-2 mb-3">
+                    <div className="relative">
+                      <Search size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={termoBuscaDespesas}
+                        onChange={(e) => setTermoBuscaDespesas(e.target.value)}
+                        placeholder="Buscar por descrição ou categoria..."
+                        className="w-full pl-9 pr-8 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-none focus:border-red-400 dark:focus:border-red-500 transition-colors"
+                      />
+                      {termoBuscaDespesas && (
+                        <button
+                          onClick={() => setTermoBuscaDespesas('')}
+                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                        >
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+
+                    {categoriasDisponiveis.length > 1 && (
+                      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px] no-scrollbar">
+                        <button
+                          onClick={() => setCategoriaFiltroDespesas(null)}
+                          className={`px-2.5 py-1 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
+                            !categoriaFiltroDespesas
+                              ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900 shadow-2xs'
+                              : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                          }`}
+                        >
+                          Todas
+                        </button>
+                        {categoriasDisponiveis.map(cat => (
+                          <button
+                            key={cat}
+                            onClick={() => setCategoriaFiltroDespesas(categoriaFiltroDespesas === cat ? null : cat)}
+                            className={`px-2.5 py-1 rounded-lg font-bold transition-all whitespace-nowrap cursor-pointer ${
+                              categoriaFiltroDespesas === cat
+                                ? 'bg-red-500 text-white shadow-2xs'
+                                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
-              </div>
-            </motion.div>
-          </div>
-        )}
+
+                {/* Lista de Transações */}
+                <div className="flex-1 overflow-y-auto space-y-2 pr-1 custom-scrollbar">
+                  {despesasFiltradas.length === 0 ? (
+                    <div className="text-center py-10 px-4">
+                      <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center mx-auto mb-2">
+                        <TrendingDown size={22} />
+                      </div>
+                      <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
+                        {termoBuscaDespesas || categoriaFiltroDespesas ? 'Nenhuma despesa encontrada' : 'Nenhuma despesa de conta registrada neste mês.'}
+                      </p>
+                      <p className="text-xs text-slate-400 mt-1 max-w-xs mx-auto">
+                        {termoBuscaDespesas || categoriaFiltroDespesas ? 'Tente ajustar os filtros ou termo de busca acima.' : 'Compras no cartão de crédito são contabilizadas separadamente na Fatura do Cartão.'}
+                      </p>
+                    </div>
+                  ) : (
+                    despesasFiltradas.map((t, idx) => {
+                      const dataParts = t.data ? t.data.split('-') : [];
+                      const diaStr = dataParts.length >= 3 ? dataParts[2] : '--';
+                      const mesIndex = dataParts.length >= 2 ? parseInt(dataParts[1], 10) - 1 : 0;
+                      const mesCurto = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'][mesIndex] || '---';
+
+                      const isFaturaPag = (t.descricao || '').toLowerCase().includes('fatura') || (t.tags as any)?.nome?.toLowerCase()?.includes('fatura');
+                      const catNome = (t.tags as any)?.categories?.nome || (t.tags as any)?.nome || 'Geral';
+                      const catCor = (t.tags as any)?.categories?.cor || '#EF4444';
+                      const tagNome = (t.tags as any)?.nome;
+                      const showTag = tagNome && tagNome.toLowerCase() !== catNome.toLowerCase();
+
+                      return (
+                        <div
+                          key={t.id || idx}
+                          className="flex items-center justify-between p-3.5 rounded-2xl bg-[#F8FAFC] dark:bg-[#0E1424]/90 border border-[#E2E8F0] dark:border-[#1E293B] hover:border-slate-300 dark:hover:border-slate-700 transition-all shadow-2xs hover:shadow-sm group"
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            {/* Bloco de Data Moderno */}
+                            <div className="bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 rounded-xl px-2.5 py-1.5 flex flex-col items-center justify-center min-w-[46px] shrink-0 shadow-2xs">
+                              <span className="text-[13px] font-black text-slate-800 dark:text-slate-100 leading-none">
+                                {diaStr}
+                              </span>
+                              <span className="text-[9px] font-bold uppercase text-slate-400 dark:text-slate-500 mt-0.5 tracking-wider">
+                                {mesCurto}
+                              </span>
+                            </div>
+
+                            {/* Detalhes da Despesa */}
+                            <div className="min-w-0">
+                              <p className="text-[13px] font-bold text-[#0F172A] dark:text-white truncate group-hover:text-red-500 dark:group-hover:text-red-400 transition-colors">
+                                {t.descricao || 'Sem descrição'}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: catCor }}></span>
+                                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+                                  {catNome}
+                                </span>
+                                {showTag && (
+                                  <>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                                      {tagNome}
+                                    </span>
+                                  </>
+                                )}
+                                {isFaturaPag && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-md bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-300 border border-purple-200/60 dark:border-purple-800/40 flex items-center gap-1">
+                                    <CreditCard size={10} /> Pagamento Fatura
+                                  </span>
+                                )}
+                                {t.forma_pagamento && (
+                                  <>
+                                    <span className="text-slate-300 dark:text-slate-600">·</span>
+                                    <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 uppercase tracking-wider">
+                                      {t.forma_pagamento === 'cartao_credito' ? 'Cartão' : t.forma_pagamento}
+                                    </span>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Valor da Despesa */}
+                          <span className="text-[15px] font-black text-[#EF4444] shrink-0 ml-3 tracking-tight">
+                            -{formatarValor(Number(t.valor) || 0)}
+                          </span>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+
+                {/* Footer */}
+                <div className="pt-3.5 border-t border-[#E2E8F0] dark:border-[#1E293B] flex justify-between items-center mt-3 relative z-10">
+                  <span className="text-xs text-[#94A3B8] font-medium">
+                    {despesasFiltradas.length} de {despesasDetalhadas.length} {despesasDetalhadas.length === 1 ? 'lançamento' : 'lançamentos'}
+                  </span>
+                  {setActivePage && (
+                    <button
+                      onClick={() => {
+                        setModalDespesasAberto(false);
+                        setActivePage('transactions');
+                      }}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 dark:bg-white dark:hover:bg-slate-100 text-white dark:text-slate-900 rounded-xl font-bold text-xs shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <span>Abrir página de Transações</span>
+                      <ChevronRight size={14} />
+                    </button>
+                  )}
+                </div>
+              </motion.div>
+            </div>
+          );
+        })()}
       </AnimatePresence>
 
       {activeProfileId && (

@@ -100,6 +100,31 @@ export const helperCalcularPeriodoParaMes = (
 };
 
 /**
+ * Dado o mês e ano em que a fatura deve VENCER, calcula o mês e ano de fechamento correspondente.
+ * Ex: Se dia_vencimento < dia_fechamento (ex: fecha dia 25 e vence dia 5):
+ * A fatura com vencimento em Outubro (10/2026) teve seu fechamento em Setembro (09/2026).
+ * Se dia_vencimento >= dia_fechamento:
+ * A fatura com vencimento em Outubro (10/2026) teve seu fechamento no mesmo mês (10/2026).
+ */
+export const helperCalcularMesFechamentoParaVencimento = (
+  diaFechamento: number,
+  diaVencimento: number,
+  anoVencimento: number,
+  mesVencimento: number
+): { anoFechamento: number; mesFechamento: number } => {
+  if ((diaVencimento || 10) < (diaFechamento || 1)) {
+    let mesFechamento = mesVencimento - 1;
+    let anoFechamento = anoVencimento;
+    if (mesFechamento < 1) {
+      mesFechamento = 12;
+      anoFechamento -= 1;
+    }
+    return { anoFechamento, mesFechamento };
+  }
+  return { anoFechamento: anoVencimento, mesFechamento: mesVencimento };
+};
+
+/**
  * Calcula o período relativo ao mês atual com um offset de meses.
  */
 export const helperCalcularPeriodo = (
